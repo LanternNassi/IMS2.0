@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "0ji6sUlPKlBA3dS1cqLl1tXgiqIDOj/si2jx0eHidV0=",
+  "Source": "ImsServer",
+  "BasePath": "_content/ImsServer",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}

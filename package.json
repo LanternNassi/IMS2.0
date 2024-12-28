@@ -1,0 +1,53 @@
+{
+    "name": "myapp",
+    "version": "1.0.0",
+    "description": "An Electron + Next.js desktop application with a .NET backend and SQL Server integration.",
+    "main": "electron/main.js",
+    "scripts": {
+        "start": "electron .",
+        "dev:app": "cd frontend && npm run dev:all",
+        "dev:backend": "cd backend && dotnet watch run"
+    },
+    "dependencies": {
+        "@fontsource/figtree": "^5.1.1",
+        "electron": "^27.2.0",
+        "electron-is-dev": "^2.0.0",
+        "next": "13.4.0",
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0"
+    },
+    "devDependencies": {
+        "concurrently": "^8.2.0",
+        "electron-builder": "^24.6.0"
+    },
+    "build": {
+        "appId": "com.example.myapp",
+        "productName": "MyApp",
+        "files": [
+            "electron/**/*",
+            "frontend/out/**/*",
+            "backend/**/*"
+        ],
+        "extraFiles": [
+            {
+                "from": "backend",
+                "to": "resources/backend"
+            },
+            {
+                "from": "sqlserver",
+                "to": "resources/sqlserver"
+            }
+        ],
+        "win": {
+            "target": [
+                "nsis"
+            ],
+            "icon": "electron/icon.ico"
+        },
+        "nsis": {
+            "oneClick": false,
+            "perMachine": true,
+            "allowToChangeInstallationDirectory": true
+        }
+    }
+}
