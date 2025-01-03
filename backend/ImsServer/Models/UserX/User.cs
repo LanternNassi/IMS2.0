@@ -5,6 +5,7 @@ namespace ImsServer.Models.UserX{
         public string Username { get; set; }
         public string PasswordHash { get; set; }
         public string? Email { get; set; }
+        public string? Gender {get; set;}
         public string? Telephone {get; set;}
         public string Role { get; set; }
     }
@@ -14,6 +15,7 @@ namespace ImsServer.Models.UserX{
         public Guid Id { get; set; }
         public string Username { get; set; }
         public string? Email { get; set; }
+        public string? Gender {get; set;}       
         public string? Telephone {get; set;}
         public string Role { get; set; }
     }

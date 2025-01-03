@@ -4,6 +4,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/lib/ThemeProvider";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+import { Toaster } from "@/components/ui/toaster"
 
 
 export const metadata: Metadata = {
@@ -34,32 +35,32 @@ export default function RootLayout({
           <nav className="flex-1 overflow-y-auto">
             <ul className="space-y-1 p-2">
                 {[
-                { label: "Dashboard", icon: "🏠" },
-                { label: "Users", icon: "👤" },
-                { label: "Categories", icon: "📊" },
-                { label: "Store Management", icon: "🏬" },
-                { label: "Products", icon: "📦" },
-                { label: "Customers And Suppliers", icon: "👥" },
-                { label: "Transactions", icon: "🔄" },
-                { label: "Purchases", icon: "🛒" },
-                { label: "Sales", icon: "💰" },
-                { label: "Analysis", icon: "📈" },
-                { label: "Debts", icon: "💸" },
-                { label: "Expenditure", icon: "🧾" },
-                { label: "IMS Settings", icon: "⚙️" },
+                  { label: "Dashboard", icon: "🏠", path: "/Dashboard" },
+                  { label: "Users", icon: "👤", path: "/Users" },
+                  { label: "Categories", icon: "📊", path: "/Categories" },
+                  { label: "Store Management", icon: "🏬", path: "/Stores" },
+                  { label: "Products", icon: "📦", path: "/Products" },
+                  { label: "Customers And Suppliers", icon: "👥", path: "/CustomersAndSuppliers" },
+                  { label: "Transactions", icon: "🔄", path: "/Transactions" },
+                  { label: "Purchases", icon: "🛒", path: "/Purchases" },
+                  { label: "Sales", icon: "💰", path: "/Sales" },
+                  { label: "Analysis", icon: "📈", path: "/Analysis" },
+                  { label: "Debts", icon: "💸", path: "/Debts" },
+                  { label: "Expenditure", icon: "🧾", path: "/Expenditure" },
+                  { label: "IMS Settings", icon: "⚙️", path: "/IMSSettings" },
                 ].map((item, index) => (
-                <li key={index}>
-                  <a
-                  href="/Users"
-                  className={cn(
-                    "flex items-center space-x-3 p-2 rounded-md transition-colors",
-                    "hover:bg-gray-200 dark:hover:bg-gray-700"
-                  )}
-                  >
-                  <span>{item.icon}</span>
-                  <span>{item.label}</span>
-                  </a>
-                </li>
+                  <li key={index}>
+                    <a
+                      href={item.path}
+                      className={cn(
+                        "flex items-center space-x-3 p-2 rounded-md transition-colors",
+                        "hover:bg-gray-200 dark:hover:bg-gray-700"
+                      )}
+                    >
+                      <span>{item.icon}</span>
+                      <span>{item.label}</span>
+                    </a>
+                  </li>
                 ))}
             </ul>
           </nav>
@@ -88,6 +89,8 @@ export default function RootLayout({
 
           {/* Page Content */}
             <div className="flex-1 p-6 bg-[#FCFBFC] dark:bg-gray-900 overflow-y-auto">{children}</div>
+            <Toaster />
+
         </main>
 
         </div>

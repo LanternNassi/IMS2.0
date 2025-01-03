@@ -1,6 +1,7 @@
 "use client";
 /* eslint-disable react-hooks/rules-of-hooks */
-import React, { useState, ReactNode } from "react";
+import React, { useState, useEffect, ReactNode } from "react";
+import { useUserStore, User, UserDto } from "@/store/useUserStore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -12,77 +13,25 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-import { TextField, MenuItem, Button as MuiButton } from "@mui/material";
+import LoadingButton from "@mui/lab/LoadingButton";
+import SaveIcon from "@mui/icons-material/Save";
+import { TextField, MenuItem } from "@mui/material";
 import Edit from "@/components/Edit";
+import CircularProgress from "@mui/material/CircularProgress";
+import { useToast } from "@/hooks/use-toast"
 
-type UserRow = {
-  id: number;
-  user: string;
-  gender: string;
-  telephone: string;
-  email: string;
-  addedBy: string;
-  type: string;
-  serverId: number;
-};
 
 const page = () => {
-  const [data, setData] = useState<UserRow[]>([
-    {
-      id: 3,
-      user: "User",
-      gender: "Female",
-      telephone: "123-456-7890",
-      email: "user@example.com",
-      addedBy: "Nassim",
-      type: "admin",
-      serverId: 0,
-    },
-    {
-      id: 4,
-      user: "Nessim",
-      gender: "Male",
-      telephone: "234-567-8901",
-      email: "nessim@example.com",
-      addedBy: "User",
-      type: "admin",
-      serverId: 1,
-    },
-    {
-      id: 1004,
-      user: "Kayondo",
-      gender: "Male",
-      telephone: "345-678-9012",
-      email: "kayondo@example.com",
-      addedBy: "User",
-      type: "normal",
-      serverId: 2,
-    },
-    {
-      id: 2004,
-      user: "John",
-      gender: "Male",
-      telephone: "456-789-0123",
-      email: "john@example.com",
-      addedBy: "User",
-      type: "normal",
-      serverId: 3,
-    },
-    {
-      id: 3004,
-      user: "Werps",
-      gender: "Male",
-      telephone: "567-890-1234",
-      email: "werps@example.com",
-      addedBy: "User",
-      type: "normal",
-      serverId: 4,
-    },
-  ]);
-
-  const [editRow, setEditRow] = useState<UserRow | null>(null);
+  const [editRow, setEditRow] = useState<User | null>(null);
   const [edit, setedit] = React.useState<boolean>(false);
+  const { toast } = useToast()
+  const { isLoading, createUser, fetchUsers, getUserById, deleteUser, updateUser, users } =
+    useUserStore((state) => state);
+  const [submitting, setsubmitting] = useState<boolean>(false);
+
+  useEffect(() => {
+    fetchUsers(null);
+  } , []);
 
   const toggleEditDrawer = (newOpen: boolean) => {
     setedit(newOpen);
@@ -94,17 +43,29 @@ const page = () => {
         <TextField
           variant="outlined"
           id="outlined-basic"
+          name="username"
           label="Username"
-          defaultValue={editRow? editRow.user : ""}
-          sx={{ width: "25vw"}}
+          defaultValue={editRow ? editRow.username : ""}
+          sx={{ width: "25vw" }}
+          margin="normal"
+        />
+
+        <TextField
+          variant="outlined"
+          id="outlined-basic"
+          name="passwordHarsh"
+          label="Password"
+          defaultValue={editRow ? editRow.username : ""}
+          sx={{ width: "25vw" }}
           margin="normal"
         />
 
         <TextField
           id="outlined-select-type"
           select
+          name="gender"
           label="Gender"
-          defaultValue={editRow? editRow.gender : ""}
+          defaultValue={editRow ? editRow.gender : ""}
           sx={{ width: "25vw" }}
           margin="normal"
         >
@@ -115,8 +76,9 @@ const page = () => {
         <TextField
           variant="outlined"
           id="outlined-basic"
+          name="telephone"
           label="Telephone"
-          defaultValue={editRow? editRow.telephone : ""}
+          defaultValue={editRow ? editRow.telephone : ""}
           sx={{ width: "25vw" }}
           margin="normal"
         />
@@ -125,7 +87,8 @@ const page = () => {
           variant="outlined"
           id="outlined-basic"
           label="email"
-          defaultValue={editRow? editRow.email : ""}
+          name="email"
+          defaultValue={editRow ? editRow.email : ""}
           sx={{ width: "25vw" }}
           margin="normal"
         />
@@ -133,41 +96,128 @@ const page = () => {
         <TextField
           id="outlined-select-type"
           select
+          name="role"
           label="Account Type"
-          defaultValue={editRow? editRow.type : ""}
+          defaultValue={editRow ? editRow.role : ""}
           sx={{ width: "25vw" }}
           margin="normal"
         >
           <MenuItem value="admin">admin</MenuItem>
           <MenuItem value="normal">normal</MenuItem>
         </TextField>
-        <MuiButton
-          onClick={handleSave}
+        <LoadingButton
+          type="submit"
+          sx={{ width: "25vw", height: "8vh" }}
           variant="contained"
-          color="primary"
-          sx={{ width: "25vw" }}
+          tabIndex={-1}
+          loading={submitting}
+          loadingPosition="start"
+          startIcon={<SaveIcon fontSize="large" />}
         >
-          Save
-        </MuiButton>
+          <span>Submit</span>
+        </LoadingButton>
       </>
     );
   };
 
-  const handleEdit = (id: number) => {
-    const row = data.find((d) => d.id === id);
-    if (row) setEditRow(row);
-    setedit(true)
+  const handleEdit = async (id: string) => {
+    const user = await getUserById(id);
+    if (user) setEditRow(user);
+    setedit(true);
   };
 
-  const handleDelete = (id: number) => {
-    setData(data.filter((row) => row.id !== id));
-  };
+  const editUser = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
 
-  const handleSave = () => {
     if (editRow) {
-      setData(data.map((row) => (row.id === editRow.id ? editRow : row)));
-      setEditRow(null); // Close the sheet
+      const formData = new FormData(event.target as HTMLFormElement);
+
+      const updatedUser: UserDto = {
+        username: formData.get("username") as string,
+        passwordHash: formData.get("passwordHarsh") as string,
+        email: formData.get("email") as string,
+        gender: formData.get("gender") as "Male" | "Female",
+        telephone: formData.get("telephone") as string,
+        role: formData.get("role") as "admin" | "normal",
+      };
+      await updateUser(
+        {...editRow , ...updatedUser},
+        () => {
+          toast({
+            title: "System User Management",
+            description: "User successfully updated.",
+            className: "bg-primary text-black dark:bg-gray-700 dark:text-white"
+          });
+          fetchUsers(null)
+          setedit(false)
+        },
+        () => {
+          toast({
+            title: "System User Management",
+            variant: 'destructive',
+            description: "An error occured. User couldnt be updated.",
+          });
+        }
+      );
     }
+  }
+
+  const handleDelete = async (id: string) => {
+
+    await deleteUser(id , () => {
+      toast({
+        title: "System User Management",
+        description: "User successfully deleted.",
+        className: "bg-primary text-black dark:bg-gray-700 dark:text-white"
+      });
+      fetchUsers(null)
+    } , () => {
+      toast({
+        
+        title: "System User Management",
+        variant: 'destructive',
+        description: "An error occured. User couldnt be deleted. ",
+      });      
+      fetchUsers(null)
+    })
+  };
+
+  const handleSave = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    setsubmitting(true)
+    const formData = new FormData(event.target as HTMLFormElement);
+
+    const data: UserDto = {
+      username: formData.get("username") as string,
+      passwordHash: formData.get("passwordHarsh") as string,
+      email: formData.get("email") as string,
+      gender: formData.get("gender") as "Male" | "Female",
+      telephone: formData.get("telephone") as string,
+      role: formData.get("role") as "admin" | "normal",
+    };
+
+    createUser(
+      data,
+      () => {
+        setsubmitting(false);
+        toast({
+          title: "System User Management",
+          description: "User successfully created.",
+          className: "bg-primary text-black dark:bg-gray-700 dark:text-white"
+        });
+        fetchUsers(null)
+        setedit(false)
+      },
+      () => {
+        setsubmitting(false);
+        toast({
+          title: "System User Management",
+          variant : 'destructive',
+          description: "An error occured . User couldnt be added.",
+        });
+      }
+    );
   };
 
   return (
@@ -176,10 +226,13 @@ const page = () => {
         <h2 className="text-lg font-bold mb-4">Manage Users</h2>
 
         <div className="space-x-4">
-          <Button onClick={()=>{
-            setEditRow(null)
-            setedit(true)
-          }} className="bg-blue-600 hover:bg-blue-700">
+          <Button
+            onClick={() => {
+              setEditRow(null);
+              setedit(true);
+            }}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
             <i className="fas fa-plus mr-2"></i>Add
           </Button>
           <Button className="bg-blue-600 hover:bg-blue-700">
@@ -191,62 +244,70 @@ const page = () => {
         </div>
       </div>
 
-      <Table>
-        {/* <TableCaption>A list of users and their details</TableCaption> */}
-        <TableHeader>
-          <TableRow>
-            <TableHead>ID</TableHead>
-            <TableHead>User</TableHead>
-            <TableHead>Gender</TableHead>
-            <TableHead>Telephone</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Added By</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Server ID</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {data.map((row) => (
-            <TableRow key={row.id}>
-              <TableCell>{row.id}</TableCell>
-              <TableCell>{row.user}</TableCell>
-              <TableCell>{row.gender}</TableCell>
-              <TableCell>{row.telephone}</TableCell>
-              <TableCell>{row.email}</TableCell>
-              <TableCell>{row.addedBy}</TableCell>
-              <TableCell>{row.type}</TableCell>
-              <TableCell>{row.serverId}</TableCell>
-              <TableCell>
-                <div className="flex space-x-2">
-                  <Button
-                    size="sm"
-                    variant={"secondary"}
-                    onClick={() => handleEdit(row.id)}
-                  >
-                    Edit
-                  </Button>
-
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => handleDelete(row.id)}
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </TableCell>
+      {isLoading ? (
+        <div className="flex justify-center items-center flex-col h-80 w-full">
+          <CircularProgress />
+          <h3 className="mt-4">Loading System Users...</h3>
+        </div>
+      ) : (
+        <Table>
+          {/* <TableCaption>A list of users and their details</TableCaption> */}
+          <TableHeader>
+            <TableRow>
+              <TableHead>ID</TableHead>
+              <TableHead>User</TableHead>
+              <TableHead>Gender</TableHead>
+              <TableHead>Telephone</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Added By</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Added By</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-        <Edit
-          open={edit}
-          Heading={editRow? ("UPDATE USER") : ("ADD USER")}
-          onSubmit={() => {}}
-          toggleDrawer={toggleEditDrawer}
-          Fields={Fields}
-        />
+          </TableHeader>
+          <TableBody>
+            {users?.map((row) => (
+              <TableRow key={row.id}>
+                <TableCell>{`${(row.id).slice(0,6)}...`}</TableCell>
+                <TableCell>{row.username}</TableCell>
+                <TableCell>{row.gender}</TableCell>
+                <TableCell>{row.telephone}</TableCell>
+                <TableCell>{row.email}</TableCell>
+                <TableCell>{row.addedBy}</TableCell>
+                <TableCell>{row.role}</TableCell>
+                <TableCell>{row.addedBy}</TableCell>
+                <TableCell>
+                  <div className="flex space-x-2">
+                    <Button
+                      size="sm"
+                      variant={"secondary"}
+                      onClick={() => handleEdit(row.id)}
+                    >
+                      Edit
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => handleDelete(row.id)}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+
+      <Edit
+        open={edit}
+        Heading={editRow ? "UPDATE USER" : "ADD USER"}
+        onSubmit={editRow ? editUser : handleSave}
+        toggleDrawer={toggleEditDrawer}
+        Fields={Fields}
+      />
     </div>
   );
 };

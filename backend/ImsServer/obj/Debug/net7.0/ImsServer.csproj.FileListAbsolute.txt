@@ -103,3 +103,8 @@ C:\Users\SHANY\Desktop\IMS2.0\ims\backend\IMsServer\obj\Debug\net7.0\scopedcss\b
 C:\Users\SHANY\Desktop\IMS2.0\ims\backend\IMsServer\obj\Debug\net7.0\ImsServer.csproj.CopyComplete
 C:\Users\SHANY\Desktop\IMS2.0\ims\backend\IMsServer\obj\Debug\net7.0\ImsServer.genruntimeconfig.cache
 C:\Users\SHANY\Desktop\IMS2.0\ims\backend\IMsServer\obj\Debug\net7.0\ref\ImsServer.dll
+C:\Users\SHANY\Desktop\IMS2.0\ims\backend\ImsServer\bin\Debug\net7.0\Humanizer.dll
+C:\Users\SHANY\Desktop\IMS2.0\ims\backend\ImsServer\bin\Debug\net7.0\Microsoft.EntityFrameworkCore.Design.dll
+C:\Users\SHANY\Desktop\IMS2.0\ims\backend\ImsServer\bin\Debug\net7.0\Microsoft.Extensions.DependencyModel.dll
+C:\Users\SHANY\Desktop\IMS2.0\ims\backend\ImsServer\bin\Debug\net7.0\Mono.TextTemplating.dll
+C:\Users\SHANY\Desktop\IMS2.0\ims\backend\ImsServer\bin\Debug\net7.0\System.CodeDom.dll
