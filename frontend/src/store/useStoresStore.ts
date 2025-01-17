@@ -1,7 +1,7 @@
 import {create} from 'zustand';
 import api from '@/Utils/Request';
 import {AxiosResponse} from 'axios';
-import {defaultProperties} from '@/Utils/defaultProperties';
+import {defaultProperties} from '@/Utils/DefaultProperties';
 
 export interface store extends defaultProperties {
     id: string;

@@ -37,6 +37,8 @@ namespace ImsServer.Controllers
             }
 
             var query = _dbcontext.Stores.AsQueryable();
+            // query = query.Include(s => s.Categories);
+
 
             if (keywords != null)
             {
@@ -84,29 +86,83 @@ namespace ImsServer.Controllers
 
 
         [HttpPost]
-        public async Task<ActionResult<Store>> PostStore(Store store)
+        public async Task<ActionResult<StoreDto>> PostStore(SimpleStoreDto store)
         {
-          if (_dbcontext.Users == null)
+          if (_dbcontext.Stores == null)
           {
               return Problem("Entity set 'DBContext.Store'  is null.");
           }
 
-            // user.PasswordHash = PasswordHasherUtility.HashPassword(user.PasswordHash);
-            _dbcontext.Stores.Add(store);
+            _dbcontext.Stores.Add(_mapper.Map<Store>(store));
             await _dbcontext.SaveChangesAsync();
 
             return CreatedAtAction("GetStore", new { id = store.Id }, store);
         }
 
+        // [HttpPatch("AddCategories/{store_id}")]
+        // public async Task<IActionResult> AddCategoriesToStore(Guid store_id , List<Guid> categories)
+        // {
+        //     var store =  _dbcontext.Stores.Find(store_id);
+
+        //     if (store == null){
+        //         return BadRequest("The store doesnot exist");
+        //     }
+
+        //     foreach (var categoryId in categories)
+        //     {
+        //         var category = _dbcontext.Categories.Find(categoryId);
+        //         if (category != null){
+        //             store.Categories.Add(category);
+        //         }
+        //     }
+
+        //     await _dbcontext.SaveChangesAsync();
+
+
+        //     return Ok(new {message = "Categories added successfully"});
+        // }
+
+        // [HttpDelete("RemoveCategories/{store_id}")]
+        // public async Task<IActionResult> RemoveCategoriesFromStore(Guid store_id , List<Guid> categories)
+        // {
+        //     var store =  _dbcontext.Stores.Find(store_id);
+
+        //     if (store == null){
+        //         return BadRequest("The store doesnot exist");
+        //     }
+
+        //     foreach (var categoryId in categories)
+        //     {
+        //         var category = _dbcontext.Categories.Find(categoryId);
+        //         if (category != null){
+        //             store.Categories.Remove(category);
+        //         }
+        //     }
+
+        //     await _dbcontext.SaveChangesAsync();
+
+
+        //     return Ok(new {message = "Categories removed successfully"});
+        // }
+
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutStore(Guid id, Store store)
+        public async Task<IActionResult> PutStore(Guid id, SimpleStoreDto store)
         {
             if (id != store.Id)
             {
                 return BadRequest();
             }
 
-            _dbcontext.Entry(store).State = EntityState.Modified;
+            var db_store = _dbcontext.Stores.Find(id);
+
+            if (db_store == null){
+                return BadRequest("The store doesnot exist");
+            }
+
+            db_store.Name = store.Name;
+            db_store.Address = store.Address;
+            db_store.Description = store.Description;
+            db_store.UpdatedAt = DateTime.Now;
 
             try
             {

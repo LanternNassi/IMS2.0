@@ -1,4 +1,5 @@
 using ImsServer.Models.UserX;
+using ImsServer.Models.CategoryX;
 using ImsServer.Models.StoreX;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography.X509Certificates;
@@ -14,14 +15,15 @@ namespace ImsServer.Models
 
         public DbSet<User> Users { get; set; }
         public DbSet<Store> Stores { get; set; }
-
+        public DbSet<Category> Categories { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-
+            
             modelBuilder.Entity<User>().HasQueryFilter(c => !c.DeletedAt.HasValue);
             modelBuilder.Entity<Store>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+            modelBuilder.Entity<Category>().HasQueryFilter(c => !c.DeletedAt.HasValue);
             base.OnModelCreating(modelBuilder);
 
         }
@@ -43,6 +45,7 @@ namespace ImsServer.Models
             var entries = ChangeTracker.Entries()
                 .Where(e => e.Entity is User
                     || e.Entity is Store
+                    || e.Entity is Category
                     
                     )
                 .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);
