@@ -7,17 +7,18 @@ import {useSessionStore} from '@/store/useSessionStore';
 
 const navItems = [
     { label: "Dashboard", icon: "🏠", path: "/Dashboard" },
-    { label: "Users", icon: "👤", path: "/Users" },
-    { label: "Categories", icon: "📊", path: "/Categories" },
-    { label: "Store Management", icon: "🏬", path: "/Stores" },
+    { label: "Users", icon: "👥", path: "/Users" },
+    { label: "Categories", icon: "📂", path: "/Categories" },
+    { label: "Store Management", icon: "🏪", path: "/Stores" },
     { label: "Products", icon: "📦", path: "/Products" },
-    { label: "Customers And Suppliers", icon: "👥", path: "/CustomersAndSuppliers" },
+    { label: "Customers", icon: "🧑‍🤝‍🧑", path: "/Customers" },
+    { label: "Suppliers", icon: "🚚", path: "/Suppliers" },
     { label: "Transactions", icon: "🔄", path: "/Transactions" },
-    { label: "Purchases", icon: "🛒", path: "/Purchases" },
-    { label: "Sales", icon: "💰", path: "/Sales" },
-    { label: "Analysis", icon: "📈", path: "/Analysis" },
-    { label: "Debts", icon: "💸", path: "/Debts" },
-    { label: "Expenditure", icon: "🧾", path: "/Expenditure" },
+    { label: "Purchases", icon: "🛍️", path: "/Purchases" },
+    { label: "Sales", icon: "💵", path: "/Sales" },
+    { label: "Analysis", icon: "📊", path: "/Analysis" },
+    { label: "Debts", icon: "💳", path: "/Debts" },
+    { label: "Expenditure", icon: "💸", path: "/Expenditure" },
     { label: "IMS Settings", icon: "⚙️", path: "/IMSSettings" },
 ];
 
