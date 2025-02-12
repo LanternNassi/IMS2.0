@@ -36,14 +36,14 @@ const Dialog: React.FC<DialogProps> = ({
             <AlertDialogTrigger asChild>
                 {triggerComponent}
             </AlertDialogTrigger>
-            <AlertDialogContent>
+            <AlertDialogContent className="bg-primary text-black dark:bg-gray-700 dark:text-white">
                 <AlertDialogHeader>
                     <AlertDialogTitle>{heading}</AlertDialogTitle>
                 </AlertDialogHeader>
                 <AlertDialogDescription>{description}</AlertDialogDescription>
                 <AlertDialogFooter>
-                    <AlertDialogCancel onClick={onCancel}>{cancelButtonText}</AlertDialogCancel>
-                    <AlertDialogAction onClick={onContinue}>{continueButtonText}</AlertDialogAction>
+                    <AlertDialogCancel className="bg-primary text-black dark:bg-gray-700 dark:text-white" onClick={onCancel}>{cancelButtonText}</AlertDialogCancel>
+                    <AlertDialogAction className="bg-primary text-black dark:bg-gray-700 dark:text-white" onClick={onContinue}>{continueButtonText}</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>

@@ -19,6 +19,7 @@ import { TextField } from "@mui/material";
 import Edit from "@/components/Edit";
 import CircularProgress from "@mui/material/CircularProgress";
 import { useToast } from "@/hooks/use-toast";
+import Dialog from "@/components/Dialog";
 
 const page = () => {
   const [editRow, setEditRow] = useState<store | null>(null);
@@ -263,13 +264,22 @@ const page = () => {
                       Edit
                     </Button>
 
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleDelete(row.id)}
-                    >
-                      Delete
-                    </Button>
+                    <Dialog
+                      heading="Delete Storage"
+                      description={`This will delete the Store ${row.name} softly from the system.`}
+                      continueButtonText="Delete"
+                      cancelButtonText="Cancel"
+                      triggerComponent = {
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                        >
+                          Delete
+                        </Button>
+                      }
+                      onContinue={() => handleDelete(row.id)}
+                      onCancel={()=>{}}
+                    />
                   </div>
                 </TableCell>
               </TableRow>

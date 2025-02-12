@@ -74,25 +74,32 @@ namespace ImsServer.Controllers
 
             List<SimpleCustomerTagDto> tags = customer.CustomerTags;
 
-            SimpleCustomerDto derived_customer = _mapper.Map<SimpleCustomerDto>(customer);           
-            _dbcontext.Customers.Add(_mapper.Map<Customer>(derived_customer));
+            SimpleCustomerDto derived_customer = _mapper.Map<SimpleCustomerDto>(customer);  
+            var saved_customer = _mapper.Map<Customer>(derived_customer);         
+            _dbcontext.Customers.Add(saved_customer);
 
             //Checking the tags that are not present in the database
 
-            if (tags != null){
+            if (tags != null && tags.Any()){
                 foreach (SimpleCustomerTagDto tag in tags)
                 {
                     var tag_present = await _dbcontext.CustomerTags.Where(c => c.Name == tag.Name).FirstOrDefaultAsync();
 
                     if (tag_present != null){
-                        await _dbcontext.CustomerTags.Add(_mapper.Map<CustomerTag>(tag));
+
+                        saved_customer.CustomerTags.Add(tag_present);
+                        
+                    }else {
+                        var new_tag = _mapper.Map<CustomerTag>(tag);
+                        _dbcontext.CustomerTags.Add(new_tag);
+                        saved_customer.CustomerTags.Add(new_tag);
+
                     }
+                    
                 
                 }
             }
 
-
-            
 
             await _dbcontext.SaveChangesAsync();
 

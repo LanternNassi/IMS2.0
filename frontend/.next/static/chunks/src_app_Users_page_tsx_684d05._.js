@@ -7,8 +7,8 @@
   "chunks": [
     "static/chunks/node_modules_axios_lib_c4c49c._.js",
     "static/chunks/node_modules_@mui_material_20bc93._.js",
-    "static/chunks/node_modules_53a098._.js",
-    "static/chunks/src_d1730b._.js"
+    "static/chunks/node_modules_05a8e7._.js",
+    "static/chunks/src_476989._.js"
   ],
   "source": "dynamic"
 });

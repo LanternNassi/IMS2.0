@@ -19,6 +19,7 @@ import { TextField, MenuItem } from "@mui/material";
 import Edit from "@/components/Edit";
 import CircularProgress from "@mui/material/CircularProgress";
 import { useToast } from "@/hooks/use-toast"
+import Dialog from "@/components/Dialog";
 
 
 const page = () => {
@@ -164,6 +165,9 @@ const page = () => {
 
   const handleDelete = async (id: string) => {
 
+    //handle affirmation
+
+
     await deleteUser(id , () => {
       toast({
         title: "System User Management",
@@ -285,14 +289,24 @@ const page = () => {
                     >
                       Edit
                     </Button>
+                    <Dialog
+                      heading="Delete User"
+                      description={`This will delete ${row.username} softly from the database ?`}
+                      continueButtonText="Delete"
+                      cancelButtonText="Cancel"
+                      triggerComponent = {
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                        >
+                          Delete
+                        </Button>
+                      }
+                      onContinue={() => handleDelete(row.id)}
+                      onCancel={()=>{}}
+                    />
 
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleDelete(row.id)}
-                    >
-                      Delete
-                    </Button>
+                    
                   </div>
                 </TableCell>
               </TableRow>
@@ -308,6 +322,8 @@ const page = () => {
         toggleDrawer={toggleEditDrawer}
         Fields={Fields}
       />
+
+      
     </div>
   );
 };

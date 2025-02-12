@@ -1,4 +1,4 @@
-(globalThis.TURBOPACK = globalThis.TURBOPACK || []).push(["static/chunks/src_d1730b._.js", {
+(globalThis.TURBOPACK = globalThis.TURBOPACK || []).push(["static/chunks/src_a4df30._.js", {
 
 "[project]/src/Utils/Request.ts [app-client] (ecmascript)": ((__turbopack_context__) => {
 "use strict";
@@ -19,70 +19,97 @@ if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelper
     __turbopack_refresh__.registerExports(module, globalThis.$RefreshHelpers$);
 }
 }}),
-"[project]/src/store/useUserStore.ts [app-client] (ecmascript)": ((__turbopack_context__) => {
+"[project]/src/store/useStoresStore.ts [app-client] (ecmascript)": ((__turbopack_context__) => {
 "use strict";
 
 var { r: __turbopack_require__, f: __turbopack_module_context__, i: __turbopack_import__, s: __turbopack_esm__, v: __turbopack_export_value__, n: __turbopack_export_namespace__, c: __turbopack_cache__, M: __turbopack_modules__, l: __turbopack_load__, j: __turbopack_dynamic__, P: __turbopack_resolve_absolute_path__, U: __turbopack_relative_url__, R: __turbopack_resolve_module_id_path__, b: __turbopack_worker_blob_url__, g: global, __dirname, k: __turbopack_refresh__, m: module, z: __turbopack_require_stub__ } = __turbopack_context__;
 {
 __turbopack_esm__({
-    "useUserStore": (()=>useUserStore)
+    "useStoresStore": (()=>useStoresStore)
 });
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$Utils$2f$Request$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/src/Utils/Request.ts [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zustand$2f$esm$2f$react$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/node_modules/zustand/esm/react.mjs [app-client] (ecmascript)");
 ;
 ;
-const useUserStore = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zustand$2f$esm$2f$react$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["create"])((set)=>({
-        users: null,
+const useStoresStore = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zustand$2f$esm$2f$react$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["create"])((set)=>({
+        stores: null,
         isLoading: false,
-        fetchUsers: async (keywords)=>{
+        fetchStores: async (keywords)=>{
             set({
                 isLoading: true
             });
-            __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$Utils$2f$Request$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].get("/Users", {
+            __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$Utils$2f$Request$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].get('/Stores', {
                 params: {
                     keywords
                 }
             }).then((response)=>{
                 if (response.status == 200) {
                     set({
-                        users: response.data,
+                        stores: response.data,
                         isLoading: false
                     });
                 }
             });
         },
-        getUserById: async (id)=>{
-            const response = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$Utils$2f$Request$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].get(`/Users/${id}`);
+        getStoreById: async (id)=>{
+            const response = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$Utils$2f$Request$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].get(`/Stores/${id}`);
             return response.data;
         },
-        createUser: async (user, onsuccess, onFailure)=>{
-            __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$Utils$2f$Request$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].post("/Users", user).then((response)=>{
+        createStore: async (store, onsuccess, onFailure)=>{
+            __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$Utils$2f$Request$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].post('/Stores', store).then((response)=>{
                 if (response.status == 201) {
                     onsuccess();
+                } else {
+                    onFailure();
                 }
-            }).catch(()=>{
-                onFailure();
             });
         },
-        updateUser: async (user, onsuccess, onFailure)=>{
-            __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$Utils$2f$Request$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].put(`/Users/${user.id}`, user).then((response)=>{
+        updateStore: async (store, onsuccess, onFailure)=>{
+            __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$Utils$2f$Request$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].put(`/Stores/${store.id}`, store).then((response)=>{
                 if (response.status == 204) {
                     onsuccess();
+                } else {
+                    onFailure();
                 }
-            }).catch(()=>{
-                onFailure();
             });
         },
-        deleteUser: async (id, onsuccess, onFailure)=>{
-            __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$Utils$2f$Request$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].delete(`/Users/${id}`).then((response)=>{
+        deleteStore: async (id, onsuccess, onFailure)=>{
+            __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$Utils$2f$Request$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].delete(`/Stores/${id}`).then((response)=>{
                 if (response.status == 204) {
                     onsuccess();
+                } else {
+                    onFailure();
                 }
-            }).catch(()=>{
-                onFailure();
             });
         }
     }));
+if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
+    __turbopack_refresh__.registerExports(module, globalThis.$RefreshHelpers$);
+}
+}}),
+"[project]/src/Utils/ConvertDateTime.ts [app-client] (ecmascript)": ((__turbopack_context__) => {
+"use strict";
+
+var { r: __turbopack_require__, f: __turbopack_module_context__, i: __turbopack_import__, s: __turbopack_esm__, v: __turbopack_export_value__, n: __turbopack_export_namespace__, c: __turbopack_cache__, M: __turbopack_modules__, l: __turbopack_load__, j: __turbopack_dynamic__, P: __turbopack_resolve_absolute_path__, U: __turbopack_relative_url__, R: __turbopack_resolve_module_id_path__, b: __turbopack_worker_blob_url__, g: global, __dirname, k: __turbopack_refresh__, m: module, z: __turbopack_require_stub__ } = __turbopack_context__;
+{
+__turbopack_esm__({
+    "toDDMMYYYY": (()=>toDDMMYYYY),
+    "toISODate": (()=>toISODate)
+});
+function toDDMMYYYY(isoDateString) {
+    const date = new Date(isoDateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // Add leading zero for single-digit months
+    const day = String(date.getDate()).padStart(2, '0'); // Add leading zero for single-digit days
+    return `${day}/${month}/${year}`;
+}
+function toISODate(dateString) {
+    const parts = dateString.split('/'); // Split by '/' delimiter
+    const year = parseInt(parts[2], 10); // Parse year as integer
+    const day = parseInt(parts[1], 10) - 1; // Subtract 1 for month (0-indexed)
+    const month = parseInt(parts[0], 10);
+    return new Date(year, month, day).toISOString();
+}
 if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
     __turbopack_refresh__.registerExports(module, globalThis.$RefreshHelpers$);
 }
@@ -407,7 +434,252 @@ if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelper
     __turbopack_refresh__.registerExports(module, globalThis.$RefreshHelpers$);
 }
 }}),
-"[project]/src/app/Users/page.tsx [app-client] (ecmascript)": ((__turbopack_context__) => {
+"[project]/src/components/ui/alert-dialog.tsx [app-client] (ecmascript)": ((__turbopack_context__) => {
+"use strict";
+
+var { r: __turbopack_require__, f: __turbopack_module_context__, i: __turbopack_import__, s: __turbopack_esm__, v: __turbopack_export_value__, n: __turbopack_export_namespace__, c: __turbopack_cache__, M: __turbopack_modules__, l: __turbopack_load__, j: __turbopack_dynamic__, P: __turbopack_resolve_absolute_path__, U: __turbopack_relative_url__, R: __turbopack_resolve_module_id_path__, b: __turbopack_worker_blob_url__, g: global, __dirname, k: __turbopack_refresh__, m: module, z: __turbopack_require_stub__ } = __turbopack_context__;
+{
+__turbopack_esm__({
+    "AlertDialog": (()=>AlertDialog),
+    "AlertDialogAction": (()=>AlertDialogAction),
+    "AlertDialogCancel": (()=>AlertDialogCancel),
+    "AlertDialogContent": (()=>AlertDialogContent),
+    "AlertDialogDescription": (()=>AlertDialogDescription),
+    "AlertDialogFooter": (()=>AlertDialogFooter),
+    "AlertDialogHeader": (()=>AlertDialogHeader),
+    "AlertDialogOverlay": (()=>AlertDialogOverlay),
+    "AlertDialogPortal": (()=>AlertDialogPortal),
+    "AlertDialogTitle": (()=>AlertDialogTitle),
+    "AlertDialogTrigger": (()=>AlertDialogTrigger)
+});
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/node_modules/next/dist/compiled/react/jsx-dev-runtime.js [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/node_modules/next/dist/compiled/react/index.js [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/src/lib/utils.ts [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/src/components/ui/button.tsx [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$radix$2d$ui$2f$react$2d$alert$2d$dialog$2f$dist$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/node_modules/@radix-ui/react-alert-dialog/dist/index.mjs [app-client] (ecmascript)");
+"use client";
+;
+;
+;
+;
+;
+const AlertDialog = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$radix$2d$ui$2f$react$2d$alert$2d$dialog$2f$dist$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__.Root;
+const AlertDialogTrigger = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$radix$2d$ui$2f$react$2d$alert$2d$dialog$2f$dist$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__.Trigger;
+const AlertDialogPortal = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$radix$2d$ui$2f$react$2d$alert$2d$dialog$2f$dist$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__.Portal;
+const AlertDialogOverlay = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__.forwardRef(({ className, ...props }, ref)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$radix$2d$ui$2f$react$2d$alert$2d$dialog$2f$dist$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__.Overlay, {
+        className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["cn"])("fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0", className),
+        ...props,
+        ref: ref
+    }, void 0, false, {
+        fileName: "[project]/src/components/ui/alert-dialog.tsx",
+        lineNumber: 19,
+        columnNumber: 3
+    }, this));
+_c = AlertDialogOverlay;
+AlertDialogOverlay.displayName = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$radix$2d$ui$2f$react$2d$alert$2d$dialog$2f$dist$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__.Overlay.displayName;
+const AlertDialogContent = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__.forwardRef(_c1 = ({ className, ...props }, ref)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(AlertDialogPortal, {
+        children: [
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(AlertDialogOverlay, {}, void 0, false, {
+                fileName: "[project]/src/components/ui/alert-dialog.tsx",
+                lineNumber: 35,
+                columnNumber: 5
+            }, this),
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$radix$2d$ui$2f$react$2d$alert$2d$dialog$2f$dist$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__.Content, {
+                ref: ref,
+                className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["cn"])("fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg", className),
+                ...props
+            }, void 0, false, {
+                fileName: "[project]/src/components/ui/alert-dialog.tsx",
+                lineNumber: 36,
+                columnNumber: 5
+            }, this)
+        ]
+    }, void 0, true, {
+        fileName: "[project]/src/components/ui/alert-dialog.tsx",
+        lineNumber: 34,
+        columnNumber: 3
+    }, this));
+_c2 = AlertDialogContent;
+AlertDialogContent.displayName = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$radix$2d$ui$2f$react$2d$alert$2d$dialog$2f$dist$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__.Content.displayName;
+const AlertDialogHeader = ({ className, ...props })=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+        className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["cn"])("flex flex-col space-y-2 text-center sm:text-left", className),
+        ...props
+    }, void 0, false, {
+        fileName: "[project]/src/components/ui/alert-dialog.tsx",
+        lineNumber: 52,
+        columnNumber: 3
+    }, this);
+_c3 = AlertDialogHeader;
+AlertDialogHeader.displayName = "AlertDialogHeader";
+const AlertDialogFooter = ({ className, ...props })=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+        className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["cn"])("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2", className),
+        ...props
+    }, void 0, false, {
+        fileName: "[project]/src/components/ui/alert-dialog.tsx",
+        lineNumber: 66,
+        columnNumber: 3
+    }, this);
+_c4 = AlertDialogFooter;
+AlertDialogFooter.displayName = "AlertDialogFooter";
+const AlertDialogTitle = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__.forwardRef(_c5 = ({ className, ...props }, ref)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$radix$2d$ui$2f$react$2d$alert$2d$dialog$2f$dist$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__.Title, {
+        ref: ref,
+        className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["cn"])("text-lg font-semibold", className),
+        ...props
+    }, void 0, false, {
+        fileName: "[project]/src/components/ui/alert-dialog.tsx",
+        lineNumber: 80,
+        columnNumber: 3
+    }, this));
+_c6 = AlertDialogTitle;
+AlertDialogTitle.displayName = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$radix$2d$ui$2f$react$2d$alert$2d$dialog$2f$dist$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__.Title.displayName;
+const AlertDialogDescription = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__.forwardRef(_c7 = ({ className, ...props }, ref)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$radix$2d$ui$2f$react$2d$alert$2d$dialog$2f$dist$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__.Description, {
+        ref: ref,
+        className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["cn"])("text-sm text-muted-foreground", className),
+        ...props
+    }, void 0, false, {
+        fileName: "[project]/src/components/ui/alert-dialog.tsx",
+        lineNumber: 92,
+        columnNumber: 3
+    }, this));
+_c8 = AlertDialogDescription;
+AlertDialogDescription.displayName = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$radix$2d$ui$2f$react$2d$alert$2d$dialog$2f$dist$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__.Description.displayName;
+const AlertDialogAction = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__.forwardRef(_c9 = ({ className, ...props }, ref)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$radix$2d$ui$2f$react$2d$alert$2d$dialog$2f$dist$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__.Action, {
+        ref: ref,
+        className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["cn"])((0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["buttonVariants"])(), className),
+        ...props
+    }, void 0, false, {
+        fileName: "[project]/src/components/ui/alert-dialog.tsx",
+        lineNumber: 105,
+        columnNumber: 3
+    }, this));
+_c10 = AlertDialogAction;
+AlertDialogAction.displayName = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$radix$2d$ui$2f$react$2d$alert$2d$dialog$2f$dist$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__.Action.displayName;
+const AlertDialogCancel = /*#__PURE__*/ __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__.forwardRef(_c11 = ({ className, ...props }, ref)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$radix$2d$ui$2f$react$2d$alert$2d$dialog$2f$dist$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__.Cancel, {
+        ref: ref,
+        className: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$utils$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["cn"])((0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["buttonVariants"])({
+            variant: "outline"
+        }), "mt-2 sm:mt-0", className),
+        ...props
+    }, void 0, false, {
+        fileName: "[project]/src/components/ui/alert-dialog.tsx",
+        lineNumber: 117,
+        columnNumber: 3
+    }, this));
+_c12 = AlertDialogCancel;
+AlertDialogCancel.displayName = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$radix$2d$ui$2f$react$2d$alert$2d$dialog$2f$dist$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__.Cancel.displayName;
+;
+var _c, _c1, _c2, _c3, _c4, _c5, _c6, _c7, _c8, _c9, _c10, _c11, _c12;
+__turbopack_refresh__.register(_c, "AlertDialogOverlay");
+__turbopack_refresh__.register(_c1, "AlertDialogContent$React.forwardRef");
+__turbopack_refresh__.register(_c2, "AlertDialogContent");
+__turbopack_refresh__.register(_c3, "AlertDialogHeader");
+__turbopack_refresh__.register(_c4, "AlertDialogFooter");
+__turbopack_refresh__.register(_c5, "AlertDialogTitle$React.forwardRef");
+__turbopack_refresh__.register(_c6, "AlertDialogTitle");
+__turbopack_refresh__.register(_c7, "AlertDialogDescription$React.forwardRef");
+__turbopack_refresh__.register(_c8, "AlertDialogDescription");
+__turbopack_refresh__.register(_c9, "AlertDialogAction$React.forwardRef");
+__turbopack_refresh__.register(_c10, "AlertDialogAction");
+__turbopack_refresh__.register(_c11, "AlertDialogCancel$React.forwardRef");
+__turbopack_refresh__.register(_c12, "AlertDialogCancel");
+if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
+    __turbopack_refresh__.registerExports(module, globalThis.$RefreshHelpers$);
+}
+}}),
+"[project]/src/components/Dialog.tsx [app-client] (ecmascript)": ((__turbopack_context__) => {
+"use strict";
+
+var { r: __turbopack_require__, f: __turbopack_module_context__, i: __turbopack_import__, s: __turbopack_esm__, v: __turbopack_export_value__, n: __turbopack_export_namespace__, c: __turbopack_cache__, M: __turbopack_modules__, l: __turbopack_load__, j: __turbopack_dynamic__, P: __turbopack_resolve_absolute_path__, U: __turbopack_relative_url__, R: __turbopack_resolve_module_id_path__, b: __turbopack_worker_blob_url__, g: global, __dirname, k: __turbopack_refresh__, m: module, z: __turbopack_require_stub__ } = __turbopack_context__;
+{
+__turbopack_esm__({
+    "default": (()=>__TURBOPACK__default__export__)
+});
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/node_modules/next/dist/compiled/react/jsx-dev-runtime.js [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$alert$2d$dialog$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/src/components/ui/alert-dialog.tsx [app-client] (ecmascript)");
+;
+;
+const Dialog = ({ heading, description, triggerComponent, continueButtonText, cancelButtonText, onContinue, onCancel })=>{
+    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$alert$2d$dialog$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AlertDialog"], {
+        children: [
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$alert$2d$dialog$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AlertDialogTrigger"], {
+                asChild: true,
+                children: triggerComponent
+            }, void 0, false, {
+                fileName: "[project]/src/components/Dialog.tsx",
+                lineNumber: 36,
+                columnNumber: 13
+            }, this),
+            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$alert$2d$dialog$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AlertDialogContent"], {
+                className: "bg-primary text-black dark:bg-gray-700 dark:text-white",
+                children: [
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$alert$2d$dialog$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AlertDialogHeader"], {
+                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$alert$2d$dialog$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AlertDialogTitle"], {
+                            children: heading
+                        }, void 0, false, {
+                            fileName: "[project]/src/components/Dialog.tsx",
+                            lineNumber: 41,
+                            columnNumber: 21
+                        }, this)
+                    }, void 0, false, {
+                        fileName: "[project]/src/components/Dialog.tsx",
+                        lineNumber: 40,
+                        columnNumber: 17
+                    }, this),
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$alert$2d$dialog$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AlertDialogDescription"], {
+                        children: description
+                    }, void 0, false, {
+                        fileName: "[project]/src/components/Dialog.tsx",
+                        lineNumber: 43,
+                        columnNumber: 17
+                    }, this),
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$alert$2d$dialog$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AlertDialogFooter"], {
+                        children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$alert$2d$dialog$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AlertDialogCancel"], {
+                                className: "bg-primary text-black dark:bg-gray-700 dark:text-white",
+                                onClick: onCancel,
+                                children: cancelButtonText
+                            }, void 0, false, {
+                                fileName: "[project]/src/components/Dialog.tsx",
+                                lineNumber: 45,
+                                columnNumber: 21
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$alert$2d$dialog$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AlertDialogAction"], {
+                                className: "bg-primary text-black dark:bg-gray-700 dark:text-white",
+                                onClick: onContinue,
+                                children: continueButtonText
+                            }, void 0, false, {
+                                fileName: "[project]/src/components/Dialog.tsx",
+                                lineNumber: 46,
+                                columnNumber: 21
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "[project]/src/components/Dialog.tsx",
+                        lineNumber: 44,
+                        columnNumber: 17
+                    }, this)
+                ]
+            }, void 0, true, {
+                fileName: "[project]/src/components/Dialog.tsx",
+                lineNumber: 39,
+                columnNumber: 13
+            }, this)
+        ]
+    }, void 0, true, {
+        fileName: "[project]/src/components/Dialog.tsx",
+        lineNumber: 35,
+        columnNumber: 9
+    }, this);
+};
+_c = Dialog;
+const __TURBOPACK__default__export__ = Dialog;
+var _c;
+__turbopack_refresh__.register(_c, "Dialog");
+if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
+    __turbopack_refresh__.registerExports(module, globalThis.$RefreshHelpers$);
+}
+}}),
+"[project]/src/app/Stores/page.tsx [app-client] (ecmascript)": ((__turbopack_context__) => {
 "use strict";
 
 var { r: __turbopack_require__, f: __turbopack_module_context__, i: __turbopack_import__, s: __turbopack_esm__, v: __turbopack_export_value__, n: __turbopack_export_namespace__, c: __turbopack_cache__, M: __turbopack_modules__, l: __turbopack_load__, j: __turbopack_dynamic__, P: __turbopack_resolve_absolute_path__, U: __turbopack_relative_url__, R: __turbopack_resolve_module_id_path__, b: __turbopack_worker_blob_url__, g: global, __dirname, k: __turbopack_refresh__, m: module, z: __turbopack_require_stub__ } = __turbopack_context__;
@@ -417,13 +689,14 @@ __turbopack_esm__({
 });
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/node_modules/next/dist/compiled/react/jsx-dev-runtime.js [app-client] (ecmascript)");
 /* eslint-disable react-hooks/rules-of-hooks */ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/node_modules/next/dist/compiled/react/index.js [app-client] (ecmascript)");
-var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$store$2f$useUserStore$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/src/store/useUserStore.ts [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$store$2f$useStoresStore$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/src/store/useStoresStore.ts [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$Utils$2f$ConvertDateTime$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/src/Utils/ConvertDateTime.ts [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/src/components/ui/button.tsx [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/src/components/ui/table.tsx [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$Edit$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/src/components/Edit.tsx [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$hooks$2f$use$2d$toast$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/src/hooks/use-toast.ts [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$Dialog$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/src/components/Dialog.tsx [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mui$2f$material$2f$TextField$2f$TextField$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__TextField$3e$__ = __turbopack_import__("[project]/node_modules/@mui/material/TextField/TextField.js [app-client] (ecmascript) <export default as TextField>");
-var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mui$2f$material$2f$MenuItem$2f$MenuItem$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__MenuItem$3e$__ = __turbopack_import__("[project]/node_modules/@mui/material/MenuItem/MenuItem.js [app-client] (ecmascript) <export default as MenuItem>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mui$2f$lab$2f$LoadingButton$2f$LoadingButton$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/node_modules/@mui/lab/LoadingButton/LoadingButton.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mui$2f$icons$2d$material$2f$esm$2f$Save$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/node_modules/@mui/icons-material/esm/Save.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mui$2f$material$2f$CircularProgress$2f$CircularProgress$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_import__("[project]/node_modules/@mui/material/CircularProgress/CircularProgress.js [app-client] (ecmascript)");
@@ -440,18 +713,20 @@ var _s = __turbopack_refresh__.signature();
 ;
 ;
 ;
+;
+;
 const page = ()=>{
     _s();
     const [editRow, setEditRow] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
     const [edit, setedit] = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].useState(false);
     const { toast } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$hooks$2f$use$2d$toast$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useToast"])();
-    const { isLoading, createUser, fetchUsers, getUserById, deleteUser, updateUser, users } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$store$2f$useUserStore$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useUserStore"])({
-        "page.useUserStore": (state)=>state
-    }["page.useUserStore"]);
+    const { isLoading, createStore, fetchStores, getStoreById, deleteStore, updateStore, stores } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$store$2f$useStoresStore$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useStoresStore"])({
+        "page.useStoresStore": (state)=>state
+    }["page.useStoresStore"]);
     const [submitting, setsubmitting] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "page.useEffect": ()=>{
-            fetchUsers(null);
+            fetchStores(null);
         }
     }["page.useEffect"], []);
     const toggleEditDrawer = (newOpen)=>{
@@ -463,127 +738,63 @@ const page = ()=>{
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mui$2f$material$2f$TextField$2f$TextField$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__TextField$3e$__["TextField"], {
                     variant: "outlined",
                     id: "outlined-basic",
-                    name: "username",
-                    label: "Username",
-                    defaultValue: editRow ? editRow.username : "",
+                    name: "id",
+                    label: "Store Id",
+                    disabled: true,
+                    defaultValue: editRow ? editRow.id : "",
                     sx: {
                         width: "25vw"
                     },
                     margin: "normal"
                 }, void 0, false, {
-                    fileName: "[project]/src/app/Users/page.tsx",
-                    lineNumber: 43,
+                    fileName: "[project]/src/app/Stores/page.tsx",
+                    lineNumber: 50,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mui$2f$material$2f$TextField$2f$TextField$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__TextField$3e$__["TextField"], {
                     variant: "outlined",
                     id: "outlined-basic",
-                    name: "passwordHarsh",
-                    label: "Password",
-                    defaultValue: editRow ? editRow.username : "",
+                    name: "name",
+                    label: "Store Name",
+                    defaultValue: editRow ? editRow.name : "",
                     sx: {
                         width: "25vw"
                     },
                     margin: "normal"
                 }, void 0, false, {
-                    fileName: "[project]/src/app/Users/page.tsx",
-                    lineNumber: 53,
+                    fileName: "[project]/src/app/Stores/page.tsx",
+                    lineNumber: 61,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mui$2f$material$2f$TextField$2f$TextField$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__TextField$3e$__["TextField"], {
                     id: "outlined-select-type",
-                    select: true,
-                    name: "gender",
-                    label: "Gender",
-                    defaultValue: editRow ? editRow.gender : "",
-                    sx: {
-                        width: "25vw"
-                    },
-                    margin: "normal",
-                    children: [
-                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mui$2f$material$2f$MenuItem$2f$MenuItem$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__MenuItem$3e$__["MenuItem"], {
-                            value: "Male",
-                            children: "Male"
-                        }, void 0, false, {
-                            fileName: "[project]/src/app/Users/page.tsx",
-                            lineNumber: 72,
-                            columnNumber: 11
-                        }, this),
-                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mui$2f$material$2f$MenuItem$2f$MenuItem$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__MenuItem$3e$__["MenuItem"], {
-                            value: "Female",
-                            children: "Female"
-                        }, void 0, false, {
-                            fileName: "[project]/src/app/Users/page.tsx",
-                            lineNumber: 73,
-                            columnNumber: 11
-                        }, this)
-                    ]
-                }, void 0, true, {
-                    fileName: "[project]/src/app/Users/page.tsx",
-                    lineNumber: 63,
-                    columnNumber: 9
-                }, this),
-                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mui$2f$material$2f$TextField$2f$TextField$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__TextField$3e$__["TextField"], {
-                    variant: "outlined",
-                    id: "outlined-basic",
-                    name: "telephone",
-                    label: "Telephone",
-                    defaultValue: editRow ? editRow.telephone : "",
+                    name: "address",
+                    label: "Store Address",
+                    defaultValue: editRow ? editRow.address : "",
                     sx: {
                         width: "25vw"
                     },
                     margin: "normal"
                 }, void 0, false, {
-                    fileName: "[project]/src/app/Users/page.tsx",
-                    lineNumber: 76,
+                    fileName: "[project]/src/app/Stores/page.tsx",
+                    lineNumber: 71,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mui$2f$material$2f$TextField$2f$TextField$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__TextField$3e$__["TextField"], {
                     variant: "outlined",
                     id: "outlined-basic",
-                    label: "email",
-                    name: "email",
-                    defaultValue: editRow ? editRow.email : "",
+                    name: "description",
+                    multiline: true,
+                    rows: 4,
+                    label: "Store Description",
+                    defaultValue: editRow ? editRow.description : "",
                     sx: {
                         width: "25vw"
                     },
                     margin: "normal"
                 }, void 0, false, {
-                    fileName: "[project]/src/app/Users/page.tsx",
-                    lineNumber: 86,
-                    columnNumber: 9
-                }, this),
-                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mui$2f$material$2f$TextField$2f$TextField$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__TextField$3e$__["TextField"], {
-                    id: "outlined-select-type",
-                    select: true,
-                    name: "role",
-                    label: "Account Type",
-                    defaultValue: editRow ? editRow.role : "",
-                    sx: {
-                        width: "25vw"
-                    },
-                    margin: "normal",
-                    children: [
-                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mui$2f$material$2f$MenuItem$2f$MenuItem$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__MenuItem$3e$__["MenuItem"], {
-                            value: "admin",
-                            children: "admin"
-                        }, void 0, false, {
-                            fileName: "[project]/src/app/Users/page.tsx",
-                            lineNumber: 105,
-                            columnNumber: 11
-                        }, this),
-                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mui$2f$material$2f$MenuItem$2f$MenuItem$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__MenuItem$3e$__["MenuItem"], {
-                            value: "normal",
-                            children: "normal"
-                        }, void 0, false, {
-                            fileName: "[project]/src/app/Users/page.tsx",
-                            lineNumber: 106,
-                            columnNumber: 11
-                        }, this)
-                    ]
-                }, void 0, true, {
-                    fileName: "[project]/src/app/Users/page.tsx",
-                    lineNumber: 96,
+                    fileName: "[project]/src/app/Stores/page.tsx",
+                    lineNumber: 80,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mui$2f$lab$2f$LoadingButton$2f$LoadingButton$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
@@ -599,77 +810,74 @@ const page = ()=>{
                     startIcon: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mui$2f$icons$2d$material$2f$esm$2f$Save$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
                         fontSize: "large"
                     }, void 0, false, {
-                        fileName: "[project]/src/app/Users/page.tsx",
-                        lineNumber: 115,
+                        fileName: "[project]/src/app/Stores/page.tsx",
+                        lineNumber: 99,
                         columnNumber: 22
                     }, void 0),
                     children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                         children: "Submit"
                     }, void 0, false, {
-                        fileName: "[project]/src/app/Users/page.tsx",
-                        lineNumber: 117,
+                        fileName: "[project]/src/app/Stores/page.tsx",
+                        lineNumber: 101,
                         columnNumber: 11
                     }, this)
                 }, void 0, false, {
-                    fileName: "[project]/src/app/Users/page.tsx",
-                    lineNumber: 108,
+                    fileName: "[project]/src/app/Stores/page.tsx",
+                    lineNumber: 92,
                     columnNumber: 9
                 }, this)
             ]
         }, void 0, true);
     };
     const handleEdit = async (id)=>{
-        const user = await getUserById(id);
-        if (user) setEditRow(user);
+        const store = await getStoreById(id);
+        if (store) setEditRow(store);
         setedit(true);
     };
-    const editUser = async (event)=>{
+    const editStore = async (event)=>{
         event.preventDefault();
         if (editRow) {
             const formData = new FormData(event.target);
-            const updatedUser = {
-                username: formData.get("username"),
-                passwordHash: formData.get("passwordHarsh"),
-                email: formData.get("email"),
-                gender: formData.get("gender"),
-                telephone: formData.get("telephone"),
-                role: formData.get("role")
+            const updatedStore = {
+                name: formData.get("name"),
+                address: formData.get("address"),
+                description: formData.get("description")
             };
-            await updateUser({
+            await updateStore({
                 ...editRow,
-                ...updatedUser
+                ...updatedStore
             }, ()=>{
                 toast({
-                    title: "System User Management",
-                    description: "User successfully updated.",
+                    title: "System Store Management",
+                    description: "Store successfully updated.",
                     className: "bg-primary text-black dark:bg-gray-700 dark:text-white"
                 });
-                fetchUsers(null);
+                fetchStores(null);
                 setedit(false);
             }, ()=>{
                 toast({
-                    title: "System User Management",
-                    variant: 'destructive',
+                    title: "System Store Management",
+                    variant: "destructive",
                     description: "An error occured. User couldnt be updated."
                 });
             });
         }
     };
     const handleDelete = async (id)=>{
-        await deleteUser(id, ()=>{
+        await deleteStore(id, ()=>{
             toast({
-                title: "System User Management",
-                description: "User successfully deleted.",
+                title: "System Store Management",
+                description: "Store successfully deleted.",
                 className: "bg-primary text-black dark:bg-gray-700 dark:text-white"
             });
-            fetchUsers(null);
+            fetchStores(null);
         }, ()=>{
             toast({
-                title: "System User Management",
-                variant: 'destructive',
-                description: "An error occured. User couldnt be deleted. "
+                title: "System Store Management",
+                variant: "destructive",
+                description: "An error occured. Stores couldnt be deleted. "
             });
-            fetchUsers(null);
+            fetchStores(null);
         });
     };
     const handleSave = (event)=>{
@@ -677,28 +885,25 @@ const page = ()=>{
         setsubmitting(true);
         const formData = new FormData(event.target);
         const data = {
-            username: formData.get("username"),
-            passwordHash: formData.get("passwordHarsh"),
-            email: formData.get("email"),
-            gender: formData.get("gender"),
-            telephone: formData.get("telephone"),
-            role: formData.get("role")
+            name: formData.get("name"),
+            address: formData.get("address"),
+            description: formData.get("description")
         };
-        createUser(data, ()=>{
+        createStore(data, ()=>{
             setsubmitting(false);
             toast({
-                title: "System User Management",
-                description: "User successfully created.",
+                title: "System Store Management",
+                description: "Store successfully created.",
                 className: "bg-primary text-black dark:bg-gray-700 dark:text-white"
             });
-            fetchUsers(null);
+            fetchStores(null);
             setedit(false);
         }, ()=>{
             setsubmitting(false);
             toast({
-                title: "System User Management",
-                variant: 'destructive',
-                description: "An error occured . User couldnt be added."
+                title: "System Store Management",
+                variant: "destructive",
+                description: "An error occured . Store couldnt be added."
             });
         });
     };
@@ -710,10 +915,10 @@ const page = ()=>{
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
                         className: "text-lg font-bold mb-4",
-                        children: "Manage Users"
+                        children: "Manage Business Stores"
                     }, void 0, false, {
-                        fileName: "[project]/src/app/Users/page.tsx",
-                        lineNumber: 226,
+                        fileName: "[project]/src/app/Stores/page.tsx",
+                        lineNumber: 206,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -729,15 +934,15 @@ const page = ()=>{
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("i", {
                                         className: "fas fa-plus mr-2"
                                     }, void 0, false, {
-                                        fileName: "[project]/src/app/Users/page.tsx",
-                                        lineNumber: 236,
+                                        fileName: "[project]/src/app/Stores/page.tsx",
+                                        lineNumber: 216,
                                         columnNumber: 13
                                     }, this),
                                     "Add"
                                 ]
                             }, void 0, true, {
-                                fileName: "[project]/src/app/Users/page.tsx",
-                                lineNumber: 229,
+                                fileName: "[project]/src/app/Stores/page.tsx",
+                                lineNumber: 209,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
@@ -746,15 +951,15 @@ const page = ()=>{
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("i", {
                                         className: "fas fa-print mr-2"
                                     }, void 0, false, {
-                                        fileName: "[project]/src/app/Users/page.tsx",
-                                        lineNumber: 239,
+                                        fileName: "[project]/src/app/Stores/page.tsx",
+                                        lineNumber: 219,
                                         columnNumber: 13
                                     }, this),
                                     "Print"
                                 ]
                             }, void 0, true, {
-                                fileName: "[project]/src/app/Users/page.tsx",
-                                lineNumber: 238,
+                                fileName: "[project]/src/app/Stores/page.tsx",
+                                lineNumber: 218,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
@@ -763,49 +968,49 @@ const page = ()=>{
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("i", {
                                         className: "fas fa-file-excel mr-2"
                                     }, void 0, false, {
-                                        fileName: "[project]/src/app/Users/page.tsx",
-                                        lineNumber: 242,
+                                        fileName: "[project]/src/app/Stores/page.tsx",
+                                        lineNumber: 222,
                                         columnNumber: 13
                                     }, this),
                                     "Export To Excel"
                                 ]
                             }, void 0, true, {
-                                fileName: "[project]/src/app/Users/page.tsx",
-                                lineNumber: 241,
+                                fileName: "[project]/src/app/Stores/page.tsx",
+                                lineNumber: 221,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
-                        fileName: "[project]/src/app/Users/page.tsx",
-                        lineNumber: 228,
+                        fileName: "[project]/src/app/Stores/page.tsx",
+                        lineNumber: 208,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
-                fileName: "[project]/src/app/Users/page.tsx",
-                lineNumber: 225,
+                fileName: "[project]/src/app/Stores/page.tsx",
+                lineNumber: 205,
                 columnNumber: 7
             }, this),
             isLoading ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "flex justify-center items-center flex-col h-80 w-full",
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mui$2f$material$2f$CircularProgress$2f$CircularProgress$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {}, void 0, false, {
-                        fileName: "[project]/src/app/Users/page.tsx",
-                        lineNumber: 249,
+                        fileName: "[project]/src/app/Stores/page.tsx",
+                        lineNumber: 229,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
                         className: "mt-4",
-                        children: "Loading System Users..."
+                        children: "Loading Business Stores..."
                     }, void 0, false, {
-                        fileName: "[project]/src/app/Users/page.tsx",
-                        lineNumber: 250,
+                        fileName: "[project]/src/app/Stores/page.tsx",
+                        lineNumber: 230,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
-                fileName: "[project]/src/app/Users/page.tsx",
-                lineNumber: 248,
+                fileName: "[project]/src/app/Stores/page.tsx",
+                lineNumber: 228,
                 columnNumber: 9
             }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Table"], {
                 children: [
@@ -815,134 +1020,120 @@ const page = ()=>{
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableHead"], {
                                     children: "ID"
                                 }, void 0, false, {
-                                    fileName: "[project]/src/app/Users/page.tsx",
-                                    lineNumber: 257,
+                                    fileName: "[project]/src/app/Stores/page.tsx",
+                                    lineNumber: 237,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableHead"], {
-                                    children: "User"
+                                    children: "Name"
                                 }, void 0, false, {
-                                    fileName: "[project]/src/app/Users/page.tsx",
-                                    lineNumber: 258,
+                                    fileName: "[project]/src/app/Stores/page.tsx",
+                                    lineNumber: 238,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableHead"], {
-                                    children: "Gender"
+                                    children: "Address"
                                 }, void 0, false, {
-                                    fileName: "[project]/src/app/Users/page.tsx",
-                                    lineNumber: 259,
+                                    fileName: "[project]/src/app/Stores/page.tsx",
+                                    lineNumber: 239,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableHead"], {
-                                    children: "Telephone"
+                                    children: "Description"
                                 }, void 0, false, {
-                                    fileName: "[project]/src/app/Users/page.tsx",
-                                    lineNumber: 260,
+                                    fileName: "[project]/src/app/Stores/page.tsx",
+                                    lineNumber: 240,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableHead"], {
-                                    children: "Email"
+                                    children: "Date Added"
                                 }, void 0, false, {
-                                    fileName: "[project]/src/app/Users/page.tsx",
-                                    lineNumber: 261,
+                                    fileName: "[project]/src/app/Stores/page.tsx",
+                                    lineNumber: 241,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableHead"], {
-                                    children: "Added By"
+                                    children: "Date Updated"
                                 }, void 0, false, {
-                                    fileName: "[project]/src/app/Users/page.tsx",
-                                    lineNumber: 262,
-                                    columnNumber: 15
-                                }, this),
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableHead"], {
-                                    children: "Type"
-                                }, void 0, false, {
-                                    fileName: "[project]/src/app/Users/page.tsx",
-                                    lineNumber: 263,
+                                    fileName: "[project]/src/app/Stores/page.tsx",
+                                    lineNumber: 242,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableHead"], {
                                     children: "Added By"
                                 }, void 0, false, {
-                                    fileName: "[project]/src/app/Users/page.tsx",
-                                    lineNumber: 264,
+                                    fileName: "[project]/src/app/Stores/page.tsx",
+                                    lineNumber: 243,
                                     columnNumber: 15
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableHead"], {
                                     children: "Actions"
                                 }, void 0, false, {
-                                    fileName: "[project]/src/app/Users/page.tsx",
-                                    lineNumber: 265,
+                                    fileName: "[project]/src/app/Stores/page.tsx",
+                                    lineNumber: 244,
                                     columnNumber: 15
                                 }, this)
                             ]
                         }, void 0, true, {
-                            fileName: "[project]/src/app/Users/page.tsx",
-                            lineNumber: 256,
+                            fileName: "[project]/src/app/Stores/page.tsx",
+                            lineNumber: 236,
                             columnNumber: 13
                         }, this)
                     }, void 0, false, {
-                        fileName: "[project]/src/app/Users/page.tsx",
-                        lineNumber: 255,
+                        fileName: "[project]/src/app/Stores/page.tsx",
+                        lineNumber: 235,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableBody"], {
-                        children: users?.map((row)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableRow"], {
+                        children: stores?.map((row)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableRow"], {
                                 children: [
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableCell"], {
                                         children: `${row.id.slice(0, 6)}...`
                                     }, void 0, false, {
-                                        fileName: "[project]/src/app/Users/page.tsx",
-                                        lineNumber: 271,
+                                        fileName: "[project]/src/app/Stores/page.tsx",
+                                        lineNumber: 250,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableCell"], {
-                                        children: row.username
+                                        children: row.name
                                     }, void 0, false, {
-                                        fileName: "[project]/src/app/Users/page.tsx",
-                                        lineNumber: 272,
+                                        fileName: "[project]/src/app/Stores/page.tsx",
+                                        lineNumber: 251,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableCell"], {
-                                        children: row.gender
+                                        children: row.address
                                     }, void 0, false, {
-                                        fileName: "[project]/src/app/Users/page.tsx",
-                                        lineNumber: 273,
+                                        fileName: "[project]/src/app/Stores/page.tsx",
+                                        lineNumber: 252,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableCell"], {
-                                        children: row.telephone
+                                        children: row.description.length > 40 ? `${row.description.slice(0, 40)}...` : row.description
                                     }, void 0, false, {
-                                        fileName: "[project]/src/app/Users/page.tsx",
-                                        lineNumber: 274,
+                                        fileName: "[project]/src/app/Stores/page.tsx",
+                                        lineNumber: 253,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableCell"], {
-                                        children: row.email
+                                        children: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$Utils$2f$ConvertDateTime$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["toDDMMYYYY"])(row.addedAt)
                                     }, void 0, false, {
-                                        fileName: "[project]/src/app/Users/page.tsx",
-                                        lineNumber: 275,
+                                        fileName: "[project]/src/app/Stores/page.tsx",
+                                        lineNumber: 254,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableCell"], {
-                                        children: row.addedBy
+                                        children: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$Utils$2f$ConvertDateTime$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["toDDMMYYYY"])(row.updatedAt)
                                     }, void 0, false, {
-                                        fileName: "[project]/src/app/Users/page.tsx",
-                                        lineNumber: 276,
-                                        columnNumber: 17
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableCell"], {
-                                        children: row.role
-                                    }, void 0, false, {
-                                        fileName: "[project]/src/app/Users/page.tsx",
-                                        lineNumber: 277,
+                                        fileName: "[project]/src/app/Stores/page.tsx",
+                                        lineNumber: 255,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableCell"], {
                                         children: row.addedBy
                                     }, void 0, false, {
-                                        fileName: "[project]/src/app/Users/page.tsx",
-                                        lineNumber: 278,
+                                        fileName: "[project]/src/app/Stores/page.tsx",
+                                        lineNumber: 256,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["TableCell"], {
@@ -955,70 +1146,81 @@ const page = ()=>{
                                                     onClick: ()=>handleEdit(row.id),
                                                     children: "Edit"
                                                 }, void 0, false, {
-                                                    fileName: "[project]/src/app/Users/page.tsx",
-                                                    lineNumber: 281,
+                                                    fileName: "[project]/src/app/Stores/page.tsx",
+                                                    lineNumber: 259,
                                                     columnNumber: 21
                                                 }, this),
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
-                                                    size: "sm",
-                                                    variant: "destructive",
-                                                    onClick: ()=>handleDelete(row.id),
-                                                    children: "Delete"
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$Dialog$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
+                                                    heading: "Delete Storage",
+                                                    description: `This will delete the Store ${row.name} softly from the system.`,
+                                                    continueButtonText: "Delete",
+                                                    cancelButtonText: "Cancel",
+                                                    triggerComponent: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
+                                                        size: "sm",
+                                                        variant: "destructive",
+                                                        children: "Delete"
+                                                    }, void 0, false, {
+                                                        fileName: "[project]/src/app/Stores/page.tsx",
+                                                        lineNumber: 273,
+                                                        columnNumber: 25
+                                                    }, void 0),
+                                                    onContinue: ()=>handleDelete(row.id),
+                                                    onCancel: ()=>{}
                                                 }, void 0, false, {
-                                                    fileName: "[project]/src/app/Users/page.tsx",
-                                                    lineNumber: 289,
+                                                    fileName: "[project]/src/app/Stores/page.tsx",
+                                                    lineNumber: 267,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
-                                            fileName: "[project]/src/app/Users/page.tsx",
-                                            lineNumber: 280,
+                                            fileName: "[project]/src/app/Stores/page.tsx",
+                                            lineNumber: 258,
                                             columnNumber: 19
                                         }, this)
                                     }, void 0, false, {
-                                        fileName: "[project]/src/app/Users/page.tsx",
-                                        lineNumber: 279,
+                                        fileName: "[project]/src/app/Stores/page.tsx",
+                                        lineNumber: 257,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, row.id, true, {
-                                fileName: "[project]/src/app/Users/page.tsx",
-                                lineNumber: 270,
+                                fileName: "[project]/src/app/Stores/page.tsx",
+                                lineNumber: 249,
                                 columnNumber: 15
                             }, this))
                     }, void 0, false, {
-                        fileName: "[project]/src/app/Users/page.tsx",
-                        lineNumber: 268,
+                        fileName: "[project]/src/app/Stores/page.tsx",
+                        lineNumber: 247,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
-                fileName: "[project]/src/app/Users/page.tsx",
-                lineNumber: 253,
+                fileName: "[project]/src/app/Stores/page.tsx",
+                lineNumber: 233,
                 columnNumber: 9
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$Edit$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
                 open: edit,
-                Heading: editRow ? "UPDATE USER" : "ADD USER",
-                onSubmit: editRow ? editUser : handleSave,
+                Heading: editRow ? "UPDATE STORE" : "ADD STORE",
+                onSubmit: editRow ? editStore : handleSave,
                 toggleDrawer: toggleEditDrawer,
                 Fields: Fields
             }, void 0, false, {
-                fileName: "[project]/src/app/Users/page.tsx",
-                lineNumber: 304,
+                fileName: "[project]/src/app/Stores/page.tsx",
+                lineNumber: 291,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
-        fileName: "[project]/src/app/Users/page.tsx",
-        lineNumber: 224,
+        fileName: "[project]/src/app/Stores/page.tsx",
+        lineNumber: 204,
         columnNumber: 5
     }, this);
 };
-_s(page, "Vle+oCJCeJJuHB4BJVWDxSCr+EI=", false, function() {
+_s(page, "RpNu7LSscikGeBJlxIqSo6R3Fv0=", false, function() {
     return [
         __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$hooks$2f$use$2d$toast$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useToast"],
-        __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$store$2f$useUserStore$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useUserStore"]
+        __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$store$2f$useStoresStore$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useStoresStore"]
     ];
 });
 const __TURBOPACK__default__export__ = page;
@@ -1026,11 +1228,11 @@ if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelper
     __turbopack_refresh__.registerExports(module, globalThis.$RefreshHelpers$);
 }
 }}),
-"[project]/src/app/Users/page.tsx [app-rsc] (ecmascript, Next.js server component, client modules)": ((__turbopack_context__) => {
+"[project]/src/app/Stores/page.tsx [app-rsc] (ecmascript, Next.js server component, client modules)": ((__turbopack_context__) => {
 
 var { r: __turbopack_require__, f: __turbopack_module_context__, i: __turbopack_import__, s: __turbopack_esm__, v: __turbopack_export_value__, n: __turbopack_export_namespace__, c: __turbopack_cache__, M: __turbopack_modules__, l: __turbopack_load__, j: __turbopack_dynamic__, P: __turbopack_resolve_absolute_path__, U: __turbopack_relative_url__, R: __turbopack_resolve_module_id_path__, b: __turbopack_worker_blob_url__, g: global, __dirname, t: __turbopack_require_real__ } = __turbopack_context__;
 {
 }}),
 }]);
 
-//# sourceMappingURL=src_d1730b._.js.map
+//# sourceMappingURL=src_a4df30._.js.map
