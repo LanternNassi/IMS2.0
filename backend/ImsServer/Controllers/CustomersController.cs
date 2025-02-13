@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ImsServer.Models.CustomerX;
 using ImsServer.Models;
+using ImsServer.Utils;
 
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
@@ -28,7 +29,11 @@ namespace ImsServer.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<CustomerDto>>> GetCustomers([FromQuery]string? keywords = null)
+        public async Task<ActionResult<IEnumerable<CustomerDto>>> GetCustomers(
+            [FromQuery]string? keywords = null,
+            [FromQuery]int page = 1,
+            [FromQuery]int pageSize = 10
+        )
         {
             if (_dbcontext.Customers == null)
             {
@@ -45,7 +50,12 @@ namespace ImsServer.Controllers
 
             }
 
-            return Ok(_mapper.Map<List<CustomerDto>>(await query.ToListAsync()));
+            var pagedCustomers = await Pagination.GetPagedAsync(query , page , pageSize);
+
+            return Ok(new {
+                Pagination = pagedCustomers.Pagination,
+                Customers = _mapper.Map<List<CustomerDto>>(pagedCustomers.Items),
+            });
         }
 
         [HttpGet("{id}")]
@@ -96,14 +106,93 @@ namespace ImsServer.Controllers
 
                     }
                     
-                
                 }
             }
-
 
             await _dbcontext.SaveChangesAsync();
 
             return CreatedAtAction("GetCustomer" , new { id = customer.Id} , customer);
+        }
+
+        [HttpGet("Tags")]
+        public async Task<ActionResult<IEnumerable<SimpleCustomerTagDto>>> GetCustomerTags(
+            [FromQuery] Guid? customer = null,
+            [FromQuery] string? keywords = null
+        )
+        {
+            var query = _dbcontext.CustomerTags
+                .Include(c => c.Customers)
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(keywords))
+            {
+                query = query.Where(c => c.Name.Contains(keywords));
+            }
+
+            if (customer != null)
+            {
+                query = query.Where(c => c.Customers.Any(cust => cust.Id == customer));
+            }
+
+            var result = await query.ToListAsync();
+            
+            return Ok(_mapper.Map<List<SimpleCustomerTagDto>>(result));
+        }
+
+        [HttpPost("Tags")]
+        public async Task<IActionResult> CreateCustomerTags(SimpleCustomerTagDto tag)
+        {
+
+            try {
+
+                _dbcontext.CustomerTags.Add(_mapper.Map<CustomerTag>(tag));
+
+                await _dbcontext.SaveChangesAsync();
+
+                return Ok();
+
+            }catch(Exception ex){
+
+                return BadRequest(ex.Message);
+
+            }
+            
+        }
+
+        [HttpPost("{customer}/tags")]
+        public async Task<IActionResult> AttachCustomerTags(Guid customer, List<SimpleCustomerTagDto> tags)
+        {
+            try{
+
+                var saved_customer = await _dbcontext.Customers.FindAsync(customer);
+
+                if (tags != null && tags.Any()){
+                    foreach (SimpleCustomerTagDto tag in tags)
+                    {
+                        var tag_present = await _dbcontext.CustomerTags.Where(c => c.Name == tag.Name).FirstOrDefaultAsync();
+
+                        if (tag_present != null){
+
+                            saved_customer.CustomerTags.Add(tag_present);
+                            
+                        }else {
+                            var new_tag = _mapper.Map<CustomerTag>(tag);
+                            _dbcontext.CustomerTags.Add(new_tag);
+                            saved_customer.CustomerTags.Add(new_tag);
+                        }
+                        
+                    }
+
+                    await _dbcontext.SaveChangesAsync();
+
+                    return Ok("Tags were added successfully");
+                }
+
+                return BadRequest("No tags were supplied");
+            }catch(Exception ex){
+                return BadRequest(ex.Message);
+            }
+            
         }
 
 
