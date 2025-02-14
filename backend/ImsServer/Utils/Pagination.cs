@@ -8,7 +8,8 @@ namespace ImsServer.Utils{
 
         public class PaginationData {
             public int TotalCount { get; set; }
-            public int PageNumber { get; set; }
+            public int Pages {get; set;}
+            public int Page {get; set;}
             public int PageSize { get; set; }
             public int? Next {get; set;}
             public int? Previous { get; set;}
@@ -30,8 +31,9 @@ namespace ImsServer.Utils{
             var result = new PagedResult<T>
             {
                 Pagination = new PaginationData{
-                    PageNumber = pageNumber,
                     PageSize = pageSize,
+                    Pages = totalPages,
+                    Page = pageNumber,
                     TotalCount = totalCount,
                     Next = pageNumber < totalPages ? pageNumber + 1 : (int?)null,
                     Previous = pageNumber > 1 ? pageNumber - 1 : (int?)null,

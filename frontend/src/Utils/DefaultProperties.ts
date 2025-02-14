@@ -10,8 +10,8 @@ export type defaultProperties = {
 export type pagination = {
     page: number;
     pages: number;
-    per_page: number;
-    items: number;
+    pageSize: number;
+    totalCount: number;
     next: number;
     previous: number;
 }

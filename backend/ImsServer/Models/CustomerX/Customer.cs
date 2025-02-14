@@ -22,7 +22,7 @@ namespace ImsServer.Models.CustomerX
     {
         public int Id {get; set;}
         public string Name {get; set;}
-        public string Description {get; set;}
+        public string? Description {get; set;}
 
         public virtual ICollection<Customer> Customers {get; set;} = new List<Customer>();
     }
@@ -31,7 +31,7 @@ namespace ImsServer.Models.CustomerX
     {
         public int Id {get; set;}
         public string Name {get; set;}
-        public string Description {get; set;}
+        public string? Description {get; set;}
 
         public List <SimpleCustomerDto>? Customers {get; set;}
     } 
@@ -40,7 +40,7 @@ namespace ImsServer.Models.CustomerX
     {
         public int Id {get; set;}
         public string Name {get; set;}
-        public string Description {get; set;}
+        public string? Description {get; set;}
     }
 
     public class SimpleCustomerDto

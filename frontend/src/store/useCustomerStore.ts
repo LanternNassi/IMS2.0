@@ -6,7 +6,7 @@ import {defaultProperties , pagination} from '@/Utils/DefaultProperties';
 
 interface customerTag {
     name : string;
-    description : string;
+    description? : string;
 }
 
 export interface customer extends defaultProperties {
@@ -39,7 +39,9 @@ interface ICustomerStore {
     pagination : pagination | null;
     customerTags : customerTag[] | null;
     fetchCustomers : (keywords: string|null , page: number) => Promise<void>;
-    fetchCustomerTags : (keywords : string|null) => Promise<void>;
+    fetchCustomerTags : (keywords : string|null , customer : string|null) => Promise<void>;
+    addCustomerToTags : (customer: string, tags : customerTag[] , onsuccess : ()=> void , onFailure : () => void) => Promise<void>;
+    searchCustomerTags : (keywords: string) => Promise<customerTag[]>
     getCustomerById : (id : string) => Promise<customer>;
     createCustomer : (customer : customerDto, onsuccess: ()=> void, onFailure: ()=> void) => Promise<void>;
     updateCustomer : (customer: customer, onsuccess: ()=>void, onFailure: ()=>void) => Promise<void>;
@@ -63,12 +65,28 @@ export const useCustomerStore = create<ICustomerStore>((set) => ({
             } 
         })
     },
-    fetchCustomerTags : async (keywords: string | null) => {
-        api.get('/CustomerTags' , {params: {keywords}}).then((response : AxiosResponse) => {
+    fetchCustomerTags : async (keywords: string | null , customer: string|null) => {
+        api.get('/Customers/Tags' , {params: {keywords,customer}}).then((response : AxiosResponse) => {
             if (response.status == 200){
                 set({customerTags : response.data})
             }
         })
+    },
+    searchCustomerTags : async (keywords: string | null) => {
+        const response:AxiosResponse = await api.get(`/Customers/Tags` , {params:{keywords}});
+        return response.data
+    },
+    addCustomerToTags : async (customer: string , tags , onsuccess, onFailure) => {
+        api.post(`/Customers/${customer}/tags`, tags).then((response : AxiosResponse) => {
+            if (response.status == 200){
+                onsuccess()
+            }else {
+                onFailure()
+            }
+        }).catch(() => {
+            onFailure()
+        })
+
     },
     getCustomerById : async (id : string) => {
         const response:AxiosResponse = await api.get(`/Customers/${id}`);
