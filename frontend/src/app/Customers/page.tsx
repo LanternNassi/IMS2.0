@@ -20,6 +20,7 @@ import {
 import LoadingButton from "@mui/lab/LoadingButton";
 import SaveIcon from "@mui/icons-material/Save";
 import { TextField } from "@mui/material";
+import Pagination from '@mui/material/Pagination';
 import Edit from "@/components/Edit";
 import CircularProgress from "@mui/material/CircularProgress";
 import { useToast } from "@/hooks/use-toast";
@@ -28,6 +29,10 @@ import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
 import {GetColorFromLetters} from "@/Utils/Usuals"; 
 import ChipInput , {Tag} from "@/components/ChipInput";
+import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
+import InputAdornment from '@mui/material/InputAdornment';
+import { defaultProperties } from "@/Utils/DefaultProperties";
+
 
 const page = () => {
   const [editRow, setEditRow] = useState<customer | null>(null);
@@ -44,12 +49,24 @@ const page = () => {
     searchCustomerTags,
     isLoading,
     customers,
+    pagination
   } = useCustomerStore();
   const [submitting, setsubmitting] = useState<boolean>(false);
 
   useEffect(() => {
     fetchCustomers(null, page);
   }, []);
+
+  interface CustomersExcel extends defaultProperties {
+    id: string;
+    name : string;
+    customerType : string;
+    address : string;
+    phone : string;
+    email : string;
+    accountNumber : string;
+    moreInfo : string;
+  }
 
   const toggleEditDrawer = (newOpen: boolean) => {
     setedit(newOpen);
@@ -175,6 +192,28 @@ const page = () => {
     setedit(true);
   };
 
+  const exportToExcel = async () => {
+
+    // @ts-expect-error : window.electron is resolved at build time
+    if (window.electron) {
+
+      const customerExcelSheet : CustomersExcel[] | null  = customers ;
+
+      // @ts-expect-error : window.electron is resolved at build time
+      window.electron.exportExcel(customerExcelSheet , 'Customers');
+
+      toast({
+        title: "System Customer Management",
+        description: "Customers successfully exported to Excel.",
+        className: "bg-primary text-black dark:bg-gray-700 dark:text-white",
+      });
+
+    } else {
+
+    }
+      
+  }
+
   const editCustomer = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -245,9 +284,34 @@ const page = () => {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-6 h-full">
+      <h2 className="text-lg font-bold mb-4">Manage Business Customers</h2>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-bold mb-4">Manage Business Customers</h2>
+
+        <TextField
+          id="outlined-select-type"
+          name="searchcustomer"
+          label="Search Customers"
+          sx={{ width: "25vw" }}
+          onChange={async (event) => {
+            if (event.target.value.trim() != ""){
+                if (event.target.value.trim().length >= 3 ){
+                  await fetchCustomers(event.target.value.trim() , page != 1 ? 1 : page )
+                }
+            }else{
+              await fetchCustomers(null , 1)
+            }
+          }}
+          slotProps={{
+            input: {
+              startAdornment: 
+              <InputAdornment position="start">
+                  <SearchOutlinedIcon/>
+              </InputAdornment>
+            }
+          }}
+          margin="normal"
+        />
 
         <div className="space-x-4">
           <Button
@@ -262,7 +326,7 @@ const page = () => {
           <Button className="bg-blue-600 hover:bg-blue-700">
             <i className="fas fa-print mr-2"></i>Print
           </Button>
-          <Button className="bg-blue-600 hover:bg-blue-700">
+          <Button onClick={() => {exportToExcel()}} className="bg-blue-600 hover:bg-blue-700">
             <i className="fas fa-file-excel mr-2"></i>Export To Excel
           </Button>
         </div>
@@ -274,68 +338,81 @@ const page = () => {
           <h3 className="mt-4">Loading Business Customers...</h3>
         </div>
       ) : (
-        <Table>
-          {/* <TableCaption>A list of users and their details</TableCaption> */}
-          <TableHeader>
-            <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>CustomerType</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Address</TableHead>
-              <TableHead>Date Added</TableHead>
-              <TableHead>Tags</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {customers?.map((row) => (
-              <TableRow key={row.id}>
-                <TableCell>{`${row.id.slice(0, 6)}...`}</TableCell>
-                <TableCell>{row.name}</TableCell>
-                <TableCell>{row.customerType}</TableCell>
-                <TableCell>{row.phone}</TableCell>
-                <TableCell>{row.email}</TableCell>
-                <TableCell>{row.address}</TableCell>
-                <TableCell>{toDDMMYYYY(row.addedAt)}</TableCell>
-                <Stack direction="row" spacing={1} sx={{height : 50 , alignItems : 'center'}}>
-                {
-                  row.customerTags?.map((tag , key) => (
-                      <Chip key={key} label={tag.name} color={"primary"} style={{color : GetColorFromLetters(tag.name)}} variant="outlined" />
-                  ))
-                }
-                </Stack>
-                  
-                <TableCell>
-                  <div className="flex space-x-2">
-                    <Button
-                      size="sm"
-                      variant={"secondary"}
-                      onClick={() => handleEdit(row.id)}
-                    >
-                      Edit
-                    </Button>
-
-                    <Dialog
-                      heading="Delete Storage"
-                      description={`This will delete the customer ${row.name} softly from the system.`}
-                      continueButtonText="Delete"
-                      cancelButtonText="Cancel"
-                      triggerComponent={
-                        <Button size="sm" variant="destructive">
-                          Delete
-                        </Button>
-                      }
-                      onContinue={() => handleDelete(row.id)}
-                      onCancel={() => {}}
-                    />
-                  </div>
-                </TableCell>
+        <div className="flex flex-col h-[80%] justify-between items-end">
+          <Table className="flex-grow">
+            {/* <TableCaption>A list of users and their details</TableCaption> */}
+            <TableHeader>
+              <TableRow>
+                <TableHead>ID</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>CustomerType</TableHead>
+                <TableHead>Phone</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Address</TableHead>
+                <TableHead>Date Added</TableHead>
+                <TableHead>Tags</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {customers?.map((row) => (
+                <TableRow key={row.id}>
+                  <TableCell>{`${row.id.slice(0, 6)}...`}</TableCell>
+                  <TableCell>{row.name}</TableCell>
+                  <TableCell>{row.customerType}</TableCell>
+                  <TableCell>{row.phone}</TableCell>
+                  <TableCell>{row.email}</TableCell>
+                  <TableCell>{row.address}</TableCell>
+                  <TableCell>{toDDMMYYYY(row.addedAt)}</TableCell>
+                  <Stack direction="row" spacing={1} sx={{height : 50 , alignItems : 'center'}}>
+                  {
+                    row.customerTags?.map((tag , key) => (
+                        <Chip key={key} label={tag.name} color={"primary"} style={{color : GetColorFromLetters(tag.name)}} variant="outlined" />
+                    ))
+                  }
+                  </Stack>
+                    
+                  <TableCell>
+                    <div className="flex space-x-2">
+                      <Button
+                        size="sm"
+                        variant={"secondary"}
+                        onClick={() => handleEdit(row.id)}
+                      >
+                        Edit
+                      </Button>
+
+                      <Dialog
+                        heading="Delete Storage"
+                        description={`This will delete the customer ${row.name} softly from the system.`}
+                        continueButtonText="Delete"
+                        cancelButtonText="Cancel"
+                        triggerComponent={
+                          <Button size="sm" variant="destructive">
+                            Delete
+                          </Button>
+                        }
+                        onContinue={() => handleDelete(row.id)}
+                        onCancel={() => {}}
+                      />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <Pagination 
+            count={pagination?.pages}
+            variant="outlined"
+            color="secondary"
+            hideNextButton={pagination?.next == null}
+            hidePrevButton={pagination?.previous == null}
+            onChange={async (event, page ) => {
+                await fetchCustomers(null , page)
+            }}
+          />
+        </div>
+
       )}
 
       <Edit

@@ -23,7 +23,7 @@ export default function RootLayout({
             <SideNav/>
             <main className="flex-1 flex flex-col">
               <UpperNav />
-              <div className="flex-1 p-6 bg-[#FCFBFC] dark:bg-gray-900 overflow-y-auto">
+              <div className="flex-1 h-full p-6 bg-[#FCFBFC] dark:bg-gray-900 overflow-y-auto">
                 {children}
               </div>
               <Toaster/>

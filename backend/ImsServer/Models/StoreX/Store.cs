@@ -27,7 +27,7 @@ namespace ImsServer.Models.StoreX
         public string Name { get; set; }
         public string? Address { get; set; }
         public string? Description { get; set; }
-
+        
         // public List<SimpleCategoryDto>? Categories { get; set; }
     }
 }
