@@ -103,7 +103,7 @@ export const useCustomerStore = create<ICustomerStore>((set) => ({
     },
     updateCustomer : async (customer: customer , onsuccess , onFailure) => {
         api.put(`/Customers/${customer.id}`, customer).then((response : AxiosResponse) => {
-            if (response.status == 204){
+            if (response.status == 200){
                 onsuccess();
             }else {
                 onFailure();

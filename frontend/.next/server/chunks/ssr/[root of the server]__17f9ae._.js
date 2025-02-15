@@ -195,7 +195,7 @@ const useCustomerStore = (0, __TURBOPACK__imported__module__$5b$project$5d2f$nod
         },
         updateCustomer: async (customer, onsuccess, onFailure)=>{
             __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$Utils$2f$Request$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"].put(`/Customers/${customer.id}`, customer).then((response)=>{
-                if (response.status == 204) {
+                if (response.status == 200) {
                     onsuccess();
                 } else {
                     onFailure();
@@ -957,7 +957,7 @@ const page = ()=>{
     const [AddTags, setAddTags] = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"].useState([]);
     const [page] = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"].useState(1);
     const { toast } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$hooks$2f$use$2d$toast$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useToast"])();
-    const { fetchCustomers, getCustomerById, deleteCustomer, createCustomer, searchCustomerTags, isLoading, customers, pagination } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$store$2f$useCustomerStore$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useCustomerStore"])();
+    const { fetchCustomers, getCustomerById, deleteCustomer, createCustomer, searchCustomerTags, updateCustomer, isLoading, customers, pagination } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$store$2f$useCustomerStore$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useCustomerStore"])();
     const [submitting, setsubmitting] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(false);
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
         fetchCustomers(null, page);
@@ -991,7 +991,7 @@ const page = ()=>{
                     margin: "normal"
                 }, void 0, false, {
                     fileName: "[project]/src/app/Customers/page.tsx",
-                    lineNumber: 87,
+                    lineNumber: 88,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mui$2f$material$2f$TextField$2f$TextField$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__TextField$3e$__["TextField"], {
@@ -1006,7 +1006,7 @@ const page = ()=>{
                     margin: "normal"
                 }, void 0, false, {
                     fileName: "[project]/src/app/Customers/page.tsx",
-                    lineNumber: 98,
+                    lineNumber: 99,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mui$2f$material$2f$TextField$2f$TextField$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__TextField$3e$__["TextField"], {
@@ -1021,7 +1021,7 @@ const page = ()=>{
                     margin: "normal"
                 }, void 0, false, {
                     fileName: "[project]/src/app/Customers/page.tsx",
-                    lineNumber: 108,
+                    lineNumber: 109,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mui$2f$material$2f$TextField$2f$TextField$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__TextField$3e$__["TextField"], {
@@ -1035,7 +1035,7 @@ const page = ()=>{
                     margin: "normal"
                 }, void 0, false, {
                     fileName: "[project]/src/app/Customers/page.tsx",
-                    lineNumber: 118,
+                    lineNumber: 119,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mui$2f$material$2f$TextField$2f$TextField$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__TextField$3e$__["TextField"], {
@@ -1049,7 +1049,7 @@ const page = ()=>{
                     margin: "normal"
                 }, void 0, false, {
                     fileName: "[project]/src/app/Customers/page.tsx",
-                    lineNumber: 127,
+                    lineNumber: 128,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mui$2f$material$2f$TextField$2f$TextField$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__TextField$3e$__["TextField"], {
@@ -1063,7 +1063,7 @@ const page = ()=>{
                     margin: "normal"
                 }, void 0, false, {
                     fileName: "[project]/src/app/Customers/page.tsx",
-                    lineNumber: 136,
+                    lineNumber: 137,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mui$2f$material$2f$TextField$2f$TextField$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__TextField$3e$__["TextField"], {
@@ -1077,7 +1077,7 @@ const page = ()=>{
                     margin: "normal"
                 }, void 0, false, {
                     fileName: "[project]/src/app/Customers/page.tsx",
-                    lineNumber: 145,
+                    lineNumber: 146,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mui$2f$material$2f$TextField$2f$TextField$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__TextField$3e$__["TextField"], {
@@ -1094,7 +1094,7 @@ const page = ()=>{
                     margin: "normal"
                 }, void 0, false, {
                     fileName: "[project]/src/app/Customers/page.tsx",
-                    lineNumber: 154,
+                    lineNumber: 155,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ChipInput$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
@@ -1107,7 +1107,7 @@ const page = ()=>{
                     tags: editRow ? editRow.customerTags : []
                 }, void 0, false, {
                     fileName: "[project]/src/app/Customers/page.tsx",
-                    lineNumber: 166,
+                    lineNumber: 167,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mui$2f$lab$2f$LoadingButton$2f$LoadingButton$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
@@ -1124,19 +1124,19 @@ const page = ()=>{
                         fontSize: "large"
                     }, void 0, false, {
                         fileName: "[project]/src/app/Customers/page.tsx",
-                        lineNumber: 181,
+                        lineNumber: 182,
                         columnNumber: 22
                     }, void 0),
                     children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                         children: "Submit"
                     }, void 0, false, {
                         fileName: "[project]/src/app/Customers/page.tsx",
-                        lineNumber: 183,
+                        lineNumber: 184,
                         columnNumber: 11
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/src/app/Customers/page.tsx",
-                    lineNumber: 174,
+                    lineNumber: 175,
                     columnNumber: 9
                 }, this)
             ]
@@ -1159,10 +1159,6 @@ const page = ()=>{
                 className: "bg-primary text-black dark:bg-gray-700 dark:text-white"
             });
         } else {}
-    };
-    const editCustomer = async (event)=>{
-        event.preventDefault();
-        if (editRow) {}
     };
     const handleDelete = async (id)=>{
         await deleteCustomer(id, ()=>{
@@ -1213,6 +1209,43 @@ const page = ()=>{
             });
         });
     };
+    const handleUpdate = async (event)=>{
+        event.preventDefault();
+        setsubmitting(true);
+        const formData = new FormData(event.target);
+        const data = {
+            name: formData.get("name"),
+            customerType: formData.get("customerType"),
+            address: formData.get("address"),
+            phone: formData.get("phone"),
+            email: formData.get("email"),
+            accountNumber: formData.get("accountNumber"),
+            moreInfo: formData.get("moreInfo")
+        };
+        if (editRow == null) {
+            return;
+        }
+        await updateCustomer({
+            ...editRow,
+            ...data
+        }, ()=>{
+            setsubmitting(false);
+            toast({
+                title: "System Customer Management",
+                description: `${editRow?.name} successfully updated`,
+                className: "bg-primary text-black dark:bg-gray-700 dark:text-white"
+            });
+            fetchCustomers(null, page);
+            setedit(false);
+        }, ()=>{
+            setsubmitting(false);
+            toast({
+                title: "System Customer Management",
+                variant: "destructive",
+                description: "An error occured . Customer couldnt be updated."
+            });
+        });
+    };
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
         className: "p-6 h-full",
         children: [
@@ -1221,7 +1254,7 @@ const page = ()=>{
                 children: "Manage Business Customers"
             }, void 0, false, {
                 fileName: "[project]/src/app/Customers/page.tsx",
-                lineNumber: 288,
+                lineNumber: 325,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1249,12 +1282,12 @@ const page = ()=>{
                                     position: "start",
                                     children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mui$2f$icons$2d$material$2f$esm$2f$SearchOutlined$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {}, void 0, false, {
                                         fileName: "[project]/src/app/Customers/page.tsx",
-                                        lineNumber: 309,
+                                        lineNumber: 346,
                                         columnNumber: 19
                                     }, void 0)
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/Customers/page.tsx",
-                                    lineNumber: 308,
+                                    lineNumber: 345,
                                     columnNumber: 15
                                 }, void 0)
                             }
@@ -1262,7 +1295,7 @@ const page = ()=>{
                         margin: "normal"
                     }, void 0, false, {
                         fileName: "[project]/src/app/Customers/page.tsx",
-                        lineNumber: 291,
+                        lineNumber: 328,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1279,14 +1312,14 @@ const page = ()=>{
                                         className: "fas fa-plus mr-2"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/Customers/page.tsx",
-                                        lineNumber: 324,
+                                        lineNumber: 361,
                                         columnNumber: 13
                                     }, this),
                                     "Add"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/Customers/page.tsx",
-                                lineNumber: 317,
+                                lineNumber: 354,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
@@ -1296,14 +1329,14 @@ const page = ()=>{
                                         className: "fas fa-print mr-2"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/Customers/page.tsx",
-                                        lineNumber: 327,
+                                        lineNumber: 364,
                                         columnNumber: 13
                                     }, this),
                                     "Print"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/Customers/page.tsx",
-                                lineNumber: 326,
+                                lineNumber: 363,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
@@ -1316,26 +1349,26 @@ const page = ()=>{
                                         className: "fas fa-file-excel mr-2"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/Customers/page.tsx",
-                                        lineNumber: 330,
+                                        lineNumber: 367,
                                         columnNumber: 13
                                     }, this),
                                     "Export To Excel"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/Customers/page.tsx",
-                                lineNumber: 329,
+                                lineNumber: 366,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/app/Customers/page.tsx",
-                        lineNumber: 316,
+                        lineNumber: 353,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/app/Customers/page.tsx",
-                lineNumber: 289,
+                lineNumber: 326,
                 columnNumber: 7
             }, this),
             isLoading ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1343,7 +1376,7 @@ const page = ()=>{
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mui$2f$material$2f$CircularProgress$2f$CircularProgress$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {}, void 0, false, {
                         fileName: "[project]/src/app/Customers/page.tsx",
-                        lineNumber: 337,
+                        lineNumber: 374,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
@@ -1351,13 +1384,13 @@ const page = ()=>{
                         children: "Loading Business Customers..."
                     }, void 0, false, {
                         fileName: "[project]/src/app/Customers/page.tsx",
-                        lineNumber: 338,
+                        lineNumber: 375,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/app/Customers/page.tsx",
-                lineNumber: 336,
+                lineNumber: 373,
                 columnNumber: 9
             }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "flex flex-col h-[80%] justify-between items-end",
@@ -1369,129 +1402,115 @@ const page = ()=>{
                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["TableRow"], {
                                     children: [
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["TableHead"], {
-                                            children: "ID"
-                                        }, void 0, false, {
-                                            fileName: "[project]/src/app/Customers/page.tsx",
-                                            lineNumber: 346,
-                                            columnNumber: 17
-                                        }, this),
-                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["TableHead"], {
                                             children: "Name"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/Customers/page.tsx",
-                                            lineNumber: 347,
+                                            lineNumber: 383,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["TableHead"], {
                                             children: "CustomerType"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/Customers/page.tsx",
-                                            lineNumber: 348,
+                                            lineNumber: 384,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["TableHead"], {
                                             children: "Phone"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/Customers/page.tsx",
-                                            lineNumber: 349,
+                                            lineNumber: 385,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["TableHead"], {
                                             children: "Email"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/Customers/page.tsx",
-                                            lineNumber: 350,
+                                            lineNumber: 386,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["TableHead"], {
                                             children: "Address"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/Customers/page.tsx",
-                                            lineNumber: 351,
+                                            lineNumber: 387,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["TableHead"], {
                                             children: "Date Added"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/Customers/page.tsx",
-                                            lineNumber: 352,
+                                            lineNumber: 388,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["TableHead"], {
                                             children: "Tags"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/Customers/page.tsx",
-                                            lineNumber: 353,
+                                            lineNumber: 389,
                                             columnNumber: 17
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["TableHead"], {
                                             children: "Actions"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/Customers/page.tsx",
-                                            lineNumber: 354,
+                                            lineNumber: 390,
                                             columnNumber: 17
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/Customers/page.tsx",
-                                    lineNumber: 345,
+                                    lineNumber: 382,
                                     columnNumber: 15
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/src/app/Customers/page.tsx",
-                                lineNumber: 344,
+                                lineNumber: 381,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["TableBody"], {
                                 children: customers?.map((row)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["TableRow"], {
                                         children: [
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["TableCell"], {
-                                                children: `${row.id.slice(0, 6)}...`
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/app/Customers/page.tsx",
-                                                lineNumber: 360,
-                                                columnNumber: 19
-                                            }, this),
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["TableCell"], {
                                                 children: row.name
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/Customers/page.tsx",
-                                                lineNumber: 361,
+                                                lineNumber: 396,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["TableCell"], {
                                                 children: row.customerType
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/Customers/page.tsx",
-                                                lineNumber: 362,
+                                                lineNumber: 397,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["TableCell"], {
                                                 children: row.phone
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/Customers/page.tsx",
-                                                lineNumber: 363,
+                                                lineNumber: 398,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["TableCell"], {
                                                 children: row.email
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/Customers/page.tsx",
-                                                lineNumber: 364,
+                                                lineNumber: 399,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["TableCell"], {
                                                 children: row.address
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/Customers/page.tsx",
-                                                lineNumber: 365,
+                                                lineNumber: 400,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["TableCell"], {
                                                 children: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$Utils$2f$ConvertDateTime$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["toDDMMYYYY"])(row.addedAt)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/Customers/page.tsx",
-                                                lineNumber: 366,
+                                                lineNumber: 401,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mui$2f$material$2f$Stack$2f$Stack$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
@@ -1501,21 +1520,31 @@ const page = ()=>{
                                                     height: 50,
                                                     alignItems: 'center'
                                                 },
-                                                children: row.customerTags?.map((tag, key)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mui$2f$material$2f$Chip$2f$Chip$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
-                                                        label: tag.name,
-                                                        color: "primary",
-                                                        style: {
-                                                            color: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$Utils$2f$Usuals$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["GetColorFromLetters"])(tag.name)
-                                                        },
+                                                children: [
+                                                    row.customerTags?.slice(0, 2).map((tag, key)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mui$2f$material$2f$Chip$2f$Chip$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
+                                                            label: tag.name,
+                                                            color: "primary",
+                                                            style: {
+                                                                color: (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$Utils$2f$Usuals$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["GetColorFromLetters"])(tag.name)
+                                                            },
+                                                            variant: "outlined"
+                                                        }, key, false, {
+                                                            fileName: "[project]/src/app/Customers/page.tsx",
+                                                            lineNumber: 405,
+                                                            columnNumber: 25
+                                                        }, this)),
+                                                    row.customerTags?.length > 2 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mui$2f$material$2f$Chip$2f$Chip$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
+                                                        label: `+${row.customerTags.length - 2}`,
                                                         variant: "outlined"
-                                                    }, key, false, {
+                                                    }, void 0, false, {
                                                         fileName: "[project]/src/app/Customers/page.tsx",
-                                                        lineNumber: 370,
-                                                        columnNumber: 25
-                                                    }, this))
-                                            }, void 0, false, {
+                                                        lineNumber: 410,
+                                                        columnNumber: 23
+                                                    }, this)
+                                                ]
+                                            }, void 0, true, {
                                                 fileName: "[project]/src/app/Customers/page.tsx",
-                                                lineNumber: 367,
+                                                lineNumber: 402,
                                                 columnNumber: 19
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$table$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["TableCell"], {
@@ -1529,7 +1558,7 @@ const page = ()=>{
                                                             children: "Edit"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/Customers/page.tsx",
-                                                            lineNumber: 377,
+                                                            lineNumber: 416,
                                                             columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$Dialog$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
@@ -1543,42 +1572,42 @@ const page = ()=>{
                                                                 children: "Delete"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/app/Customers/page.tsx",
-                                                                lineNumber: 391,
+                                                                lineNumber: 430,
                                                                 columnNumber: 27
                                                             }, void 0),
                                                             onContinue: ()=>handleDelete(row.id),
                                                             onCancel: ()=>{}
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/app/Customers/page.tsx",
-                                                            lineNumber: 385,
+                                                            lineNumber: 424,
                                                             columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/app/Customers/page.tsx",
-                                                    lineNumber: 376,
+                                                    lineNumber: 415,
                                                     columnNumber: 21
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/Customers/page.tsx",
-                                                lineNumber: 375,
+                                                lineNumber: 414,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, row.id, true, {
                                         fileName: "[project]/src/app/Customers/page.tsx",
-                                        lineNumber: 359,
+                                        lineNumber: 395,
                                         columnNumber: 17
                                     }, this))
                             }, void 0, false, {
                                 fileName: "[project]/src/app/Customers/page.tsx",
-                                lineNumber: 357,
+                                lineNumber: 393,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/app/Customers/page.tsx",
-                        lineNumber: 342,
+                        lineNumber: 379,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$mui$2f$material$2f$Pagination$2f$Pagination$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
@@ -1592,30 +1621,30 @@ const page = ()=>{
                         }
                     }, void 0, false, {
                         fileName: "[project]/src/app/Customers/page.tsx",
-                        lineNumber: 404,
+                        lineNumber: 443,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/app/Customers/page.tsx",
-                lineNumber: 341,
+                lineNumber: 378,
                 columnNumber: 9
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$Edit$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
                 open: edit,
                 Heading: editRow ? "UPDATE CUSTOMER" : "ADD CUSTOMER",
-                onSubmit: editRow ? editCustomer : handleSave,
+                onSubmit: editRow ? handleUpdate : handleSave,
                 toggleDrawer: toggleEditDrawer,
                 Fields: Fields
             }, void 0, false, {
                 fileName: "[project]/src/app/Customers/page.tsx",
-                lineNumber: 418,
+                lineNumber: 457,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/src/app/Customers/page.tsx",
-        lineNumber: 287,
+        lineNumber: 324,
         columnNumber: 5
     }, this);
 };

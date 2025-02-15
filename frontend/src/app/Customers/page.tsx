@@ -47,6 +47,7 @@ const page = () => {
     deleteCustomer,
     createCustomer,
     searchCustomerTags,
+    updateCustomer,
     isLoading,
     customers,
     pagination
@@ -214,13 +215,6 @@ const page = () => {
       
   }
 
-  const editCustomer = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (editRow) {
-    }
-  };
-
   const handleDelete = async (id: string) => {
     await deleteCustomer(
       id,
@@ -278,6 +272,49 @@ const page = () => {
           title: "System Customer Management",
           variant: "destructive",
           description: "An error occured . Customer couldnt be added.",
+        });
+      }
+    );
+  };
+
+  const handleUpdate = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    setsubmitting(true);
+    const formData = new FormData(event.target as HTMLFormElement);
+
+    const data = {
+      name: formData.get("name") as string,
+      customerType: formData.get("customerType") as string,
+      address: formData.get("address") as string,
+      phone: formData.get("phone") as string,
+      email: formData.get("email") as string,
+      accountNumber: formData.get("accountNumber") as string,
+      moreInfo: formData.get("moreInfo") as string,
+    };
+
+    if (editRow == null) {
+      return ;
+    }
+
+    await updateCustomer(
+      {...editRow , ...data},
+      () => {
+        setsubmitting(false);
+        toast({
+          title: "System Customer Management",
+          description: `${editRow?.name} successfully updated`,
+          className: "bg-primary text-black dark:bg-gray-700 dark:text-white",
+        });
+        fetchCustomers(null, page);
+        setedit(false);
+      },
+      () => {
+        setsubmitting(false);
+        toast({
+          title: "System Customer Management",
+          variant: "destructive",
+          description: "An error occured . Customer couldnt be updated.",
         });
       }
     );
@@ -343,7 +380,6 @@ const page = () => {
             {/* <TableCaption>A list of users and their details</TableCaption> */}
             <TableHeader>
               <TableRow>
-                <TableHead>ID</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>CustomerType</TableHead>
                 <TableHead>Phone</TableHead>
@@ -357,7 +393,6 @@ const page = () => {
             <TableBody>
               {customers?.map((row) => (
                 <TableRow key={row.id}>
-                  <TableCell>{`${row.id.slice(0, 6)}...`}</TableCell>
                   <TableCell>{row.name}</TableCell>
                   <TableCell>{row.customerType}</TableCell>
                   <TableCell>{row.phone}</TableCell>
@@ -366,10 +401,14 @@ const page = () => {
                   <TableCell>{toDDMMYYYY(row.addedAt)}</TableCell>
                   <Stack direction="row" spacing={1} sx={{height : 50 , alignItems : 'center'}}>
                   {
-                    row.customerTags?.map((tag , key) => (
+                    row.customerTags?.slice(0,2).map((tag , key) => (
                         <Chip key={key} label={tag.name} color={"primary"} style={{color : GetColorFromLetters(tag.name)}} variant="outlined" />
                     ))
                   }
+
+                  {row.customerTags?.length > 2 && (
+                      <Chip label={`+${row.customerTags.length - 2}`} variant="outlined" />
+                    )}
                   </Stack>
                     
                   <TableCell>
@@ -418,7 +457,7 @@ const page = () => {
       <Edit
         open={edit}
         Heading={editRow ? "UPDATE CUSTOMER" : "ADD CUSTOMER"}
-        onSubmit={editRow ? editCustomer : handleSave}
+        onSubmit={editRow ? handleUpdate : handleSave}
         toggleDrawer={toggleEditDrawer}
         Fields={Fields}
       />
