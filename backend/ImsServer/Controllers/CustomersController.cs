@@ -195,9 +195,143 @@ namespace ImsServer.Controllers
             
         }
 
+        [HttpPut("{id}")]
+        public async Task<IActionResult> PutCustomer(Guid id, CustomerDto customer)
+        {
+            if (id != customer.Id)
+            {
+                return BadRequest("The entities don't match");
+            }
+
+            var db_customer = await _dbcontext.Customers
+                                            .Include(c => c.CustomerTags) // Ensure existing tags are loaded
+                                            .FirstOrDefaultAsync(c => c.Id == id);
+
+            if (db_customer == null)
+            {
+                return NotFound("The customer doesn't exist in the database");
+            }
+
+            // Update customer details
+            db_customer.Name = customer.Name;
+            db_customer.CustomerType = customer.CustomerType;
+            db_customer.Address = customer.Address;
+            db_customer.Phone = customer.Phone;
+            db_customer.Email = customer.Email;
+            db_customer.AccountNumber = customer.AccountNumber;
+            db_customer.MoreInfo = customer.MoreInfo;
+
+            // Handle customer tags
+            if (customer.CustomerTags == null || !customer.CustomerTags.Any())
+            {
+                db_customer.CustomerTags.Clear();
+            }
+            else
+            {
+                var new_tags = new List<CustomerTag>();
+
+                foreach (var tagDto in customer.CustomerTags)
+                {
+                    var existingTag = await _dbcontext.CustomerTags
+                                                    .FirstOrDefaultAsync(t => t.Name == tagDto.Name);
+
+                    if (existingTag != null)
+                    {
+                        new_tags.Add(existingTag);
+                        
+                    }
+                    else
+                    {
+                        // Create new tag
+                        var newTag = _mapper.Map<CustomerTag>(tagDto);
+                        _dbcontext.CustomerTags.Add(newTag);
+                        new_tags.Add(newTag);
+                    }
+                }
+
+                // Update customer tags (clear old ones and add new ones)
+                db_customer.CustomerTags.Clear();
+                foreach (var tag in new_tags)
+                {
+                    db_customer.CustomerTags.Add(tag);
+                }
+            }
+
+            try
+            {
+                await _dbcontext.SaveChangesAsync();
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred: {ex.Message}");
+            }
+        }
 
 
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteCustomer(Guid id)
+        {
+            var customer = await _dbcontext.Customers.FindAsync(id);
 
+            if (customer == null)
+            {
+                return NotFound();
+            }
+
+            _dbcontext.SoftDelete(customer);
+            await _dbcontext.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        [HttpGet("DeletedCustomers")]
+        public async Task<ActionResult<IEnumerable<CustomerDto>>> GetDeletedCustomers(
+            [FromQuery]string? keywords = null,
+            [FromQuery]int page = 1,
+            [FromQuery]int pageSize = 10
+        )
+        {
+            if (_dbcontext.Customers == null)
+            {
+                return NotFound();
+            }
+
+            var query = _dbcontext.Customers
+                                .IgnoreQueryFilters()
+                                .Where(u => u.DeletedAt != null)
+                                .Include(c => c.CustomerTags)
+                                .AsQueryable();
+
+            if (keywords != null){
+                
+                query = query.Where(c => c.Name.Contains(keywords));
+
+            }
+
+            var pagedCustomers = await Pagination.GetPagedAsync(query , page , pageSize);
+
+            return Ok(new {
+                Pagination = pagedCustomers.Pagination,
+                Customers = _mapper.Map<List<CustomerDto>>(pagedCustomers.Items),
+            });
+        }
+
+
+        [HttpPut("Restore/{id}")]
+        public async Task<IActionResult> RestoreCustomer(Guid id)
+        {
+            var customer = await _dbcontext.Customers.IgnoreQueryFilters().Where(u => u.DeletedAt != null && u.Id == id).FirstOrDefaultAsync();
+
+            if (customer == null){
+                return NotFound();
+            }
+
+            _dbcontext.Restore(customer);
+            await _dbcontext.SaveChangesAsync();
+
+            return Ok();
+        }
 
 
     }
