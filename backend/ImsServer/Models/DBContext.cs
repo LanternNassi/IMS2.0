@@ -2,6 +2,7 @@ using ImsServer.Models.UserX;
 using ImsServer.Models.CategoryX;
 using ImsServer.Models.CustomerX;
 using ImsServer.Models.StoreX;
+using ImsServer.Models.SupplierX;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography.X509Certificates;
 
@@ -20,7 +21,9 @@ namespace ImsServer.Models
 
         public DbSet<Customer> Customers { get; set; }
         public DbSet<CustomerTag> CustomerTags { get; set; }
-
+        
+        public DbSet<Supplier> Suppliers { get; set;}
+        public DbSet<SupplierTag> SupplierTags { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -32,7 +35,8 @@ namespace ImsServer.Models
             modelBuilder.Entity<Customer>().HasQueryFilter(c => !c.DeletedAt.HasValue);
             modelBuilder.Entity<CustomerTag>().HasQueryFilter(c => !c.DeletedAt.HasValue);
 
-            
+            modelBuilder.Entity<Supplier>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+            modelBuilder.Entity<SupplierTag>().HasQueryFilter(c => !c.DeletedAt.HasValue);
 
             base.OnModelCreating(modelBuilder);
 
@@ -59,6 +63,9 @@ namespace ImsServer.Models
 
                     || e.Entity is Customer
                     || e.Entity is CustomerTag
+
+                    || e.Entity is Supplier
+                    || e.Entity is SupplierTag
                     
                     )
                 .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);
