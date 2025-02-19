@@ -18,6 +18,7 @@ export interface supplier extends defaultProperties {
     address: string;
     tin: string;
     status: string;
+    moreInfo: string;
     supplierTags : supplierTag[];
 }
 
@@ -29,6 +30,7 @@ export type supplierDto = {
     address: string;
     tin: string;
     status: string;
+    moreInfo: string;
     supplierTags : supplierTag[];
 }
 

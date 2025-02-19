@@ -219,6 +219,7 @@ namespace ImsServer.Controllers
             db_supplier.PhoneNumber = supplier.PhoneNumber;
             db_supplier.Address = supplier.Address;
             db_supplier.TIN = supplier.TIN;
+            db_supplier.MoreInfo = supplier.MoreInfo;
             db_supplier.Status = supplier.Status;
 
             // Handle supplier tags

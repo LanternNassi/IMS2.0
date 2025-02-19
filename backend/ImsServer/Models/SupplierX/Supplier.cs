@@ -11,6 +11,7 @@ namespace ImsServer.Models.SupplierX
         public string PhoneNumber { get; set; }
         public string Address { get; set; }
         public string? TIN { get; set; }
+        public string? MoreInfo { get; set; }
         public string Status { get; set; } //Active , Disabled
 
         public virtual ICollection<SupplierTag> SupplierTags {get; set;} = new List<SupplierTag>();
@@ -48,6 +49,7 @@ namespace ImsServer.Models.SupplierX
         public string PhoneNumber { get; set; }
         public string Address { get; set; }
         public string? TIN { get; set; }
+        public string? MoreInfo { get; set; }
         public string Status { get; set; } //Active , Disabled
 
     }
@@ -61,6 +63,7 @@ namespace ImsServer.Models.SupplierX
         public string PhoneNumber { get; set; }
         public string Address { get; set; }
         public string? TIN { get; set; }
+        public string? MoreInfo { get; set; }
         public string Status { get; set; } //Active , Disabled
 
         public List<SimpleSupplierTagDto>? SupplierTags {get; set;}
