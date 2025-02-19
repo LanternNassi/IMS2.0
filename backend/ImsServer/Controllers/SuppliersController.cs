@@ -204,9 +204,9 @@ namespace ImsServer.Controllers
             }
 
             var db_supplier = await _dbcontext.Suppliers
-                                            .Include(c => c.SupplierTags) // Ensure existing tags are loaded
+                                            .Include(c => c.SupplierTags)
                                             .FirstOrDefaultAsync(c => c.Id == id);
-
+            
             if (db_supplier == null)
             {
                 return NotFound("The supplier doesn't exist in the database");
