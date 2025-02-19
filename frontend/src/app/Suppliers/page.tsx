@@ -8,9 +8,9 @@ import React, { useState, useEffect, ReactNode } from "react";
 // } from "@/store/useCustomerStore";
 
 import {
-    useSupplierStore,
-    supplier,
-    supplierDto,
+  useSupplierStore,
+  supplier,
+  supplierDto,
 } from "@/store/useSupplierStore";
 import { toDDMMYYYY } from "@/Utils/ConvertDateTime";
 import { Button } from "@/components/ui/button";
@@ -26,23 +26,22 @@ import {
 import LoadingButton from "@mui/lab/LoadingButton";
 import SaveIcon from "@mui/icons-material/Save";
 import { TextField } from "@mui/material";
-import Pagination from '@mui/material/Pagination';
+import Pagination from "@mui/material/Pagination";
 import Edit from "@/components/Edit";
 import CircularProgress from "@mui/material/CircularProgress";
 import { useToast } from "@/hooks/use-toast";
 import Dialog from "@/components/Dialog";
 import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
-import {GetColorFromLetters} from "@/Utils/Usuals"; 
-import ChipInput , {Tag} from "@/components/ChipInput";
-import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
-import InputAdornment from '@mui/material/InputAdornment';
-
+import { GetColorFromLetters } from "@/Utils/Usuals";
+import ChipInput, { Tag } from "@/components/ChipInput";
+import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
+import InputAdornment from "@mui/material/InputAdornment";
 
 const page = () => {
   const [editRow, setEditRow] = useState<supplier | null>(null);
   const [edit, setedit] = React.useState<boolean>(false);
-  const [AddTags, setAddTags] = React.useState<Tag[]>([])
+  const [AddTags, setAddTags] = React.useState<Tag[]>([]);
   const [page] = React.useState<number>(1);
 
   const { toast } = useToast();
@@ -55,7 +54,7 @@ const page = () => {
     updateSupplier,
     isLoading,
     suppliers,
-    pagination
+    pagination,
   } = useSupplierStore();
   const [submitting, setsubmitting] = useState<boolean>(false);
 
@@ -63,19 +62,17 @@ const page = () => {
     fetchSuppliers(null, page);
   }, []);
 
-
   const toggleEditDrawer = (newOpen: boolean) => {
     setedit(newOpen);
   };
 
   const onTagsChange = (tags: Tag[]) => {
-    if (editRow != null){
-        setEditRow({...editRow , supplierTags : tags})
-    }else{
-        setAddTags(tags)
+    if (editRow != null) {
+      setEditRow({ ...editRow, supplierTags: tags });
+    } else {
+      setAddTags(tags);
     }
-  }
-
+  };
 
   const Fields = (): ReactNode => {
     return (
@@ -170,9 +167,9 @@ const page = () => {
           margin="normal"
         />
 
-        <ChipInput 
-          styles = {{width : "25vw"}}
-          onTagsChange={onTagsChange} 
+        <ChipInput
+          styles={{ width: "25vw" }}
+          onTagsChange={onTagsChange}
           searchTags={searchSupplierTags}
           label="Attach Tags eg. Urgent(This is an urgent supplier)"
           tags={editRow ? editRow.supplierTags : []}
@@ -200,26 +197,21 @@ const page = () => {
   };
 
   const exportToExcel = async () => {
-
     // @ts-expect-error : window.electron is resolved at build time
     if (window.electron) {
-
-      const supplierExcelSheet = suppliers ;
+      const supplierExcelSheet = suppliers;
 
       // @ts-expect-error : window.electron is resolved at build time
-      window.electron.exportExcel(supplierExcelSheet , 'Suppliers');
+      window.electron.exportExcel(supplierExcelSheet, "Suppliers");
 
       toast({
         title: "System Supplier Management",
         description: "Suppliers successfully exported to Excel.",
         className: "bg-primary text-black dark:bg-gray-700 dark:text-white",
       });
-
     } else {
-
     }
-      
-  }
+  };
 
   const handleDelete = async (id: string) => {
     await deleteSupplier(
@@ -291,22 +283,22 @@ const page = () => {
     const formData = new FormData(event.target as HTMLFormElement);
 
     const data = {
-        companyName: formData.get("companyName") as string,
-        contactPerson: formData.get("contactPerson") as string,
-        address: formData.get("address") as string,
-        phoneNumber: formData.get("phoneNumber") as string,
-        emailAddress: formData.get("emailAddress") as string,
-        tin: formData.get("tin") as string,
-        status: formData.get("status") as string,
-        moreInfo: formData.get("moreInfo") as string,
+      companyName: formData.get("companyName") as string,
+      contactPerson: formData.get("contactPerson") as string,
+      address: formData.get("address") as string,
+      phoneNumber: formData.get("phoneNumber") as string,
+      emailAddress: formData.get("emailAddress") as string,
+      tin: formData.get("tin") as string,
+      status: formData.get("status") as string,
+      moreInfo: formData.get("moreInfo") as string,
     };
 
     if (editRow == null) {
-      return ;
+      return;
     }
 
     await updateSupplier(
-      {...editRow , ...data},
+      { ...editRow, ...data },
       () => {
         setsubmitting(false);
         toast({
@@ -332,28 +324,31 @@ const page = () => {
     <div className="p-6 h-full">
       <h2 className="text-lg font-bold mb-4">Manage Business Suppliers</h2>
       <div className="flex justify-between items-center mb-4">
-
         <TextField
           id="outlined-select-type"
           name="searchsupplier"
           label="Search Suppliers"
           sx={{ width: "25vw" }}
           onChange={async (event) => {
-            if (event.target.value.trim() != ""){
-                if (event.target.value.trim().length >= 3 ){
-                  await fetchSuppliers(event.target.value.trim() , page != 1 ? 1 : page )
-                }
-            }else{
-              await fetchSuppliers(null , 1)
+            if (event.target.value.trim() != "") {
+              if (event.target.value.trim().length >= 3) {
+                await fetchSuppliers(
+                  event.target.value.trim(),
+                  page != 1 ? 1 : page
+                );
+              }
+            } else {
+              await fetchSuppliers(null, 1);
             }
           }}
           slotProps={{
             input: {
-              startAdornment: 
-              <InputAdornment position="start">
-                  <SearchOutlinedIcon/>
-              </InputAdornment>
-            }
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchOutlinedIcon />
+                </InputAdornment>
+              ),
+            },
           }}
           margin="normal"
         />
@@ -371,7 +366,12 @@ const page = () => {
           <Button className="bg-blue-600 hover:bg-blue-700">
             <i className="fas fa-print mr-2"></i>Print
           </Button>
-          <Button onClick={() => {exportToExcel()}} className="bg-blue-600 hover:bg-blue-700">
+          <Button
+            onClick={() => {
+              exportToExcel();
+            }}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
             <i className="fas fa-file-excel mr-2"></i>Export To Excel
           </Button>
         </div>
@@ -400,31 +400,51 @@ const page = () => {
             </TableHeader>
             <TableBody>
               {suppliers?.map((row) => (
-                <TableRow key={row.id}>
+                <TableRow
+                  className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+                  onClick={() => {
+                    alert(row.id);
+                  }}
+                  key={row.id}
+                >
                   <TableCell>{row.companyName}</TableCell>
                   <TableCell>{row.contactPerson}</TableCell>
                   <TableCell>{row.phoneNumber}</TableCell>
                   <TableCell>{row.emailAddress}</TableCell>
                   <TableCell>{row.address}</TableCell>
                   <TableCell>{toDDMMYYYY(row.addedAt)}</TableCell>
-                  <Stack direction="row" spacing={1} sx={{height : 50 , alignItems : 'center'}}>
-                  {
-                    row.supplierTags?.slice(0,2).map((tag , key) => (
-                        <Chip key={key} label={tag.name} color={"primary"} style={{color : GetColorFromLetters(tag.name)}} variant="outlined" />
-                    ))
-                  }
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    sx={{ height: 50, alignItems: "center" }}
+                  >
+                    {row.supplierTags?.slice(0, 2).map((tag, key) => (
+                      <Chip
+                        key={key}
+                        label={tag.name}
+                        color={"primary"}
+                        style={{ color: GetColorFromLetters(tag.name) }}
+                        variant="outlined"
+                      />
+                    ))}
 
-                  {row.supplierTags?.length > 2 && (
-                      <Chip label={`+${row.supplierTags.length - 2}`} variant="outlined" />
+                    {row.supplierTags?.length > 2 && (
+                      <Chip
+                        label={`+${row.supplierTags.length - 2}`}
+                        variant="outlined"
+                      />
                     )}
                   </Stack>
-                    
+
                   <TableCell>
                     <div className="flex space-x-2">
                       <Button
                         size="sm"
                         variant={"secondary"}
-                        onClick={() => handleEdit(row.id)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleEdit(row.id);
+                        }}
                       >
                         Edit
                       </Button>
@@ -435,7 +455,13 @@ const page = () => {
                         continueButtonText="Delete"
                         cancelButtonText="Cancel"
                         triggerComponent={
-                          <Button size="sm" variant="destructive">
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                            }}
+                          >
                             Delete
                           </Button>
                         }
@@ -448,18 +474,17 @@ const page = () => {
               ))}
             </TableBody>
           </Table>
-          <Pagination 
+          <Pagination
             count={pagination?.pages}
             variant="outlined"
             color="secondary"
             hideNextButton={pagination?.next == null}
             hidePrevButton={pagination?.previous == null}
-            onChange={async (event, page ) => {
-                await fetchSuppliers(null , page)
+            onChange={async (event, page) => {
+              await fetchSuppliers(null, page);
             }}
           />
         </div>
-
       )}
 
       <Edit
