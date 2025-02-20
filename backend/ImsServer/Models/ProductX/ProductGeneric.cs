@@ -22,4 +22,24 @@ namespace ImsServer.Models.ProductX
 
     }
 
+    public class ProductGenericDto : GeneralFields
+    {
+        public Guid Id { get; set; }
+        public Guid ProductId { get; set; }
+        public DateTime ExpiryDate { get; set; }
+        public DateTime ManufactureDate { get; set; }
+        public string? BatchNumber { get; set; }
+        public Guid SupplierId { get; set; }  
+    }
+
+    public class SimpleProductGenericDto
+    {
+        public Guid Id { get; set; }
+        public Guid ProductId { get; set; }
+        public DateTime ExpiryDate { get; set; }
+        public DateTime ManufactureDate { get; set; }
+        public string? BatchNumber { get; set; }
+        public Guid SupplierId { get; set; } 
+    }
+
 }
