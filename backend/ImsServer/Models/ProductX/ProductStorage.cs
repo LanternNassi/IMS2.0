@@ -20,4 +20,22 @@ namespace ImsServer.Models.ProductX
 
     }
 
+    public class ProductStorageDto : GeneralFields
+    {
+        public Guid Id { get; set; }
+        public Guid ProductGenericId { get; set; }
+        public decimal Quantity { get; set; }
+        public Guid StorageId { get; set; }
+        public decimal ReorderLevel { get; set; }
+    }
+
+    public class SimpleProductStorageDto
+    {
+        public Guid Id { get; set; }
+        public Guid ProductGenericId { get; set; }
+        public decimal Quantity { get; set; }
+        public Guid StorageId { get; set; }
+        public decimal ReorderLevel { get; set; }
+    }
+
 }

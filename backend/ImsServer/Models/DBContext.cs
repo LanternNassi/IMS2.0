@@ -3,6 +3,7 @@ using ImsServer.Models.CategoryX;
 using ImsServer.Models.CustomerX;
 using ImsServer.Models.StoreX;
 using ImsServer.Models.SupplierX;
+using ImsServer.Models.ProductX;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography.X509Certificates;
 
@@ -25,6 +26,11 @@ namespace ImsServer.Models
         public DbSet<Supplier> Suppliers { get; set;}
         public DbSet<SupplierTag> SupplierTags { get; set; }
 
+        public DbSet<Product> Products { get; set;}
+        public DbSet<ProductGeneric> ProductGenerics { get; set; }
+        public DbSet<ProductVariation> ProductVariations { get; set; }
+        public DbSet<ProductStorage> ProductStorages { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             
@@ -37,6 +43,12 @@ namespace ImsServer.Models
 
             modelBuilder.Entity<Supplier>().HasQueryFilter(c => !c.DeletedAt.HasValue);
             modelBuilder.Entity<SupplierTag>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+
+            modelBuilder.Entity<Product>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+            modelBuilder.Entity<ProductGeneric>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+            modelBuilder.Entity<ProductVariation>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+            modelBuilder.Entity<ProductStorage>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+
 
             base.OnModelCreating(modelBuilder);
 
@@ -66,7 +78,12 @@ namespace ImsServer.Models
 
                     || e.Entity is Supplier
                     || e.Entity is SupplierTag
-                    
+
+                    || e.Entity is Product
+                    || e.Entity is ProductGeneric
+                    || e.Entity is ProductVariation
+                    || e.Entity is ProductStorage
+
                     )
                 .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);
 

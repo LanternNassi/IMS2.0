@@ -13,6 +13,7 @@ namespace ImsServer.Models.ProductX
         public decimal WholeSalePrice { get; set; }
         public decimal? Discount { get; set; }
         public bool IsActive { get; set; }
+        public bool IsMain { get; set; }
         
         [ForeignKey("ProductId")]
         public virtual Product Product { get; set; }
@@ -29,6 +30,7 @@ namespace ImsServer.Models.ProductX
         public decimal WholeSalePrice { get; set; }
         public decimal? Discount { get; set; }
         public bool IsActive { get; set; }
+        public bool IsMain { get; set; }
     }
 
     public class SimpleProductVariationDto
@@ -41,5 +43,6 @@ namespace ImsServer.Models.ProductX
         public decimal WholeSalePrice { get; set; }
         public decimal? Discount { get; set; }
         public bool IsActive { get; set; }
+        public bool IsMain { get; set; }
     }
 }

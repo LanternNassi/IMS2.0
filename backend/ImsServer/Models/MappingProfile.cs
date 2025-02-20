@@ -4,6 +4,7 @@ using ImsServer.Models.StoreX;
 using ImsServer.Models.CategoryX;
 using ImsServer.Models.CustomerX;
 using ImsServer.Models.SupplierX;
+using ImsServer.Models.ProductX;
 
 namespace ImsServer.Models{
 
@@ -33,6 +34,19 @@ namespace ImsServer.Models{
 
             CreateMap<SupplierTag, SupplierTagDto>().ReverseMap();
             CreateMap<SupplierTag, SimpleSupplierTagDto>().ReverseMap();
+
+            CreateMap<Product, SimpleProductDto>().ReverseMap();
+            CreateMap<Product, ProductDto>().ReverseMap();
+
+            CreateMap<ProductVariation, SimpleProductVariationDto>().ReverseMap();
+            CreateMap<ProductVariation, ProductVariationDto>().ReverseMap();
+
+            CreateMap<ProductGeneric, SimpleProductGenericDto>().ReverseMap();
+            CreateMap<ProductGeneric, ProductGenericDto>().ReverseMap();
+
+            CreateMap<ProductStorage, SimpleProductStorageDto>().ReverseMap();
+            CreateMap<ProductStorage, ProductStorageDto>().ReverseMap();
+            
         }
     }
 

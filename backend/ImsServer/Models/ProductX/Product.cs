@@ -10,7 +10,7 @@ namespace ImsServer.Models.ProductX
         public string? Description { get; set; }
         public decimal BaseCostPrice { get; set; }
         public decimal BaseRetailPrice { get; set; }
-        public decimal BaseWholePrice { get; set; }
+        public decimal BaseWholeSalePrice { get; set; }
         public decimal? BaseDiscount { get; set; }
         public decimal StackSize { get; set; }
         public string BasicUnitofMeasure { get; set; }
@@ -25,7 +25,7 @@ namespace ImsServer.Models.ProductX
     }
 
     
-    public class SimpleProductDto : GeneralFields
+    public class SimpleProductDto
     {
         public Guid Id { get; set; }
         public string ProductName { get; set; }
@@ -33,7 +33,7 @@ namespace ImsServer.Models.ProductX
         public string? Description { get; set; }
         public decimal BaseCostPrice { get; set; }
         public decimal BaseRetailPrice { get; set; }
-        public decimal BaseWholePrice { get; set; }
+        public decimal BaseWholeSalePrice { get; set; }
         public decimal? BaseDiscount { get; set; }
         public decimal StackSize { get; set; }
         public string BasicUnitofMeasure { get; set; }
@@ -43,8 +43,23 @@ namespace ImsServer.Models.ProductX
         public bool IsActive { get; set; }
     }
 
-    public class ProductDto : SimpleProductDto
+    public class ProductDto : GeneralFields
     {
+        public Guid Id { get; set; }
+        public string ProductName { get; set; }
+        public string? BarCode { get; set; }
+        public string? Description { get; set; }
+        public decimal BaseCostPrice { get; set; }
+        public decimal BaseRetailPrice { get; set; }
+        public decimal BaseWholeSalePrice { get; set; }
+        public decimal? BaseDiscount { get; set; }
+        public decimal StackSize { get; set; }
+        public string BasicUnitofMeasure { get; set; }
+        public decimal ReorderLevel { get; set; }
+        public bool IsTaxable { get; set; }
+        public decimal? TaxRate { get; set;}
+        public bool IsActive { get; set; }
+
         public List<ProductVariationDto>? ProductVariations { get; set; }
     }
 
