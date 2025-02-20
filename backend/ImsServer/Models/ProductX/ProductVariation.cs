@@ -12,6 +12,7 @@ namespace ImsServer.Models.ProductX
         public decimal RetailPrice { get; set; }
         public decimal WholeSalePrice { get; set; }
         public decimal? Discount { get; set; }
+        public string? UnitofMeasure { get; set; }
         public bool IsActive { get; set; }
         public bool IsMain { get; set; }
         
@@ -29,6 +30,7 @@ namespace ImsServer.Models.ProductX
         public decimal RetailPrice { get; set; }
         public decimal WholeSalePrice { get; set; }
         public decimal? Discount { get; set; }
+        public string? UnitofMeasure { get; set; }
         public bool IsActive { get; set; }
         public bool IsMain { get; set; }
     }
@@ -42,6 +44,7 @@ namespace ImsServer.Models.ProductX
         public decimal RetailPrice { get; set; }
         public decimal WholeSalePrice { get; set; }
         public decimal? Discount { get; set; }
+        public string? UnitofMeasure { get; set; }
         public bool IsActive { get; set; }
         public bool IsMain { get; set; }
     }

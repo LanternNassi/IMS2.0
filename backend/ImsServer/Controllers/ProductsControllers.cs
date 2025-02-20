@@ -113,6 +113,7 @@ namespace ImsServer.Controllers
                     RetailPrice = product_instance.BaseRetailPrice,
                     WholeSalePrice = product_instance.BaseWholeSalePrice,
                     Discount = product_instance.BaseDiscount,
+                    UnitofMeasure = product_instance.BasicUnitofMeasure,
                     IsActive = product_instance.IsActive,
                     IsMain = true
                 };
