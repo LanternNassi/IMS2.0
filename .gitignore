@@ -11,12 +11,14 @@
 !.yarn/versions
 
 /frontend/node_modules
+/electron/node_modules
 
 # testing
 /coverage
 
 # next.js
 /.next/
+/frontend/.next/
 /out/
 
 # production
@@ -25,6 +27,13 @@
 # misc
 .DS_Store
 *.pem
+
+# .NET / C# build artifacts
+/backend/ImsServer/obj
+/backend/ImsServer/bin
+**/obj/
+**/bin/Debug/
+**/bin/Release/
 
 # debug
 npm-debug.log*
@@ -41,3 +50,5 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+
