@@ -33,7 +33,12 @@ const SideNav = () => {
                 <h1 className="text-lg font-bold">User</h1>
                 <p className="text-sm">Developed by Nessim</p>
             </div>
-            <nav className="flex-1 overflow-y-auto">
+            <nav 
+                className="flex-1 overflow-y-auto h-64 p-4 space-y-2 rounded-lg shadow 
+                scrollbar-thin dark:scrollbar-thumb-gray-800 dark:scrollbar-track-gray-700 
+                scrollbar-thumb-rounded-md dark:hover:scrollbar-thumb-gray-400 
+                focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
                 <ul className="space-y-1 p-2">
                     {navItems.map((item, index) => (
                         <li key={index}>
