@@ -44,9 +44,10 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.UseHttpsRedirection();
 }
 
-app.UseHttpsRedirection();
+// Don't use HTTPS redirect in production for Electron app
 
 app.UseAuthorization();
 

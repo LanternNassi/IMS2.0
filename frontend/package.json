@@ -8,6 +8,7 @@
     "electron-dev": "wait-on tcp:3000 tcp:5184 && cd .. && cd electron && electron .",
     "start": "next start",
     "build": "next build",
+    "export": "echo Export handled by build with output: export config",
     "dev:all": "concurrently \"npm run dev:backend\" \"npm run dev\" \"npm run electron-dev\""
   },
   "dependencies": {

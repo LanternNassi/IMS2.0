@@ -38,7 +38,7 @@ const page = () => {
 
   useEffect(() => {
     fetchCategories(null);
-  }, []);
+  }, [fetchCategories]);
 
   const toggleEditDrawer = (newOpen: boolean) => {
     setedit(newOpen);

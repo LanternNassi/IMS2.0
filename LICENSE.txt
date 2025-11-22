@@ -1,0 +1,33 @@
+END-USER LICENSE AGREEMENT (EULA)
+
+IMS Desktop - Inventory Management System
+
+Copyright (c) 2025. All rights reserved.
+
+This End-User License Agreement ("EULA") is a legal agreement between you (either an individual or a single entity) and the software developer for the IMS Desktop application ("Software").
+
+By installing, copying, or otherwise using the Software, you agree to be bound by the terms of this EULA.
+
+1. GRANT OF LICENSE
+   This EULA grants you the following rights:
+   - Installation and Use: You may install and use the Software on a single computer.
+   - Backup Copy: You may make one backup copy of the Software for archival purposes.
+
+2. RESTRICTIONS
+   - You may not reverse engineer, decompile, or disassemble the Software.
+   - You may not rent, lease, or lend the Software.
+   - You may not distribute copies of the Software to third parties.
+
+3. TERMINATION
+   This EULA is effective until terminated. Your rights under this EULA will terminate automatically without notice if you fail to comply with any term(s) of this EULA.
+
+4. COPYRIGHT
+   The Software is protected by copyright laws and international copyright treaties, as well as other intellectual property laws and treaties.
+
+5. LIMITED WARRANTY
+   THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED.
+
+6. LIMITATION OF LIABILITY
+   IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY DAMAGES WHATSOEVER.
+
+If you have any questions concerning this EULA, please contact support.

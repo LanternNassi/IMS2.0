@@ -51,4 +51,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Build output
+dist/
+release/
+
+# Electron
+out/
+
 

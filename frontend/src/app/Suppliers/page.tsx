@@ -60,7 +60,7 @@ const page = () => {
 
   useEffect(() => {
     fetchSuppliers(null, page);
-  }, []);
+  }, [fetchSuppliers, page]);
 
   const toggleEditDrawer = (newOpen: boolean) => {
     setedit(newOpen);

@@ -32,7 +32,7 @@ const page = () => {
 
   useEffect(() => {
     fetchUsers(null);
-  } , []);
+  }, [fetchUsers]);
 
   const toggleEditDrawer = (newOpen: boolean) => {
     setedit(newOpen);

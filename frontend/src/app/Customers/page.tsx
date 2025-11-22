@@ -56,7 +56,7 @@ const page = () => {
 
   useEffect(() => {
     fetchCustomers(null, page);
-  }, []);
+  }, [fetchCustomers, page]);
 
   interface CustomersExcel extends defaultProperties {
     id: string;
