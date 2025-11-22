@@ -8,6 +8,7 @@ namespace ImsServer.Models.ProductX
     {
         public Guid Id { get; set; }
         public Guid ProductGenericId { get; set; }
+        public Guid ProductVariationId { get; set; }
         public decimal Quantity { get; set; }
         public Guid StorageId { get; set; }
         public decimal ReorderLevel { get; set; }
@@ -18,6 +19,9 @@ namespace ImsServer.Models.ProductX
         [ForeignKey("StorageId")]
         public virtual Store Store { get; set; }
 
+        [ForeignKey("ProductVariationId")]
+        public virtual ProductVariation ProductVariation { get; set; }
+
     }
 
     public class ProductStorageDto : GeneralFields
@@ -27,12 +31,14 @@ namespace ImsServer.Models.ProductX
         public decimal Quantity { get; set; }
         public Guid StorageId { get; set; }
         public decimal ReorderLevel { get; set; }
+        public Guid ProductVariationId { get; set; }
     }
 
     public class SimpleProductStorageDto
     {
         public Guid Id { get; set; }
         public Guid ProductGenericId { get; set; }
+        public Guid ProductVariationId { get; set; }
         public decimal Quantity { get; set; }
         public Guid StorageId { get; set; }
         public decimal ReorderLevel { get; set; }
