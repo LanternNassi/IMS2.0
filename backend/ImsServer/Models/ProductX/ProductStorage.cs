@@ -13,13 +13,8 @@ namespace ImsServer.Models.ProductX
         public Guid StorageId { get; set; }
         public decimal ReorderLevel { get; set; }
 
-        [ForeignKey("ProductGenericId")]
         public virtual ProductGeneric ProductGeneric { get; set; }
-
-        [ForeignKey("StorageId")]
         public virtual Store Store { get; set; }
-
-        [ForeignKey("ProductVariationId")]
         public virtual ProductVariation ProductVariation { get; set; }
 
     }

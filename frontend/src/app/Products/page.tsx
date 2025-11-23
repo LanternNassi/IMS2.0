@@ -70,6 +70,7 @@ export type ProductGeneric = {
 export type ProductStorage = {
   id: string
   productGenericId: string
+  variationId: string
   quantity: number
   storageId: string
   storageName?: string
@@ -142,6 +143,7 @@ const mockProducts: Product[] = [
           {
             id: "1",
             productGenericId: "1",
+            variationId: "1",
             quantity: 500,
             storageId: "1",
             storageName: "Main Warehouse",
@@ -193,6 +195,7 @@ const mockProducts: Product[] = [
           {
             id: "2",
             productGenericId: "2",
+            variationId: "2",
             quantity: 300,
             storageId: "1",
             storageName: "Main Warehouse",

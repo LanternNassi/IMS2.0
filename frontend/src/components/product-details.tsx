@@ -337,7 +337,7 @@ export function ProductDetails({ product, onEdit }: ProductDetailsProps) {
                     <Grid container spacing={2}>
                       {generic.storage.map((storage) => (
                         <Grid item xs={12} md={4} key={storage.id}>
-                          <Box sx={{ p: 2, borderRadius: 1, bgcolor: "grey.50" }}>
+                          <Box sx={{ p: 2, borderRadius: 1 }}>
                             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                               Store Location
                             </Typography>

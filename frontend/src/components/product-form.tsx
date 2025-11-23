@@ -56,7 +56,8 @@ export function ProductForm({
 
   // Handlers for form fields
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type, checked } = e.target
+    const { name, value, type } = e.target
+    const checked = (e.target as HTMLInputElement).checked
     setForm((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
@@ -126,6 +127,7 @@ export function ProductForm({
     const newStorage: ProductStorage = {
       id: crypto.randomUUID(),
       productGenericId: newGenerics[genericIndex].id,
+      variationId: variations.find((v) => v.isMain)?.id || "",
       quantity: 0,
       storageId: stores[0]?.id || "",
       storageName: stores[0]?.name || "",
@@ -695,8 +697,10 @@ export function ProductForm({
                     <Grid container spacing={2}>
                       {generic.storage.map((storage, storageIndex) => (
                         <Grid item xs={12} key={storage.id}>
-                          <Box sx={{ p: 2, borderRadius: 1, bgcolor: "grey.50" }}>
+                          <Box sx={{ p: 2, borderRadius: 1 }}>
                             <Grid container spacing={2} alignItems="center">
+
+
                               <Grid item xs={12} md={3}>
                                 <FormControl fullWidth size="small">
                                   <InputLabel>Store</InputLabel>
@@ -715,6 +719,7 @@ export function ProductForm({
                                   </Select>
                                 </FormControl>
                               </Grid>
+
                               <Grid item xs={12} md={3}>
                                 <TextField
                                   label="Quantity"
@@ -727,6 +732,7 @@ export function ProductForm({
                                   fullWidth
                                 />
                               </Grid>
+
                               <Grid item xs={12} md={3}>
                                 <TextField
                                   label="Reorder Level"
@@ -739,8 +745,28 @@ export function ProductForm({
                                   fullWidth
                                 />
                               </Grid>
-                              <Grid item xs={12} md={3}>
-                                <Stack direction="row" justifyContent="flex-end">
+
+                              <Grid item xs={12} md={2.5}>
+                                <FormControl fullWidth size="small">
+                                  <InputLabel>Variation</InputLabel>
+                                  <Select
+                                    value={storage.variationId || ""}
+                                    label="Variation"
+                                    onChange={(e) =>
+                                      updateStorage(genericIndex, storageIndex, "variationId", e.target.value)
+                                    }
+                                  >
+                                    {variations.map((variation) => (
+                                      <MenuItem key={variation.id} value={variation.id}>
+                                        {variation.name}
+                                      </MenuItem>
+                                    ))}
+                                  </Select>
+                                </FormControl>
+                              </Grid>
+
+                              <Grid item xs={12} md={0.5}>
+                                <Stack direction="row" justifyContent="center" alignItems="center" height="100%">
                                   <IconButton
                                     onClick={() => removeStorage(genericIndex, storageIndex)}
                                     color="error"

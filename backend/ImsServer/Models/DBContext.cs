@@ -47,6 +47,25 @@ namespace ImsServer.Models
             modelBuilder.Entity<Product>().HasQueryFilter(c => !c.DeletedAt.HasValue);
             modelBuilder.Entity<ProductGeneric>().HasQueryFilter(c => !c.DeletedAt.HasValue);
             modelBuilder.Entity<ProductVariation>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+
+            modelBuilder.Entity<ProductStorage>()
+                .HasOne(ps => ps.ProductGeneric)
+                .WithMany()
+                .HasForeignKey(ps => ps.ProductGenericId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ProductStorage>()
+                .HasOne(ps => ps.Store)
+                .WithMany()
+                .HasForeignKey(ps => ps.StorageId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ProductStorage>()
+                .HasOne(ps => ps.ProductVariation)
+                .WithMany(pv => pv.ProductStorages)
+                .HasForeignKey(ps => ps.ProductVariationId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             modelBuilder.Entity<ProductStorage>().HasQueryFilter(c => !c.DeletedAt.HasValue);
 
 

@@ -19,6 +19,8 @@ namespace ImsServer.Models.ProductX
         [ForeignKey("ProductId")]
         public virtual Product Product { get; set; }
 
+        public ICollection<ProductStorage> ProductStorages { get; set; }
+
     }
 
     public class ProductVariationDto : GeneralFields
@@ -47,5 +49,6 @@ namespace ImsServer.Models.ProductX
         public string? UnitofMeasure { get; set; }
         public bool IsActive { get; set; }
         public bool IsMain { get; set; }
+        public ICollection<ProductStorage> ProductStorages { get; set; }
     }
 }

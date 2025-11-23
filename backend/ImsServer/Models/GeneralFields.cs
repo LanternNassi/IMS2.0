@@ -21,7 +21,6 @@ namespace ImsServer.Models
         CHF,
         CNY,
         INR,
-
         UGX
     }
 
