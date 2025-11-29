@@ -52,6 +52,7 @@ const page = () => {
     createSupplier,
     searchSupplierTags,
     updateSupplier,
+    setSuppliers,
     isLoading,
     suppliers,
     pagination,
@@ -59,7 +60,9 @@ const page = () => {
   const [submitting, setsubmitting] = useState<boolean>(false);
 
   useEffect(() => {
-    fetchSuppliers(null, page);
+    fetchSuppliers(null, page).then(response => {
+      setSuppliers(response)
+    })
   }, [fetchSuppliers, page]);
 
   const toggleEditDrawer = (newOpen: boolean) => {
@@ -262,7 +265,7 @@ const page = () => {
           description: "Supplier successfully created.",
           className: "bg-primary text-black dark:bg-gray-700 dark:text-white",
         });
-        fetchSuppliers(null, page);
+        fetchSuppliers(null, page).then(() => {setSuppliers(suppliers)});
         setedit(false);
       },
       () => {

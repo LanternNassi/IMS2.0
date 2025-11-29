@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using ImsServer.Models.StoreX;
+using ImsServer.Models.SupplierX;
 
 namespace ImsServer.Models.ProductX
 {
@@ -27,6 +28,9 @@ namespace ImsServer.Models.ProductX
         public Guid StorageId { get; set; }
         public decimal ReorderLevel { get; set; }
         public Guid ProductVariationId { get; set; }
+        public SimpleProductGenericDto? ProductGeneric { get; set; }
+        public SimpleStoreDto? Store { get; set; }
+        public SimpleProductVariationDto? ProductVariation { get; set; }
     }
 
     public class SimpleProductStorageDto

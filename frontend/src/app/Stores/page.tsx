@@ -20,6 +20,7 @@ import Edit from "@/components/Edit";
 import CircularProgress from "@mui/material/CircularProgress";
 import { useToast } from "@/hooks/use-toast";
 import Dialog from "@/components/Dialog";
+import { set } from "date-fns";
 
 const page = () => {
   const [editRow, setEditRow] = useState<store | null>(null);
@@ -32,12 +33,15 @@ const page = () => {
     getStoreById,
     deleteStore,
     updateStore,
+    setStores,
     stores,
   } = useStoresStore((state) => state);
   const [submitting, setsubmitting] = useState<boolean>(false);
 
   useEffect(() => {
-    fetchStores(null);
+    fetchStores(null).then(data => {
+      setStores(data || []);
+    })
   }, [fetchStores]);
 
   const toggleEditDrawer = (newOpen: boolean) => {
@@ -129,7 +133,9 @@ const page = () => {
             description: "Store successfully updated.",
             className: "bg-primary text-black dark:bg-gray-700 dark:text-white",
           });
-          fetchStores(null);
+          fetchStores(null).then(data => {
+            setStores(data || []);
+          });
           setedit(false);
         },
         () => {
@@ -152,7 +158,9 @@ const page = () => {
           description: "Store successfully deleted.",
           className: "bg-primary text-black dark:bg-gray-700 dark:text-white",
         });
-        fetchStores(null);
+        fetchStores(null).then(data => {
+          setStores(data || []);
+        });
       },
       () => {
         toast({
@@ -160,7 +168,9 @@ const page = () => {
           variant: "destructive",
           description: "An error occured. Stores couldnt be deleted. ",
         });
-        fetchStores(null);
+        fetchStores(null).then(data => {
+          setStores(data || []);
+        });
       }
     );
   };
@@ -186,7 +196,9 @@ const page = () => {
           description: "Store successfully created.",
           className: "bg-primary text-black dark:bg-gray-700 dark:text-white",
         });
-        fetchStores(null);
+        fetchStores(null).then(data => {
+          setStores(data || []);
+        });
         setedit(false);
       },
       () => {

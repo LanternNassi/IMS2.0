@@ -102,7 +102,7 @@ namespace ImsServer.Controllers
 
         // POST: api/ProductVariations
         [HttpPost]
-        public async Task<ActionResult<ProductVariation>> PostProductVariation(ProductVariation productVariation)
+        public async Task<ActionResult<ProductVariationDto>> PostProductVariation(ProductVariationDto productVariation)
         {
             if (_dbcontext.ProductVariations == null)
             {
@@ -129,7 +129,7 @@ namespace ImsServer.Controllers
                 }
             }
 
-            _dbcontext.ProductVariations.Add(productVariation);
+            _dbcontext.ProductVariations.Add(_mapper.Map<ProductVariation>(productVariation));
             await _dbcontext.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetProductVariation), new { id = productVariation.Id }, _mapper.Map<ProductVariationDto>(productVariation));
@@ -137,7 +137,7 @@ namespace ImsServer.Controllers
 
         // POST: api/ProductVariations/Bulk
         [HttpPost("Bulk")]
-        public async Task<ActionResult<IEnumerable<ProductVariation>>> PostProductVariations(List<ProductVariation> productVariations)
+        public async Task<ActionResult<IEnumerable<ProductVariationDto>>> PostProductVariations(List<ProductVariationDto> productVariations)
         {
             if (_dbcontext.ProductVariations == null)
             {
@@ -189,7 +189,7 @@ namespace ImsServer.Controllers
                 }
             }
 
-            _dbcontext.ProductVariations.AddRange(productVariations);
+            _dbcontext.ProductVariations.AddRange(_mapper.Map<List<ProductVariation>>(productVariations));
             await _dbcontext.SaveChangesAsync();
 
             return Ok(_mapper.Map<List<ProductVariationDto>>(productVariations));
@@ -197,7 +197,7 @@ namespace ImsServer.Controllers
 
         // PUT: api/ProductVariations/{id}
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutProductVariation(Guid id, ProductVariation productVariation)
+        public async Task<IActionResult> PutProductVariation(Guid id, ProductVariationDto productVariation)
         {
             if (id != productVariation.Id)
             {

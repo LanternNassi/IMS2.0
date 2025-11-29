@@ -18,6 +18,8 @@ namespace ImsServer.Models.ProductX
 
         [ForeignKey("SupplierId")]
         public virtual Supplier Supplier { get; set; }
+
+        public virtual ICollection<ProductStorage> ProductStorages { get; set; } = new List<ProductStorage>();
         
 
     }
@@ -30,6 +32,8 @@ namespace ImsServer.Models.ProductX
         public DateTime ManufactureDate { get; set; }
         public string? BatchNumber { get; set; }
         public Guid SupplierId { get; set; }  
+        public List<ProductStorageDto> ProductStorages { get; set; } = new List<ProductStorageDto>();
+        public SupplierDto Supplier { get; set; }
     }
 
     public class SimpleProductGenericDto
@@ -39,7 +43,8 @@ namespace ImsServer.Models.ProductX
         public DateTime ExpiryDate { get; set; }
         public DateTime ManufactureDate { get; set; }
         public string? BatchNumber { get; set; }
-        public Guid SupplierId { get; set; } 
+        public Guid SupplierId { get; set; }
+        public List<SimpleProductStorageDto>? ProductStorages { get; set; }
     }
 
 }

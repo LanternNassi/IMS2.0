@@ -197,7 +197,7 @@ namespace ImsServer.Controllers
 
         // POST: api/ProductGenerics
         [HttpPost]
-        public async Task<ActionResult<ProductGeneric>> PostProductGeneric(ProductGeneric productGeneric)
+        public async Task<ActionResult<SimpleProductGenericDto>> PostProductGeneric(SimpleProductGenericDto productGeneric)
         {
             if (_dbcontext.ProductGenerics == null)
             {
@@ -229,7 +229,7 @@ namespace ImsServer.Controllers
                 return BadRequest("Manufacture date cannot be in the future.");
             }
 
-            _dbcontext.ProductGenerics.Add(productGeneric);
+            _dbcontext.ProductGenerics.Add(_mapper.Map<ProductGeneric>(productGeneric));
             await _dbcontext.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetProductGeneric), new { id = productGeneric.Id }, _mapper.Map<ProductGenericDto>(productGeneric));
@@ -237,7 +237,7 @@ namespace ImsServer.Controllers
 
         // POST: api/ProductGenerics/Bulk
         [HttpPost("Bulk")]
-        public async Task<ActionResult<IEnumerable<ProductGeneric>>> PostProductGenerics(List<ProductGeneric> productGenerics)
+        public async Task<ActionResult<IEnumerable<SimpleProductGenericDto>>> PostProductGenerics(List<SimpleProductGenericDto> productGenerics)
         {
             if (_dbcontext.ProductGenerics == null)
             {
@@ -285,7 +285,7 @@ namespace ImsServer.Controllers
                 return BadRequest("One or more generics have invalid dates. Ensure expiry date is after manufacture date and manufacture date is not in the future.");
             }
 
-            _dbcontext.ProductGenerics.AddRange(productGenerics);
+            _dbcontext.ProductGenerics.AddRange(_mapper.Map<List<ProductGeneric>>(productGenerics));
             await _dbcontext.SaveChangesAsync();
 
             return Ok(_mapper.Map<List<ProductGenericDto>>(productGenerics));
@@ -293,7 +293,7 @@ namespace ImsServer.Controllers
 
         // PUT: api/ProductGenerics/{id}
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutProductGeneric(Guid id, ProductGeneric productGeneric)
+        public async Task<IActionResult> PutProductGeneric(Guid id, SimpleProductGenericDto productGeneric)
         {
             if (id != productGeneric.Id)
             {

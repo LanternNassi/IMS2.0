@@ -40,7 +40,7 @@ namespace ImsServer.Models.ProductX
     public class SimpleProductVariationDto
     {
         public Guid Id { get; set; }
-        public Guid ProductId { get; set; }
+        public Guid? ProductId { get; set; }
         public string Name { get; set; }
         public decimal UnitSize { get; set; }
         public decimal RetailPrice { get; set; }
@@ -49,6 +49,6 @@ namespace ImsServer.Models.ProductX
         public string? UnitofMeasure { get; set; }
         public bool IsActive { get; set; }
         public bool IsMain { get; set; }
-        public ICollection<ProductStorage> ProductStorages { get; set; }
+        public ICollection<SimpleProductStorageDto>? ProductStorages { get; set; }
     }
 }

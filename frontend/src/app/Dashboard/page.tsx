@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, use } from "react"
 import {
   ArrowDown,
   ArrowUp,  
@@ -19,8 +19,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-
-
 import {
   Area,
   AreaChart,
@@ -38,11 +36,11 @@ import {
   YAxis,
 } from "@/components/ui/chart"
 
+
 export default function AnalyticsDashboard() {
   const [darkMode] = useState(true)
   const [dateRange, setDateRange] = useState("thisMonth")
 
-  
 
   // Sample data for charts
   const salesData = [

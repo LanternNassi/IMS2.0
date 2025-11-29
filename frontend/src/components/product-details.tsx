@@ -1,18 +1,87 @@
 "use client"
 
-import React from "react"
-import { Box, Button, Chip, Grid, Tab, Tabs, Typography, Stack, Divider } from "@mui/material"
-import { Edit as EditIcon, Info, Inventory, LocalShipping, Store } from "@mui/icons-material"
+import React, { useEffect, useState} from "react"
+import { Box, Button, Chip, Grid, Tab, Tabs, Typography, Stack, Divider, CircularProgress } from "@mui/material"
+import { Edit as EditIcon, Info, Inventory, LocalShipping, Store, ErrorOutline, HourglassEmpty } from "@mui/icons-material"
 import { format } from "date-fns"
-import type { Product } from "@/app/Products/page"
+import {Product} from '../types/productTypes'
+import {useProductStore} from '../store/useProductStore'
+
 
 type ProductDetailsProps = {
-  product: Product
+  productId: string
   onEdit: () => void
 }
 
-export function ProductDetails({ product, onEdit }: ProductDetailsProps) {
-  const [tab, setTab] = React.useState(0)
+export function ProductDetails({ productId, onEdit }: ProductDetailsProps) {
+  const [tab, setTab] = useState(0)
+  const { fetchProductById } = useProductStore((state) => state)
+  const [product, setProduct] = useState<Product | null>(null)
+  const [isLoading, setisLoading] = useState<boolean>(false)
+
+
+  useEffect(()=>{
+    setisLoading(true)
+    fetchProductById(productId).then(response => {
+      setProduct(response)
+      setisLoading(false)
+    })
+  },[])
+
+  if (isLoading){
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '400px',
+          p: 4
+        }}
+      >
+        <Stack spacing={3} alignItems="center">
+          <CircularProgress size={60} thickness={4} />
+          <Stack spacing={1} alignItems="center">
+            <Typography variant="h6" color="text.secondary" fontWeight="medium">
+              Loading product details...
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Please wait while we fetch the information
+            </Typography>
+          </Stack>
+        </Stack>
+      </Box>
+    )
+  }
+
+  if (!product){
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '400px',
+          p: 4
+        }}
+      >
+        <Stack spacing={3} alignItems="center">
+          <ErrorOutline sx={{ fontSize: 80, color: 'error.main', opacity: 0.7 }} />
+          <Stack spacing={1} alignItems="center">
+            <Typography variant="h5" color="text.primary" fontWeight="bold">
+              No product found
+            </Typography>
+            <Typography variant="body1" color="text.secondary" textAlign="center">
+              The requested product could not be loaded.
+            </Typography>
+            <Typography variant="body2" color="text.secondary" textAlign="center">
+              Please check the product ID or try again later.
+            </Typography>
+          </Stack>
+        </Stack>
+      </Box>
+    )
+  }
 
   return (
     <Box
@@ -274,7 +343,7 @@ export function ProductDetails({ product, onEdit }: ProductDetailsProps) {
                     <Typography variant="h6" fontWeight="bold">
                       {generic.batchNumber ? `Batch: ${generic.batchNumber}` : "Generic Batch"}
                     </Typography>
-                    <Typography color="text.secondary">Supplier: {generic.supplierName || "Not specified"}</Typography>
+                    <Typography color="text.secondary">Supplier: {generic.supplier?.companyName || "Not specified"}</Typography>
                   </Box>
                   <Grid container spacing={3}>
                     <Grid item xs={12} md={6}>
@@ -327,22 +396,22 @@ export function ProductDetails({ product, onEdit }: ProductDetailsProps) {
                     <Typography variant="h6" fontWeight="bold">
                       {generic.batchNumber ? `Batch: ${generic.batchNumber}` : "Generic Batch"}
                     </Typography>
-                    <Typography color="text.secondary">Supplier: {generic.supplierName || "Not specified"}</Typography>
+                    <Typography color="text.secondary">Supplier: {generic.supplier?.companyName || "Not specified"}</Typography>
                   </Box>
-                  {generic.storage.length === 0 ? (
-                    <Box sx={{ p: 3, textAlign: "center", bgcolor: "grey.50", borderRadius: 1 }}>
+                  {generic.productStorages.length === 0 ? (
+                    <Box sx={{ p: 3, textAlign: "center", borderRadius: 1 }}>
                       <Typography color="text.secondary">No storage locations configured for this batch.</Typography>
                     </Box>
                   ) : (
                     <Grid container spacing={2}>
-                      {generic.storage.map((storage) => (
+                      {generic.productStorages.map((storage) => (
                         <Grid item xs={12} md={4} key={storage.id}>
                           <Box sx={{ p: 2, borderRadius: 1 }}>
                             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                               Store Location
                             </Typography>
                             <Typography fontWeight="bold" gutterBottom>
-                              {storage.storageName || "Unknown Store"}
+                              {storage.store?.name || "Unknown Store"}
                             </Typography>
 
                             <Divider sx={{ my: 1 }} />

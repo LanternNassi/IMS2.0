@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Box,
   Button,
@@ -19,40 +19,96 @@ import {
   Typography,
   IconButton,
   Stack,
+  CircularProgress,
   Chip,
 } from "@mui/material"
-import { Add, Delete, Save, Info } from "@mui/icons-material"
-import type { Product, ProductVariation, ProductGeneric, ProductStorage, Supplier, Store } from "@/app/Products/page"
+import { Add, Delete, Save, Info, ErrorOutline, } from "@mui/icons-material"
+
+import { Product, ProductVariation, ProductGeneric, ProductStorage, Supplier, Store } from '../types/productTypes'
+
+import { useProductStore } from "../store/useProductStore"
+import { SupplierAutocomplete } from './SupplierAutocomplete'
+import { StoreAutocomplete } from './StoreAutocomplete'
+import { useStoresStore } from "@/store/useStoresStore"
 
 export function ProductForm({
-  product,
+  productId,
   onSubmit,
-  suppliers,
-  stores,
-}: { product?: Product; onSubmit: (product: Product) => void; suppliers: Supplier[]; stores: Store[] }) {
+}: { productId?: string; onSubmit: (product: Product) => void }) {
+
   const [tab, setTab] = useState(0)
-  const [form, setForm] = useState<Product>(
-    product || {
-      id: "",
-      productName: "",
-      barCode: "",
-      description: "",
-      baseCostPrice: 0,
-      baseRetailPrice: 0,
-      baseWholeSalePrice: 0,
-      baseDiscount: 0,
-      stackSize: 1,
-      basicUnitofMeasure: "",
-      reorderLevel: 0,
-      isTaxable: false,
-      taxRate: 0,
-      isActive: true,
-      variations: [],
-      generics: [],
-    },
-  )
-  const [variations, setVariations] = useState<ProductVariation[]>(product?.variations || [])
-  const [generics, setGenerics] = useState<ProductGeneric[]>(product?.generics || [])
+
+  const { fetchProductById } = useProductStore((state) => state)
+  const { getStoreById } = useStoresStore((state) => state)
+ 
+  const [isLoading, setIsLoading] = useState<boolean>(false)
+
+  const initialProduct: Product = {
+    id: "",
+    productName: "",
+    barCode: "",
+    description: "",
+    baseCostPrice: 0,
+    baseRetailPrice: 0,
+    baseWholeSalePrice: 0,
+    baseDiscount: 0,
+    stackSize: 1,
+    basicUnitofMeasure: "",
+    reorderLevel: 0,
+    isTaxable: false,
+    taxRate: 0,
+    isActive: true,
+    variations: [],
+    generics: [],
+    storages: [],
+  }
+
+  const [product, setProduct] = useState<Product>(initialProduct)
+  const [form, setForm] = useState<Product>(initialProduct)
+
+  useEffect(() => {
+    if (!productId) {
+      return
+    }
+    setIsLoading(true)
+    fetchProductById(productId).then((response) => {
+      setIsLoading(false)
+
+      if (response) {
+        setProduct(response)
+        setForm(response)
+      }
+    })
+  }, [productId, fetchProductById])
+
+  // Auto-sync main variation with product details for new products
+  useEffect(() => {
+    if (!productId) {
+      setProduct(prev => {
+        // Find existing main variation ID to preserve it
+        const existingMainId = prev.variations.find(v => v.isMain)?.id
+        
+        // Create or update main variation based on product form
+        const mainVariation: ProductVariation = {
+          id: existingMainId || crypto.randomUUID(),
+          name: form.productName || "Main",
+          unitSize: form.stackSize,
+          retailPrice: form.baseRetailPrice,
+          wholeSalePrice: form.baseWholeSalePrice,
+          discount: form.baseDiscount,
+          unitofMeasure: form.basicUnitofMeasure,
+          isActive: form.isActive,
+          isMain: true,
+        }
+
+        const otherVariations = prev.variations.filter(v => !v.isMain)
+        return {
+          ...prev,
+          variations: [mainVariation, ...otherVariations]
+        }
+      })
+    }
+  }, [productId, form.productName, form.stackSize, form.baseRetailPrice, form.baseWholeSalePrice, form.baseDiscount, form.basicUnitofMeasure, form.isActive])
 
   // Handlers for form fields
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -69,31 +125,46 @@ export function ProductForm({
 
   // Variations
   const addVariation = () => {
-    setVariations([
-      ...variations,
-      {
-        id: crypto.randomUUID(),
-        productId: form.id || "",
-        name: "",
-        unitSize: 1,
-        retailPrice: 0,
-        wholeSalePrice: 0,
-        discount: 0,
-        unitofMeasure: form.basicUnitofMeasure,
-        isActive: true,
-        isMain: variations.length === 0,
-      },
-    ])
+    const newVariation: any = {
+      id: crypto.randomUUID(),
+      name: "",
+      unitSize: 1,
+      retailPrice: 0,
+      wholeSalePrice: 0,
+      discount: 0,
+      unitofMeasure: form.basicUnitofMeasure,
+      isActive: true,
+      isMain: false,
+    }
+    
+    // Only add productId when editing an existing product
+    if (productId) {
+      newVariation.productId = form.id
+    }
+    
+    setProduct({
+      ...product,
+      variations: [
+        ...product.variations,
+        newVariation,
+      ]
+    })
   }
   const removeVariation = (index: number) => {
-    const newVariations = [...variations]
+    const newVariations = [...product.variations]
     newVariations.splice(index, 1)
-    setVariations(newVariations)
+    setProduct({
+      ...product,
+      variations: newVariations,
+    })
   }
   const updateVariation = (index: number, field: keyof ProductVariation, value: any) => {
-    const newVariations = [...variations]
+    const newVariations = [...product.variations]
     newVariations[index] = { ...newVariations[index], [field]: value }
-    setVariations(newVariations)
+    setProduct({
+      ...product,
+      variations: newVariations,
+    })
   }
 
   // Generics
@@ -104,62 +175,113 @@ export function ProductForm({
       expiryDate: new Date(),
       manufactureDate: new Date(),
       batchNumber: "",
-      supplierId: suppliers[0]?.id || "",
-      supplierName: suppliers[0]?.name || "",
-      storage: [],
+      supplierId: "",
+      supplierName: "",
+      productStorages: [],
     }
-    setGenerics([...generics, newGeneric])
+    setProduct({
+      ...product!,
+      generics: [...product!.generics, newGeneric],
+    })
   }
   const removeGeneric = (index: number) => {
-    const newGenerics = [...generics]
+    const newGenerics = [...product!.generics]
     newGenerics.splice(index, 1)
-    setGenerics(newGenerics)
+    setProduct({
+      ...product!,
+      generics: newGenerics,
+    })
   }
   const updateGeneric = (index: number, field: keyof ProductGeneric, value: any) => {
-    const newGenerics = [...generics]
+    const newGenerics = [...product!.generics]
     newGenerics[index] = { ...newGenerics[index], [field]: value }
-    setGenerics(newGenerics)
+    setProduct({
+      ...product!,
+      generics: newGenerics,
+    })
   }
 
   // Storage
   const addStorage = (genericIndex: number) => {
-    const newGenerics = [...generics]
+    const newGenerics = [...product!.generics]
     const newStorage: ProductStorage = {
       id: crypto.randomUUID(),
       productGenericId: newGenerics[genericIndex].id,
-      variationId: variations.find((v) => v.isMain)?.id || "",
+      productVariationId: product!.variations.find((v) => v.isMain)?.id || "",
       quantity: 0,
-      storageId: stores[0]?.id || "",
-      storageName: stores[0]?.name || "",
+      storageId: "",
+      storageName: "",
       reorderLevel: form.reorderLevel,
     }
-    newGenerics[genericIndex].storage = [...(newGenerics[genericIndex].storage || []), newStorage]
-    setGenerics(newGenerics)
+    newGenerics[genericIndex].productStorages = [...(newGenerics[genericIndex].productStorages || []), newStorage]
+    setProduct({
+      ...product!,
+      generics: newGenerics,
+    })
   }
   const removeStorage = (genericIndex: number, storageIndex: number) => {
-    const newGenerics = [...generics]
-    newGenerics[genericIndex].storage.splice(storageIndex, 1)
-    setGenerics(newGenerics)
+    const newGenerics = [...product!.generics]
+    newGenerics[genericIndex].productStorages.splice(storageIndex, 1)
+    setProduct({
+      ...product!,
+      generics: newGenerics,
+    })
   }
-  const updateStorage = (genericIndex: number, storageIndex: number, field: keyof ProductStorage, value: any) => {
-    const newGenerics = [...generics]
-    newGenerics[genericIndex].storage[storageIndex] = {
-      ...newGenerics[genericIndex].storage[storageIndex],
+  const updateStorage = async (genericIndex: number, storageIndex: number, field: keyof ProductStorage, value: any) => {
+    const newGenerics = [...product!.generics]
+    newGenerics[genericIndex].productStorages[storageIndex] = {
+      ...newGenerics[genericIndex].productStorages[storageIndex],
       [field]: value,
     }
     if (field === "storageId") {
-      const store = stores.find((s) => s.id === value)
+      const store = await getStoreById(value)
       if (store) {
-        newGenerics[genericIndex].storage[storageIndex].storageName = store.name
+        newGenerics[genericIndex].productStorages[storageIndex].storageName = store.name
       }
     }
-    setGenerics(newGenerics)
+    setProduct({
+      ...product!,
+      generics: newGenerics,
+    })
   }
 
   // Submit
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit({ ...form, variations, generics })
+    // Merge form data with product variations and generics (which contain storages)
+    const completeProduct: Product = {
+      ...form,
+      variations: product.variations,
+      generics: product.generics,
+    }
+    onSubmit(completeProduct)
+  }
+
+
+  if (isLoading) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '400px',
+          p: 4
+        }}
+      >
+        <Stack spacing={3} alignItems="center">
+          <CircularProgress size={60} thickness={4} />
+          <Stack spacing={1} alignItems="center">
+            <Typography variant="h6" color="text.secondary" fontWeight="medium">
+              Loading product details...
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Please wait while we fetch the information
+            </Typography>
+          </Stack>
+        </Stack>
+      </Box>
+    )
   }
 
   return (
@@ -175,10 +297,10 @@ export function ProductForm({
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h5" fontWeight="bold" gutterBottom>
-          {product ? "Edit Product" : "Create New Product"}
+          {productId ? "Edit Product" : "Create New Product"}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          {product ? "Update product information and settings" : "Fill in the details to create a new product"}
+          {productId ? "Update product information and settings" : "Fill in the details to create a new product"}
         </Typography>
       </Box>
 
@@ -197,9 +319,9 @@ export function ProductForm({
           }}
         >
           <Tab label="Basic Information" />
-          <Tab label={`Variations (${variations.length})`} />
-          <Tab label={`Generics (${generics.length})`} />
-          <Tab label="Storage Management" />
+          <Tab label={`Variations (${product.variations.length})`} />
+          {productId && <Tab label={`Generics (${product.generics.length})`} />}
+          {productId && <Tab label="Storage Management" />}
         </Tabs>
       </Box>
 
@@ -384,25 +506,33 @@ export function ProductForm({
               </Typography>
             </Box>
             <Button variant="contained" startIcon={<Add />} onClick={addVariation} sx={{ borderRadius: 2 }}>
-              Add Variation
-            </Button>
-          </Stack>
+            Add Variation
+          </Button>
+        </Stack>
 
-          {variations.length === 0 ? (
+          {product.variations.length > 0 && product.variations.some(v => v.isMain) && (
+            <Box sx={{ p: 2, mb: 3, bgcolor: 'info.lighter', borderRadius: 1, border: 1, borderColor: 'info.main' }}>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Info color="info" fontSize="small" />
+                <Typography variant="body2" color="info.main">
+                  The main variation is automatically derived from the product details above. Edit the Basic Information tab to modify it.
+                </Typography>
+              </Stack>
+            </Box>
+          )}
+
+          {product.variations.length === 0 ? (
             <Box sx={{ p: 4, textAlign: "center", border: 1, borderColor: "divider", borderRadius: 2 }}>
               <Typography color="text.secondary" variant="h6" gutterBottom>
-                No variations created yet
+                No additional variations
               </Typography>
               <Typography color="text.secondary" sx={{ mb: 2 }}>
-                Add variations to offer different sizes, packages, or configurations of your product
+                The main variation is created automatically from product details. Add more variations for different sizes or packages.
               </Typography>
-              <Button variant="outlined" startIcon={<Add />} onClick={addVariation}>
-                Create First Variation
-              </Button>
             </Box>
           ) : (
             <Grid container spacing={3}>
-              {variations.map((variation, index) => (
+              {product.variations.map((variation, index) => (
                 <Grid item xs={12} lg={6} key={variation.id}>
                   <Box sx={{ p: 3, border: 1, borderColor: "divider", borderRadius: 2, height: "100%" }}>
                     <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
@@ -412,7 +542,7 @@ export function ProductForm({
                       </Stack>
                       <IconButton
                         onClick={() => removeVariation(index)}
-                        disabled={variations.length === 1}
+                        disabled={product.variations.length === 1 || variation.isMain}
                         color="error"
                       >
                         <Delete />
@@ -426,6 +556,8 @@ export function ProductForm({
                           onChange={(e) => updateVariation(index, "name", e.target.value)}
                           fullWidth
                           variant="outlined"
+                          disabled={variation.isMain}
+                          helperText={variation.isMain ? "Edit from Basic Information tab" : ""}
                         />
                       </Grid>
                       <Grid item xs={6}>
@@ -436,6 +568,7 @@ export function ProductForm({
                           onChange={(e) => updateVariation(index, "unitSize", Number(e.target.value))}
                           fullWidth
                           variant="outlined"
+                          disabled={variation.isMain}
                         />
                       </Grid>
                       <Grid item xs={6}>
@@ -445,6 +578,7 @@ export function ProductForm({
                           onChange={(e) => updateVariation(index, "unitofMeasure", e.target.value)}
                           fullWidth
                           variant="outlined"
+                          disabled={variation.isMain}
                         />
                       </Grid>
                       <Grid item xs={4}>
@@ -456,6 +590,7 @@ export function ProductForm({
                           fullWidth
                           variant="outlined"
                           InputProps={{ startAdornment: "$" }}
+                          disabled={variation.isMain}
                         />
                       </Grid>
                       <Grid item xs={4}>
@@ -467,6 +602,7 @@ export function ProductForm({
                           fullWidth
                           variant="outlined"
                           InputProps={{ startAdornment: "$" }}
+                          disabled={variation.isMain}
                         />
                       </Grid>
                       <Grid item xs={4}>
@@ -477,6 +613,7 @@ export function ProductForm({
                           onChange={(e) => updateVariation(index, "discount", Number(e.target.value))}
                           fullWidth
                           variant="outlined"
+                          disabled={variation.isMain}
                         />
                       </Grid>
                       <Grid item xs={12}>
@@ -486,6 +623,7 @@ export function ProductForm({
                               <Checkbox
                                 checked={variation.isActive}
                                 onChange={(_, checked) => updateVariation(index, "isActive", checked)}
+                                disabled={variation.isMain}
                               />
                             }
                             label="Active"
@@ -496,8 +634,11 @@ export function ProductForm({
                                 checked={variation.isMain}
                                 onChange={(_, checked) => {
                                   if (checked) {
-                                    const newVariations = variations.map((v, i) => ({ ...v, isMain: i === index }))
-                                    setVariations(newVariations)
+                                    const newVariations = product.variations.map((v, i) => ({ ...v, isMain: i === index }))
+                                    setProduct({
+                                      ...product,
+                                      variations: newVariations,
+                                    })
                                   } else {
                                     updateVariation(index, "isMain", false)
                                   }
@@ -530,11 +671,11 @@ export function ProductForm({
               </Typography>
             </Box>
             <Button variant="contained" startIcon={<Add />} onClick={addGeneric} sx={{ borderRadius: 2 }}>
-              Add Generic
-            </Button>
-          </Stack>
+            Add Generic
+          </Button>
+        </Stack>
 
-          {generics.length === 0 ? (
+          {product.generics.length === 0 ? (
             <Box sx={{ p: 4, textAlign: "center", border: 1, borderColor: "divider", borderRadius: 2 }}>
               <Typography color="text.secondary" variant="h6" gutterBottom>
                 No generics added yet
@@ -548,7 +689,7 @@ export function ProductForm({
             </Box>
           ) : (
             <Stack spacing={3}>
-              {generics.map((generic, index) => (
+              {product.generics.map((generic, index) => (
                 <Box key={generic.id} sx={{ p: 3, border: 1, borderColor: "divider", borderRadius: 2 }}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
                     <Box>
@@ -556,7 +697,7 @@ export function ProductForm({
                         {generic.batchNumber ? `Batch: ${generic.batchNumber}` : `Generic ${index + 1}`}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Supplier: {generic.supplierName || "Not specified"}
+                        Supplier: {generic.supplier?.companyName || "Not specified"}
                       </Typography>
                     </Box>
                     <IconButton onClick={() => removeGeneric(index)} color="error">
@@ -574,26 +715,30 @@ export function ProductForm({
                       />
                     </Grid>
                     <Grid item xs={12} md={6}>
-                      <FormControl fullWidth variant="outlined">
-                        <InputLabel>Supplier</InputLabel>
-                        <Select
-                          value={generic.supplierId}
-                          label="Supplier"
-                          onChange={(e) => {
-                            updateGeneric(index, "supplierId", e.target.value)
-                            const supplier = suppliers.find((s) => s.id === e.target.value)
-                            if (supplier) {
-                              updateGeneric(index, "supplierName", supplier.name)
+                      <SupplierAutocomplete
+                        value={generic.supplier || null}
+                        onChange={(newValue) => {
+                          const newGenerics = [...product!.generics]
+                          if (newValue) {
+                            newGenerics[index] = { 
+                              ...newGenerics[index], 
+                              supplierId: newValue.id,
+                              supplier: newValue
                             }
-                          }}
-                        >
-                          {suppliers.map((supplier) => (
-                            <MenuItem key={supplier.id} value={supplier.id}>
-                              {supplier.name}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
+                          } else {
+                            newGenerics[index] = { 
+                              ...newGenerics[index], 
+                              supplierId: "",
+                              supplier: undefined
+                            }
+                          }
+                          setProduct({
+                            ...product!,
+                            generics: newGenerics,
+                          })
+                        }}
+                        label="Supplier"
+                      />
                     </Grid>
                     <Grid item xs={12} md={6}>
                       <TextField
@@ -645,7 +790,7 @@ export function ProductForm({
             </Typography>
           </Box>
 
-          {generics.length === 0 ? (
+          {product!.generics.length === 0 ? (
             <Box sx={{ p: 4, textAlign: "center", border: 1, borderColor: "divider", borderRadius: 2 }}>
               <Typography color="text.secondary" variant="h6" gutterBottom>
                 No generics available
@@ -659,14 +804,14 @@ export function ProductForm({
             </Box>
           ) : (
             <Stack spacing={3}>
-              {generics.map((generic, genericIndex) => (
+              {product.generics.map((generic, genericIndex) => (
                 <Box key={generic.id} sx={{ p: 3, border: 1, borderColor: "divider", borderRadius: 2 }}>
                   <Box mb={2}>
                     <Typography variant="h6">
                       {generic.batchNumber ? `Batch: ${generic.batchNumber}` : `Generic ${genericIndex + 1}`}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Supplier: {generic.supplierName || "Not specified"}
+                      Supplier: {generic.supplier?.companyName || "Not specified"}
                     </Typography>
                   </Box>
                   <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
@@ -684,8 +829,8 @@ export function ProductForm({
                     </Button>
                   </Stack>
 
-                  {generic.storage.length === 0 ? (
-                    <Box sx={{ p: 3, textAlign: "center", bgcolor: "grey.50", borderRadius: 1 }}>
+                  {generic.productStorages.length === 0 ? (
+                    <Box sx={{ p: 3, textAlign: "center", borderRadius: 1 }}>
                       <Typography color="text.secondary" gutterBottom>
                         No storage locations added yet
                       </Typography>
@@ -695,29 +840,38 @@ export function ProductForm({
                     </Box>
                   ) : (
                     <Grid container spacing={2}>
-                      {generic.storage.map((storage, storageIndex) => (
+                      {generic.productStorages.map((storage, storageIndex) => (
                         <Grid item xs={12} key={storage.id}>
                           <Box sx={{ p: 2, borderRadius: 1 }}>
                             <Grid container spacing={2} alignItems="center">
 
 
                               <Grid item xs={12} md={3}>
-                                <FormControl fullWidth size="small">
-                                  <InputLabel>Store</InputLabel>
-                                  <Select
-                                    value={storage.storageId}
-                                    label="Store"
-                                    onChange={(e) =>
-                                      updateStorage(genericIndex, storageIndex, "storageId", e.target.value)
+                                <StoreAutocomplete
+                                  value={storage.store || null}
+                                  onChange={(newValue) => {
+                                    const newGenerics = [...product!.generics]
+                                    if (newValue) {
+                                      newGenerics[genericIndex].productStorages[storageIndex] = {
+                                        ...newGenerics[genericIndex].productStorages[storageIndex],
+                                        storageId: newValue.id,
+                                        store: newValue
+                                      }
+                                    } else {
+                                      newGenerics[genericIndex].productStorages[storageIndex] = {
+                                        ...newGenerics[genericIndex].productStorages[storageIndex],
+                                        storageId: "",
+                                        store: undefined
+                                      }
                                     }
-                                  >
-                                    {stores.map((store) => (
-                                      <MenuItem key={store.id} value={store.id}>
-                                        {store.name}
-                                      </MenuItem>
-                                    ))}
-                                  </Select>
-                                </FormControl>
+                                    setProduct({
+                                      ...product!,
+                                      generics: newGenerics,
+                                    })
+                                  }}
+                                  label="Store"
+                                  size="small"
+                                />
                               </Grid>
 
                               <Grid item xs={12} md={3}>
@@ -750,13 +904,13 @@ export function ProductForm({
                                 <FormControl fullWidth size="small">
                                   <InputLabel>Variation</InputLabel>
                                   <Select
-                                    value={storage.variationId || ""}
+                                    value={storage.productVariationId || ""}
                                     label="Variation"
                                     onChange={(e) =>
-                                      updateStorage(genericIndex, storageIndex, "variationId", e.target.value)
+                                      updateStorage(genericIndex, storageIndex, "productVariationId", e.target.value)
                                     }
                                   >
-                                    {variations.map((variation) => (
+                                    {product.variations.map((variation) => (
                                       <MenuItem key={variation.id} value={variation.id}>
                                         {variation.name}
                                       </MenuItem>
@@ -800,7 +954,7 @@ export function ProductForm({
           size="large"
           sx={{ borderRadius: 2, px: 4 }}
         >
-          {product ? "Update Product" : "Save Product"}
+          {productId ? "Update Product" : "Save Product"}
         </Button>
       </Stack>
     </Box>

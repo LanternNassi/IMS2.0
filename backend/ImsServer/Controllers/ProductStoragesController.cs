@@ -217,7 +217,7 @@ namespace ImsServer.Controllers
 
         // POST: api/ProductStorages
         [HttpPost]
-        public async Task<ActionResult<ProductStorage>> PostProductStorage(ProductStorage productStorage)
+        public async Task<ActionResult<SimpleProductStorageDto>> PostProductStorage(SimpleProductStorageDto productStorage)
         {
             if (_dbcontext.ProductStorages == null)
             {
@@ -278,7 +278,7 @@ namespace ImsServer.Controllers
                 return BadRequest("Reorder level cannot be negative.");
             }
 
-            _dbcontext.ProductStorages.Add(productStorage);
+            _dbcontext.ProductStorages.Add(_mapper.Map<ProductStorage>(productStorage));
             await _dbcontext.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetProductStorage), new { id = productStorage.Id }, _mapper.Map<ProductStorageDto>(productStorage));
@@ -286,7 +286,7 @@ namespace ImsServer.Controllers
 
         // POST: api/ProductStorages/Bulk
         [HttpPost("Bulk")]
-        public async Task<ActionResult<IEnumerable<ProductStorage>>> PostProductStorages(List<ProductStorage> productStorages)
+        public async Task<ActionResult<IEnumerable<SimpleProductStorageDto>>> PostProductStorages(List<SimpleProductStorageDto> productStorages)
         {
             if (_dbcontext.ProductStorages == null)
             {
@@ -349,7 +349,7 @@ namespace ImsServer.Controllers
                 }
             }
 
-            _dbcontext.ProductStorages.AddRange(productStorages);
+            _dbcontext.ProductStorages.AddRange(_mapper.Map<List<ProductStorage>>(productStorages));
             await _dbcontext.SaveChangesAsync();
 
             return Ok(_mapper.Map<List<ProductStorageDto>>(productStorages));
@@ -357,7 +357,7 @@ namespace ImsServer.Controllers
 
         // PUT: api/ProductStorages/{id}
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutProductStorage(Guid id, ProductStorage productStorage)
+        public async Task<IActionResult> PutProductStorage(Guid id, SimpleProductStorageDto productStorage)
         {
             if (id != productStorage.Id)
             {

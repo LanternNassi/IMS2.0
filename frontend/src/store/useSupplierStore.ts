@@ -40,8 +40,9 @@ interface ISupplierStore {
     isLoading : boolean;
     pagination : pagination | null;
     supplierTags : supplierTag[] | null;
-    fetchSuppliers : (keywords: string|null , page: number) => Promise<void>;
-    fetchSupplierTags : (keywords : string|null , supplier : string|null) => Promise<void>;
+    fetchSuppliers : (keywords: string|null , page: number) => Promise<supplier[]>;
+    setSuppliers : (suppliers : supplier[] | null) => void;
+    fetchSupplierTags : (keywords : string|null , supplier : string|null) => Promise<supplierTag[]>;
     addSupplierToTags : (supplier: string, tags : supplierTag[] , onsuccess : ()=> void , onFailure : () => void) => Promise<void>;
     searchSupplierTags : (keywords: string) => Promise<supplierTag[]>
     getSupplierById : (id : string) => Promise<supplier>;
@@ -57,22 +58,17 @@ export const useSupplierStore = create<ISupplierStore>((set) => ({
     pagination : null,
     fetchSuppliers : async (keywords: string | null , page: number) => {
         set({isLoading: true});
-        api.get('/Suppliers' , {params: {keywords , page}}).then((response : AxiosResponse) => {  
-            if (response.status == 200){
-                set({
-                    suppliers: response.data.suppliers,
-                    isLoading: false,
-                    pagination : response.data.pagination,
-                })
-            } 
-        })
+        const response: AxiosResponse = await api.get('/Suppliers' , {params: {keywords , page}});
+        set({isLoading: false});
+        return response.data.suppliers;
     },
+    setSuppliers: (suppliers: supplier[] | null) => set({suppliers}),
+
     fetchSupplierTags : async (keywords: string | null , supplier: string|null) => {
-        api.get('/Suppliers/Tags' , {params: {keywords,supplier}}).then((response : AxiosResponse) => {
-            if (response.status == 200){
-                set({supplierTags : response.data})
-            }
-        })
+        const response: AxiosResponse = await api.get('/Suppliers/Tags' , {params: {keywords,supplier}});
+        if (response.status == 200){
+            return response.data;
+        }
     },
     searchSupplierTags : async (keywords: string | null) => {
         const response:AxiosResponse = await api.get(`/Suppliers/Tags` , {params:{keywords}});
