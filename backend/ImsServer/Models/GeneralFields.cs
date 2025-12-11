@@ -44,4 +44,10 @@ namespace ImsServer.Models
         MISCELLANEOUS
     }
 
+    public enum DebtType
+    {
+        Payable,
+        Receivable
+    }
+
 }

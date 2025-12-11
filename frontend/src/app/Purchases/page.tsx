@@ -19,6 +19,7 @@ import { Card } from "@/components/ui/card"
 import { TransactionTable, Transaction } from "@/components/TransactionTable"
 import { useRouter } from "next/navigation"
 import api from "@/Utils/Request"
+import PaginationControls from "@/components/PaginationControls"
 
 // Types
 export type PurchaseItem = {
@@ -61,9 +62,26 @@ interface PurchaseMetadata {
   }>
 }
 
+interface Pagination {
+  currentPage: number
+  pageSize: number
+  totalCount: number
+  totalPages: number
+  hasPreviousPage: boolean
+  hasNextPage: boolean
+}
+
 export default function PurchasesPage() {
   const [purchases, setPurchases] = useState<Transaction[]>([])
   const [metadata, setMetadata] = useState<PurchaseMetadata | null>(null)
+  const [pagination, setPagination] = useState<Pagination>({
+    currentPage: 1,
+    pageSize: 30,
+    totalCount: 0,
+    totalPages: 1,
+    hasPreviousPage: false,
+    hasNextPage: false,
+  })
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string }>({ open: false, message: "" })
@@ -73,12 +91,20 @@ export default function PurchasesPage() {
     fetchPurchases()
   }, [])
 
-  const fetchPurchases = async () => {
+  const fetchPurchases = async (page: number = 1, pageSize: number = 30) => {
     setLoading(true)
     try {
-      const response = await api.get("/Purchases?includeMetadata=true")
+      const response = await api.get(`/Purchases?includeMetadata=true&page=${page}&pageSize=${pageSize}`)
       setPurchases(response.data.purchases || [])
       setMetadata(response.data.metadata || null)
+      setPagination(response.data.pagination || {
+        currentPage: 1,
+        pageSize: 30,
+        totalCount: 0,
+        totalPages: 1,
+        hasPreviousPage: false,
+        hasNextPage: false,
+      })
     } catch (error: any) {
       console.error("Error fetching purchases:", error)
       setSnackbar({
@@ -112,7 +138,7 @@ export default function PurchasesPage() {
     try {
       await api.delete(`/Purchases/${id}`)
       setSnackbar({ open: true, message: "Purchase deleted successfully" })
-      fetchPurchases()
+      fetchPurchases(pagination.currentPage, pagination.pageSize)
     } catch (error: any) {
       console.error("Error deleting purchase:", error)
       setSnackbar({
@@ -124,8 +150,16 @@ export default function PurchasesPage() {
 
   const handleAllocate = async (purchase: Transaction) => {
     // After allocation is complete, refetch purchases to update allocation status
-    await fetchPurchases()
+    await fetchPurchases(pagination.currentPage, pagination.pageSize)
     setSnackbar({ open: true, message: "Products allocated to storages successfully" })
+  }
+
+  const handlePageChange = (newPage: number) => {
+    fetchPurchases(newPage, pagination.pageSize)
+  }
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    fetchPurchases(1, newPageSize)
   }
 
 
@@ -322,6 +356,20 @@ export default function PurchasesPage() {
           />
         )}
       </Box>
+
+      {/* Pagination Controls */}
+      {!loading && (
+        <PaginationControls
+          currentPage={pagination.currentPage}
+          pageSize={pagination.pageSize}
+          totalCount={pagination.totalCount}
+          totalPages={pagination.totalPages}
+          hasPreviousPage={pagination.hasPreviousPage}
+          hasNextPage={pagination.hasNextPage}
+          onPageChange={handlePageChange}
+          itemName="purchases"
+        />
+      )}
 
       <Snackbar
         open={snackbar.open}

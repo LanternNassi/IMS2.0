@@ -25,7 +25,9 @@ namespace ImsServer.Controllers
             [FromQuery] DateTime? endDate,
             [FromQuery] decimal? minAmount,
             [FromQuery] decimal? maxAmount,
-            [FromQuery] bool includeMetadata = false)
+            [FromQuery] bool includeMetadata = false,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 50)
         {
             var query = _db.Expenditures
                 .Include(e => e.ExpenditureCategory)
@@ -69,19 +71,46 @@ namespace ImsServer.Controllers
                 query = query.Where(e => e.Amount <= maxAmount.Value);
             }
 
-            var expenditures = await query.ToListAsync();
+            // Get total count before pagination
+            var totalCount = await query.CountAsync();
+
+            // Validate and apply pagination
+            page = page < 1 ? 1 : page;
+            pageSize = pageSize < 1 ? 50 : pageSize > 500 ? 500 : pageSize;
+
+            var expenditures = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+            var paginationInfo = new
+            {
+                CurrentPage = page,
+                PageSize = pageSize,
+                TotalCount = totalCount,
+                TotalPages = totalPages,
+                HasPreviousPage = page > 1,
+                HasNextPage = page < totalPages
+            };
 
             if (!includeMetadata)
             {
-                return Ok(expenditures);
+                return Ok(new
+                {
+                    Pagination = paginationInfo,
+                    Expenditures = expenditures
+                });
             }
 
-            // Calculate metadata
+            // Calculate metadata (using all filtered data, not just current page)
+            var allExpenditures = await query.ToListAsync();
             var metadata = new
             {
-                TotalAmount = expenditures.Sum(e => e.Amount),
-                TotalExpenditures = expenditures.Count,
-                CategoryBreakdown = expenditures
+                TotalAmount = allExpenditures.Sum(e => e.Amount),
+                TotalExpenditures = allExpenditures.Count,
+                CategoryBreakdown = allExpenditures
                     .GroupBy(e => new { e.ExpenditureCategoryId, e.ExpenditureCategory.Name })
                     .Select(g => new
                     {
@@ -92,7 +121,7 @@ namespace ImsServer.Controllers
                     })
                     .OrderByDescending(c => c.TotalAmount)
                     .ToList(),
-                TypeBreakdown = expenditures
+                TypeBreakdown = allExpenditures
                     .GroupBy(e => e.ExpenditureCategory.Type)
                     .Select(g => new
                     {
@@ -105,6 +134,7 @@ namespace ImsServer.Controllers
 
             return Ok(new
             {
+                Pagination = paginationInfo,
                 Metadata = metadata,
                 Expenditures = expenditures
             });

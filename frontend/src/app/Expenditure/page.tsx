@@ -9,6 +9,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts"
 import { AddExpenditureDialog, type ExpenditureType, type ExpenditureCategory, type Expense } from "@/components/AddExpenditureDialog"
 import api from "@/Utils/Request"
 import { Snackbar } from "@mui/material"
+import PaginationControls from "@/components/PaginationControls"
 
 const TYPE_COLORS: { type: ExpenditureType; color: string }[] = [
   { type: "UTILITIES", color: "#3B82F6" },
@@ -17,14 +18,53 @@ const TYPE_COLORS: { type: ExpenditureType; color: string }[] = [
   { type: "MISCELLANEOUS", color: "#8B5CF6" },
 ]
 
+interface Pagination {
+  currentPage: number
+  pageSize: number
+  totalCount: number
+  totalPages: number
+  hasPreviousPage: boolean
+  hasNextPage: boolean
+}
+
+interface TypeData {
+  expenses: Expense[]
+  pagination: Pagination
+  isLoading: boolean
+}
+
+interface OverallMetadata {
+  totalAmount: number
+  totalCount: number
+  typeBreakdown: Record<ExpenditureType, { totalAmount: number; count: number }>
+}
+
 export default function ExpenditureManagement() {
-  const [expenses, setExpenses] = useState<Expense[]>([])
   const [categories, setCategories] = useState<ExpenditureCategory[]>([])
   const [startDate, setStartDate] = useState(new Date(2025, 11, 1))
   const [endDate, setEndDate] = useState(new Date(2025, 11, 31))
-  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string }>({ open: false, message: "" })
+  
+  // Overall metadata from general endpoint
+  const [overallMetadata, setOverallMetadata] = useState<OverallMetadata>({
+    totalAmount: 0,
+    totalCount: 0,
+    typeBreakdown: {
+      UTILITIES: { totalAmount: 0, count: 0 },
+      PAYMENTS: { totalAmount: 0, count: 0 },
+      BENEFITS: { totalAmount: 0, count: 0 },
+      MISCELLANEOUS: { totalAmount: 0, count: 0 },
+    },
+  })
+  
+  // State for each type (pagination only)
+  const [typeData, setTypeData] = useState<Record<ExpenditureType, TypeData>>({
+    UTILITIES: { expenses: [], pagination: { currentPage: 1, pageSize: 5, totalCount: 0, totalPages: 1, hasPreviousPage: false, hasNextPage: false }, isLoading: true },
+    PAYMENTS: { expenses: [], pagination: { currentPage: 1, pageSize: 5, totalCount: 0, totalPages: 1, hasPreviousPage: false, hasNextPage: false }, isLoading: true },
+    BENEFITS: { expenses: [], pagination: { currentPage: 1, pageSize: 5, totalCount: 0, totalPages: 1, hasPreviousPage: false, hasNextPage: false }, isLoading: true },
+    MISCELLANEOUS: { expenses: [], pagination: { currentPage: 1, pageSize: 5, totalCount: 0, totalPages: 1, hasPreviousPage: false, hasNextPage: false }, isLoading: true },
+  })
 
   // Fetch categories
   const fetchCategories = async () => {
@@ -37,10 +77,8 @@ export default function ExpenditureManagement() {
     }
   }
 
-  // Fetch expenditures with filters and metadata
-  const fetchExpenditures = async () => {
-    setIsLoading(true)
-    setError(null)
+  // Fetch overall metadata from general endpoint
+  const fetchOverallMetadata = async () => {
     try {
       const params = new URLSearchParams({
         startDate: startDate.toISOString(),
@@ -49,9 +87,61 @@ export default function ExpenditureManagement() {
       })
 
       const response = await api.get(`/Expenditures?${params}`)
+      const metadata = response.data.metadata || {}
+      
+      // Build type breakdown from metadata
+      const typeBreakdown: Record<ExpenditureType, { totalAmount: number; count: number }> = {
+        UTILITIES: { totalAmount: 0, count: 0 },
+        PAYMENTS: { totalAmount: 0, count: 0 },
+        BENEFITS: { totalAmount: 0, count: 0 },
+        MISCELLANEOUS: { totalAmount: 0, count: 0 },
+      }
+
+      // If metadata has type breakdown, use it
+      if (metadata.typeBreakdown) {
+        TYPE_COLORS.forEach(({ type }) => {
+          const typeInfo = metadata.typeBreakdown.find((t: any) => t.type === type)
+          if (typeInfo) {
+            typeBreakdown[type] = {
+              totalAmount: typeInfo.totalAmount || 0,
+              count: typeInfo.count || 0,
+            }
+          }
+        })
+      }
+      
+      setOverallMetadata({
+        totalAmount: metadata.totalAmount || 0,
+        totalCount: metadata.totalCount || 0,
+        typeBreakdown,
+      })
+    } catch (err) {
+      console.error("Error fetching overall metadata:", err)
+    }
+  }
+
+  // Fetch expenditures by type with pagination
+  const fetchExpendituresByType = async (type: ExpenditureType, page: number = 1, pageSize: number = 5) => {
+    setTypeData(prev => ({
+      ...prev,
+      [type]: { ...prev[type], isLoading: true }
+    }))
+    
+    setError(null)
+    try {
+      const params = new URLSearchParams({
+        type,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        includeMetadata: "true",
+        page: page.toString(),
+        pageSize: pageSize.toString(),
+      })
+
+      const response = await api.get(`/Expenditures?${params}`)
       
       // Transform the data to match frontend format
-      const expendituresData = response.data.expenditures || response.data
+      const expendituresData = response.data.expenditures || []
       const transformedExpenses = expendituresData.map((exp: any) => ({
         id: exp.id,
         name: exp.name,
@@ -62,35 +152,66 @@ export default function ExpenditureManagement() {
         date: new Date(exp.addedAt || exp.date),
       }))
       
-      setExpenses(transformedExpenses)
+      setTypeData(prev => ({
+        ...prev,
+        [type]: {
+          expenses: transformedExpenses,
+          pagination: response.data.pagination || {
+            currentPage: 1,
+            pageSize: 5,
+            totalCount: 0,
+            totalPages: 1,
+            hasPreviousPage: false,
+            hasNextPage: false,
+          },
+          isLoading: false,
+        }
+      }))
     } catch (err: any) {
-      console.error("Error fetching expenditures:", err)
-      setError("Failed to load expenditures. Please try again.")
-      setSnackbar({ open: true, message: "Failed to load expenditures" })
-    } finally {
-      setIsLoading(false)
+      console.error(`Error fetching ${type} expenditures:`, err)
+      setError(`Failed to load ${type} expenditures. Please try again.`)
+      setSnackbar({ open: true, message: `Failed to load ${type} expenditures` })
+      
+      setTypeData(prev => ({
+        ...prev,
+        [type]: { ...prev[type], isLoading: false }
+      }))
     }
+  }
+  
+  // Fetch all types and overall metadata
+  const fetchAllExpenditures = () => {
+    fetchOverallMetadata()
+    TYPE_COLORS.forEach(item => {
+      fetchExpendituresByType(item.type)
+    })
   }
 
   // Initial fetch
   useEffect(() => {
     fetchCategories()
-    fetchExpenditures()
+    fetchAllExpenditures()
   }, [])
 
   // Refetch when date range changes
   useEffect(() => {
-    fetchExpenditures()
+    fetchAllExpenditures()
   }, [startDate, endDate])
 
-  const filteredExpenses = expenses.filter((exp) => exp.date >= startDate && exp.date <= endDate)
-
   const getTypeTotal = (type: ExpenditureType) => {
-    return filteredExpenses.filter((exp) => exp.expenditureCategory?.type === type).reduce((sum, exp) => sum + exp.amount, 0)
+    return overallMetadata.typeBreakdown[type].totalAmount
+  }
+  
+  const getTypeCount = (type: ExpenditureType) => {
+    return overallMetadata.typeBreakdown[type].count
   }
 
   const getTotalExpenditure = () => {
-    return filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0)
+    return overallMetadata.totalAmount
+  }
+  
+  const getTotalCount = () => {
+    return overallMetadata.totalCount
   }
 
   const chartData = TYPE_COLORS.map((item) => ({
@@ -103,12 +224,15 @@ export default function ExpenditureManagement() {
     type: item.type,
     color: item.color,
     total: getTypeTotal(item.type),
-    count: filteredExpenses.filter((exp) => exp.expenditureCategory?.type === item.type).length,
+    count: getTypeCount(item.type),
   }))
 
   const handleAddExpense = (expense: Expense) => {
-    // Refresh expenditures from API
-    fetchExpenditures()
+    // Refresh overall metadata and specific type from API
+    fetchOverallMetadata()
+    if (expense.expenditureCategory?.type) {
+      fetchExpendituresByType(expense.expenditureCategory.type)
+    }
     setSnackbar({ open: true, message: `Expenditure "${expense.name}" added successfully` })
   }
 
@@ -133,16 +257,8 @@ export default function ExpenditureManagement() {
         </div>
       )}
 
-      {/* Loading State */}
-      {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center space-y-3">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="dark:text-gray-400 text-gray-600">Loading expenditures...</p>
-          </div>
-        </div>
-      ) : (
-        <>
+      {/* Content */}
+      <>
       {/* Date Range and Total Summary */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-2">
@@ -194,7 +310,7 @@ export default function ExpenditureManagement() {
               Shs{" "}
               {getTotalExpenditure().toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
-            <p className="text-xs dark:text-blue-200 text-blue-700">{filteredExpenses.length} expenses recorded</p>
+            <p className="text-xs dark:text-blue-200 text-blue-700">{getTotalCount()} expenses recorded</p>
           </CardContent>
         </Card>
       </div>
@@ -298,7 +414,8 @@ export default function ExpenditureManagement() {
       {/* Expense Items by Type */}
       <div className="space-y-6">
         {typeExpenses.map((item) => {
-          const typeItems = filteredExpenses.filter((exp) => exp.expenditureCategory?.type === item.type)
+          const data = typeData[item.type]
+          const typeItems = data.expenses
           return (
             <Card key={item.type} className="dark:bg-gray-800 bg-white">
               <CardHeader className="pb-4">
@@ -329,7 +446,12 @@ export default function ExpenditureManagement() {
                 </div>
               </CardHeader>
               <CardContent>
-                {typeItems.length > 0 ? (
+                {data.isLoading ? (
+                  <div className="py-8 text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="dark:text-gray-400 text-gray-600 text-sm mt-2">Loading...</p>
+                  </div>
+                ) : typeItems.length > 0 ? (
                   <div className="rounded-lg border dark:border-gray-700 border-gray-200 overflow-hidden">
                     <Table>
                       <TableHeader>
@@ -384,6 +506,16 @@ export default function ExpenditureManagement() {
                         ))}
                       </TableBody>
                     </Table>
+                    <PaginationControls
+                      currentPage={data.pagination.currentPage}
+                      pageSize={data.pagination.pageSize}
+                      totalCount={data.pagination.totalCount}
+                      totalPages={data.pagination.totalPages}
+                      hasPreviousPage={data.pagination.hasPreviousPage}
+                      hasNextPage={data.pagination.hasNextPage}
+                      onPageChange={(page) => fetchExpendituresByType(item.type, page, data.pagination.pageSize)}
+                      itemName="expenses"
+                    />
                   </div>
                 ) : (
                   <div className="py-8 text-center dark:text-gray-400 text-gray-600">
@@ -396,7 +528,6 @@ export default function ExpenditureManagement() {
         })}
       </div>
       </>
-      )}
 
       {/* Snackbar for feedback */}
       <Snackbar

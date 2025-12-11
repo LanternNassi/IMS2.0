@@ -1,69 +1,312 @@
-
-"use client";
-import React from 'react';
-import { cn } from '@/lib/utils';
-import { useRouter } from "next/navigation";
-import {useSessionStore} from '@/store/useSessionStore';
+"use client"
+import { useState } from "react"
+import { cn } from "@/lib/utils"
+import { useRouter } from "next/navigation"
+import {
+  LayoutDashboard,
+  Users,
+  FolderOpen,
+  Store,
+  Package,
+  UserCheck,
+  Truck,
+  ArrowLeftRight,
+  ShoppingBag,
+  Receipt,
+  BarChart3,
+  CreditCard,
+  Wallet,
+  Settings,
+  ChevronLeft,
+  ChevronRight,
+  Sun,
+  Moon,
+  LogOut,
+  Bell,
+  HelpCircle,
+  User,
+} from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Separator } from "@/components/ui/separator"
 
 const navItems = [
-    { label: "Dashboard", icon: "🏠", path: "/Dashboard" },
-    { label: "Users", icon: "👥", path: "/Users" },
-    { label: "Categories", icon: "📂", path: "/Categories" },
-    { label: "Store Management", icon: "🏪", path: "/Stores" },
-    { label: "Products", icon: "📦", path: "/Products" },
-    { label: "Customers", icon: "🧑‍🤝‍🧑", path: "/Customers" },
-    { label: "Suppliers", icon: "🚚", path: "/Suppliers" },
-    { label: "Transactions", icon: "🔄", path: "/Transactions" },
-    { label: "Purchases", icon: "🛍️", path: "/Purchases" },
-    { label: "Sales", icon: "💵", path: "/Sales" },
-    { label: "Analysis", icon: "📊", path: "/Analysis" },
-    { label: "Debts", icon: "💳", path: "/Debts" },
-    { label: "Expenditure", icon: "💸", path: "/Expenditure" },
-    { label: "IMS Settings", icon: "⚙️", path: "/IMSSettings" },
-];
+  { label: "Dashboard", icon: LayoutDashboard, path: "/Dashboard" },
+  { label: "Users", icon: Users, path: "/Users" },
+  { label: "Categories", icon: FolderOpen, path: "/Categories" },
+  { label: "Store Management", icon: Store, path: "/Stores" },
+  { label: "Products", icon: Package, path: "/Products" },
+  { label: "Customers", icon: UserCheck, path: "/Customers" },
+  { label: "Suppliers", icon: Truck, path: "/Suppliers" },
+  { label: "Transactions", icon: ArrowLeftRight, path: "/Transactions" },
+  { label: "Purchases", icon: ShoppingBag, path: "/Purchases" },
+  { label: "Sales", icon: Receipt, path: "/Sales" },
+  { label: "Product Analysis", icon: BarChart3, path: "/Analysis" },
+  { label: "Debts", icon: CreditCard, path: "/Debts" },
+  { label: "Expenditure", icon: Wallet, path: "/Expenditure" },
+]
 
-const SideNav = () => {
+const bottomNavItems = [
+  { label: "Notifications", icon: Bell, path: "/Notifications" },
+  { label: "Settings", icon: Settings, path: "/IMSSettings" },
+  { label: "Support", icon: HelpCircle, path: "/Support" },
+]
 
-    const {currentPage, setCurrentPage} = useSessionStore();
-    const router = useRouter();
+interface SideNavProps {
+  defaultCollapsed?: boolean
+}
 
-    return (
-        <aside className="w-64 bg-primary dark:bg-primary-dark border-r border-gray-700 flex flex-col">
-            <div className="p-4 text-center border-b border-gray-700">
-                <h1 className="text-lg font-bold">User</h1>
-                <p className="text-sm">Developed by Nessim</p>
-            </div>
-            <nav 
-                className="flex-1 overflow-y-auto h-64 p-4 space-y-2 rounded-lg shadow 
-                scrollbar-thin dark:scrollbar-thumb-gray-800 dark:scrollbar-track-gray-700 
-                scrollbar-thumb-rounded-md dark:hover:scrollbar-thumb-gray-400 
-                focus:outline-none focus:ring-2 focus:ring-blue-500"
+const SideNav = ({ defaultCollapsed = false }: SideNavProps) => {
+  const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed)
+  const [currentPage, setCurrentPage] = useState(0)
+  const [isDarkMode, setIsDarkMode] = useState(true)
+  const router = useRouter()
+
+  const toggleTheme = () => {
+    setIsDarkMode(!isDarkMode)
+    document.documentElement.classList.toggle("dark")
+  }
+
+  const NavItem = ({
+    item,
+    index,
+    isActive,
+  }: {
+    item: (typeof navItems)[0]
+    index: number
+    isActive: boolean
+  }) => {
+    const Icon = item.icon
+
+    const content = (
+      <button
+        onClick={() => {
+          router.push(item.path)
+          setCurrentPage(index)
+        }}
+        className={cn(
+          "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
+          "hover:bg-gray-100 dark:hover:bg-gray-800",
+          "focus:outline-none focus:ring-2 focus:ring-primary/50",
+          "group relative",
+          isActive
+            ? "bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary-foreground font-medium"
+            : "text-gray-600 dark:text-gray-400",
+          isCollapsed && "justify-center px-2",
+        )}
+      >
+        <Icon
+          className={cn(
+            "w-5 h-5 flex-shrink-0 transition-colors",
+            isActive
+              ? "text-primary dark:text-blue-400"
+              : "text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200",
+          )}
+        />
+        {!isCollapsed && <span className="text-sm truncate">{item.label}</span>}
+        {isActive && (
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary dark:bg-blue-400 rounded-r-full" />
+        )}
+      </button>
+    )
+
+    if (isCollapsed) {
+      return (
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>{content}</TooltipTrigger>
+          <TooltipContent side="right" className="font-medium text-gray-900 dark:bg-gray-800 dark:text-white">
+            {item.label}
+          </TooltipContent>
+        </Tooltip>
+      )
+    }
+
+    return content
+  }
+
+  return (
+    <TooltipProvider>
+      <aside
+        className={cn(
+          "h-screen flex flex-col border-r transition-all duration-300 ease-in-out",
+          "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800",
+          isCollapsed ? "w-[72px]" : "w-64",
+        )}
+      >
+        {/* User Profile Section */}
+        <div className={cn("p-4 border-b border-gray-200 dark:border-gray-800", isCollapsed && "px-2")}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className={cn(
+                  "w-full flex items-center gap-3 p-2 rounded-lg transition-colors",
+                  "hover:bg-gray-100 dark:hover:bg-gray-800",
+                  "focus:outline-none focus:ring-2 focus:ring-primary/50",
+                  isCollapsed && "justify-center p-1",
+                )}
+              >
+                <Avatar className="h-10 w-10 border-2 border-primary/20">
+                  <AvatarImage src="/placeholder-user.png" />
+                  <AvatarFallback className="bg-primary/10 text-primary font-semibold">DS</AvatarFallback>
+                </Avatar>
+                {!isCollapsed && (
+                  <div className="flex-1 text-left min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">Daniel Smith</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">daniel@gmail.com</p>
+                  </div>
+                )}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align={isCollapsed ? "center" : "start"}
+              className="w-56 dark:bg-gray-900 dark:border-gray-800"
             >
-                <ul className="space-y-1 p-2">
-                    {navItems.map((item, index) => (
-                        <li key={index}>
-                            <a
-                                onClick={() => {
-                                    router.push(item.path)
-                                    setCurrentPage(index)
-                                }}
-                                className={cn(
-                                    "flex items-center space-x-3 p-2 rounded-md transition-colors",
-                                    "hover:bg-gray-200 dark:hover:bg-gray-700",
-                                    "cursor-pointer",
-                                    currentPage === index ? "bg-gray-300 dark:bg-gray-600" : ""
-                                )}
-                            >
-                                <span>{item.icon}</span>
-                                <span>{item.label}</span>
-                                
-                            </a>
-                        </li>
-                    ))}
-                </ul>
-            </nav>
-        </aside>
-    );
-};
+              <DropdownMenuLabel className="dark:text-white">My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator className="dark:bg-gray-800" />
+              <DropdownMenuItem className="cursor-pointer dark:text-gray-300 dark:focus:bg-gray-800">
+                <User className="w-4 h-4 mr-2" />
+                Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer dark:text-gray-300 dark:focus:bg-gray-800">
+                <Settings className="w-4 h-4 mr-2" />
+                Account Settings
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer dark:text-gray-300 dark:focus:bg-gray-800">
+                <Bell className="w-4 h-4 mr-2" />
+                Notifications
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="dark:bg-gray-800" />
+              <DropdownMenuItem className="cursor-pointer text-red-600 dark:text-red-400 dark:focus:bg-gray-800">
+                <LogOut className="w-4 h-4 mr-2" />
+                Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
-export default SideNav;
+        {/* Main Navigation */}
+        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700 scrollbar-track-transparent">
+          {navItems.map((item, index) => (
+            <NavItem key={index} item={item} index={index} isActive={currentPage === index} />
+          ))}
+        </nav>
+
+        {/* Bottom Section */}
+        <div className="border-t border-gray-200 dark:border-gray-800 p-3 space-y-1">
+          {/* Bottom Nav Items */}
+          {bottomNavItems.map((item, index) => (
+            <NavItem
+              key={`bottom-${index}`}
+              item={item}
+              index={navItems.length + index}
+              isActive={currentPage === navItems.length + index}
+            />
+          ))}
+
+          <Separator className="my-3 dark:bg-gray-800" />
+
+          {/* Theme Toggle */}
+          <div
+            className={cn(
+              "flex items-center rounded-lg p-1 bg-gray-100 dark:bg-gray-800",
+              isCollapsed && "flex-col gap-1",
+            )}
+          >
+            <Tooltip delayDuration={0}>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    if (isDarkMode) toggleTheme()
+                  }}
+                  className={cn(
+                    "flex-1 gap-2 transition-all",
+                    !isDarkMode
+                      ? "bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white"
+                      : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200",
+                    isCollapsed && "w-full px-2",
+                  )}
+                >
+                  <Sun className="w-4 h-4" />
+                  {!isCollapsed && <span className="text-xs">Light</span>}
+                </Button>
+              </TooltipTrigger>
+              {isCollapsed && (
+                <TooltipContent side="right" className="bg-gray-900 dark:bg-gray-800 text-white border-gray-700">
+                  Light Mode
+                </TooltipContent>
+              )}
+            </Tooltip>
+
+            <Tooltip delayDuration={0}>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    if (!isDarkMode) toggleTheme()
+                  }}
+                  className={cn(
+                    "flex-1 gap-2 transition-all",
+                    isDarkMode ? "bg-gray-700 shadow-sm text-white" : "text-gray-500 hover:text-gray-700",
+                    isCollapsed && "w-full px-2",
+                  )}
+                >
+                  <Moon className="w-4 h-4" />
+                  {!isCollapsed && <span className="text-xs">Dark</span>}
+                </Button>
+              </TooltipTrigger>
+              {isCollapsed && (
+                <TooltipContent side="right" className="bg-gray-900 dark:bg-gray-800 text-white border-gray-700">
+                  Dark Mode
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </div>
+
+          {/* Collapse Toggle */}
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsCollapsed(!isCollapsed)}
+                className={cn(
+                  "w-full mt-2 text-gray-500 dark:text-gray-400",
+                  "hover:text-gray-700 dark:hover:text-gray-200",
+                  "hover:bg-gray-100 dark:hover:bg-gray-800",
+                )}
+              >
+                {isCollapsed ? (
+                  <ChevronRight className="w-4 h-4" />
+                ) : (
+                  <>
+                    <ChevronLeft className="w-4 h-4 mr-2" />
+                    <span className="text-xs">Collapse</span>
+                  </>
+                )}
+              </Button>
+            </TooltipTrigger>
+            {isCollapsed && (
+              <TooltipContent side="right" className="bg-gray-900 dark:bg-gray-800 text-white border-gray-700">
+                Expand Sidebar
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </div>
+      </aside>
+    </TooltipProvider>
+  )
+}
+
+export default SideNav

@@ -29,7 +29,9 @@ namespace ImsServer.Controllers
             [FromQuery] decimal? maxTotalAmount,
             [FromQuery] decimal? minTotalAmount,
             [FromQuery] bool? isPaid,
-            [FromQuery] bool includeMetadata = false)
+            [FromQuery] bool includeMetadata = false,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 50)
         {
             var query = _db.Purchases
                 .Include(p => p.Supplier)
@@ -79,22 +81,49 @@ namespace ImsServer.Controllers
                 query = query.Where(p => p.IsPaid == isPaid.Value);
             }
 
-            var purchases = await query.ToListAsync();
+            // Get total count before pagination
+            var totalCount = await query.CountAsync();
+
+            // Validate and apply pagination
+            page = page < 1 ? 1 : page;
+            pageSize = pageSize < 1 ? 50 : pageSize > 500 ? 500 : pageSize;
+
+            var purchases = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+            var paginationInfo = new
+            {
+                CurrentPage = page,
+                PageSize = pageSize,
+                TotalCount = totalCount,
+                TotalPages = totalPages,
+                HasPreviousPage = page > 1,
+                HasNextPage = page < totalPages
+            };
 
             if (!includeMetadata)
             {
-                return Ok(purchases);
+                return Ok(new
+                {
+                    Pagination = paginationInfo,
+                    Purchases = purchases
+                });
             }
 
-            // Calculate metadata
+            // Calculate metadata (using all filtered data, not just current page)
+            var allPurchases = await query.ToListAsync();
             var metadata = new
             {
-                TotalAmount = purchases.Sum(p => p.TotalAmount),
-                PaidAmount = purchases.Sum(p => p.PaidAmount),
-                GrandTotal = purchases.Sum(p => p.GrandTotal),
-                PaidPurchases = purchases.Count(p => p.IsPaid),
-                TotalPurchases = purchases.Count,
-                SupplierBreakdown = purchases
+                TotalAmount = allPurchases.Sum(p => p.TotalAmount),
+                PaidAmount = allPurchases.Sum(p => p.PaidAmount),
+                GrandTotal = allPurchases.Sum(p => p.GrandTotal),
+                PaidPurchases = allPurchases.Count(p => p.IsPaid),
+                TotalPurchases = allPurchases.Count,
+                SupplierBreakdown = allPurchases
                     .GroupBy(p => new { p.SupplierId, p.Supplier.CompanyName })
                     .Select(g => new
                     {
@@ -111,6 +140,7 @@ namespace ImsServer.Controllers
 
             return Ok(new
             {
+                Pagination = paginationInfo,
                 Metadata = metadata,
                 Purchases = purchases
             });

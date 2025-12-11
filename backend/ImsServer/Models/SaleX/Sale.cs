@@ -23,6 +23,7 @@ namespace ImsServer.Models.SaleX
         public bool IsTaken { get; set; } // Indicates if the sale is taken or not
         public PaymentMethod PaymentMethod { get; set; } // e.g., Cash, Card, etc.
         public bool IsCompleted { get; set; }
+        public bool WasPartialPayment { get; set; } = false; // Indicates if sale had partial payment (debt) at creation
 
         [ForeignKey("CustomerId")]
         public virtual Customer Customer { get; set; }
@@ -49,10 +50,12 @@ namespace ImsServer.Models.SaleX
         public bool IsPaid { get; set; }
         public bool IsRefunded { get; set; }
         public bool IsTaken { get; set; }
+        public bool WasPartialPayment { get; set; }
         public PaymentMethod PaymentMethod { get; set; } 
         public bool IsCompleted { get; set; }
         public SimpleCustomerDto Customer { get; set; }
         public UserDto ProcessedBy { get; set; }
+
         public List<SimpleSalesItemDto> SaleItems { get; set; } = new List<SimpleSalesItemDto>();
     }
 
@@ -77,6 +80,7 @@ namespace ImsServer.Models.SaleX
         public decimal FinalAmount { get; set; }
         public bool IsPaid { get; set; }
         public bool IsTaken { get; set; }
+        public bool WasPartialPayment { get; set; }
         public PaymentMethod PaymentMethod { get; set; }
         public bool IsCompleted { get; set; }
         public string? Notes { get; set; }

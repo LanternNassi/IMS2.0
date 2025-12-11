@@ -18,6 +18,7 @@ import { Search, FilterList } from "@mui/icons-material"
 import { SalesTable, type Sale as SaleTableType } from "@/components/SalesTable"
 import { useRouter } from "next/navigation"
 import api from "@/Utils/Request"
+import PaginationControls from "@/components/PaginationControls"
 
 // Types
 export type SalesItem = {
@@ -68,10 +69,27 @@ interface SalesMetadata {
   }>
 }
 
+interface Pagination {
+  currentPage: number
+  pageSize: number
+  totalCount: number
+  totalPages: number
+  hasPreviousPage: boolean
+  hasNextPage: boolean
+}
+
     
 export default function SalesPage() {
   const [sales, setSales] = useState<SaleTableType[]>([])
   const [metadata, setMetadata] = useState<SalesMetadata | null>(null)
+  const [pagination, setPagination] = useState<Pagination>({
+    currentPage: 1,
+    pageSize: 50,
+    totalCount: 0,
+    totalPages: 1,
+    hasPreviousPage: false,
+    hasNextPage: false,
+  })
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string }>({ open: false, message: "" })
@@ -81,12 +99,20 @@ export default function SalesPage() {
     fetchSales()
   }, [])
 
-  const fetchSales = async () => {
+  const fetchSales = async (page: number = 1, pageSize: number = 50) => {
     setLoading(true)
     try {
-      const response = await api.get("/Sales?includeMetadata=true")
+      const response = await api.get(`/Sales?includeMetadata=true&page=${page}&pageSize=${pageSize}`)
       setSales(response.data.sales || [])
       setMetadata(response.data.metadata || null)
+      setPagination(response.data.pagination || {
+        currentPage: 1,
+        pageSize: 50,
+        totalCount: 0,
+        totalPages: 1,
+        hasPreviousPage: false,
+        hasNextPage: false,
+      })
     } catch (error: any) {
       console.error("Error fetching sales:", error)
       setSnackbar({
@@ -119,7 +145,7 @@ export default function SalesPage() {
     try {
       await api.delete(`/Sales/${id}`)
       setSnackbar({ open: true, message: "Sale deleted successfully" })
-      fetchSales()
+      fetchSales(pagination.currentPage, pagination.pageSize)
     } catch (error: any) {
       console.error("Error deleting sale:", error)
 
@@ -128,6 +154,14 @@ export default function SalesPage() {
         message: error.response?.data?.message || "Failed to delete sale",
       })
     }
+  }
+
+  const handlePageChange = (newPage: number) => {
+    fetchSales(newPage, pagination.pageSize)
+  }
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    fetchSales(1, newPageSize)
   }
 
   return (
@@ -296,6 +330,20 @@ export default function SalesPage() {
           />
         )}
       </Box>
+
+      {/* Pagination Controls */}
+      {!loading && (
+        <PaginationControls
+          currentPage={pagination.currentPage}
+          pageSize={pagination.pageSize}
+          totalCount={pagination.totalCount}
+          totalPages={pagination.totalPages}
+          hasPreviousPage={pagination.hasPreviousPage}
+          hasNextPage={pagination.hasNextPage}
+          onPageChange={handlePageChange}
+          itemName="sales"
+        />
+      )}
 
       <Snackbar
         open={snackbar.open}

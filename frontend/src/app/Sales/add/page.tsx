@@ -746,7 +746,7 @@ export default function SaleForm({
                                         <span className="text-blue-500 dark:text-blue-400 font-medium">Paid amount</span>
                                         <TextField
                                             type="number"
-                                            value={paidAmount || ""}
+                                            value={paidAmount}
                                             size="small"
                                             sx={{ width: '150px', '& input': { textAlign: 'right' } }}
                                             onChange={(value) => {
@@ -870,7 +870,7 @@ export default function SaleForm({
                             <Button
                                 type="submit"
                                 variant="contained"
-                                disabled={items.length === 0 || isSubmitting || !paidAmount || paidAmount <= 0}
+                                disabled={items.length === 0 || isSubmitting}
                                 className="w-full h-12 text-lg font-semibold"
                                 ref={submitButtonRef}
                             >

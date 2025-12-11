@@ -104,7 +104,7 @@ const TransactionRow: React.FC<{
         onClick={() => setIsExpanded(!isExpanded)}
       >
         {/* Expand Toggle */}
-        <TableCell className="w-16 pl-4">
+        <TableCell className="w-16 pl-4 py-3">
           <Button
             variant="ghost"
             size="icon"
@@ -123,7 +123,7 @@ const TransactionRow: React.FC<{
         </TableCell>
 
         {/* Transaction Info */}
-        <TableCell className="py-5 w-48">
+        <TableCell className="py-3 w-48">
           <div className="flex flex-col gap-1">
             <span className="font-mono font-semibold text-foreground">{`PA-${transactionNumber?.slice(0, 5)}`}</span>
             <span className="text-xs text-muted-foreground">
@@ -133,7 +133,7 @@ const TransactionRow: React.FC<{
         </TableCell>
 
         {/* Partner Info */}
-        <TableCell className="py-5 w-48">
+        <TableCell className="py-3 w-48">
           <div className="flex flex-col gap-1">
             <span className="font-medium text-foreground">{partnerName || "—"}</span>
             {partnerContact && <span className="text-xs text-muted-foreground">{partnerContact}</span>}
@@ -141,7 +141,7 @@ const TransactionRow: React.FC<{
         </TableCell>
 
         {/* Items Count */}
-        <TableCell className="py-5 w-32">
+        <TableCell className="py-3 w-32">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 dark:bg-primary/20">
               <Package className="h-4 w-4 text-primary" />
@@ -152,7 +152,7 @@ const TransactionRow: React.FC<{
 
         {/* Allocation Status - Only for Purchases */}
         {type === "purchase" && (
-          <TableCell className="py-5 w-32">
+          <TableCell className="py-3 w-32">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -197,13 +197,13 @@ const TransactionRow: React.FC<{
         )}
 
         {/* Financial Summary */}
-        <TableCell className="py-5 w-40">
+        <TableCell className="py-3 w-40">
           <div className="flex flex-col gap-1 text-right">
             <span className="font-medium">{formatCurrencyFull(transaction.totalAmount)}</span>
           </div>
         </TableCell>
 
-        <TableCell className="py-5 w-40">
+        <TableCell className="py-3 w-40">
           <div className="flex flex-col gap-1 text-right">
             <TooltipProvider>
               <Tooltip>
@@ -225,7 +225,7 @@ const TransactionRow: React.FC<{
           </div>
         </TableCell>
 
-        <TableCell className="py-5 w-40">
+        <TableCell className="py-3 w-40">
           <div className="flex flex-col gap-1 text-right">
             <TooltipProvider>
               <Tooltip>
@@ -241,7 +241,7 @@ const TransactionRow: React.FC<{
         </TableCell>
 
         {/* Actions */}
-        <TableCell className="py-5 pr-4 w-32">
+        <TableCell className="py-3 pr-4 w-32">
           <TooltipProvider>
             <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
               {onView && (

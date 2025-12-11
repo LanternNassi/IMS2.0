@@ -104,7 +104,7 @@ const SaleRow: React.FC<{
         onClick={() => setIsExpanded(!isExpanded)}
       >
         {/* Expand Toggle */}
-        <TableCell className="w-16 pl-4 border-r border-border/30 dark:border-gray-700/30">
+        <TableCell className="w-16 pl-4 border-r border-border/30 dark:border-gray-700/30 py-3">
           <Button
             variant="ghost"
             size="icon"
@@ -123,7 +123,7 @@ const SaleRow: React.FC<{
         </TableCell>
 
         {/* Sale Info */}
-        <TableCell className="py-5 w-48 border-r border-border/30 dark:border-gray-700/30">
+        <TableCell className="py-3 w-48 border-r border-border/30 dark:border-gray-700/30">
           <div className="flex flex-col gap-1">
             <span className="font-mono font-semibold text-foreground">{`SA-${sale.id?.slice(0, 5)}`}</span>
             <span className="text-xs text-muted-foreground">
@@ -133,7 +133,7 @@ const SaleRow: React.FC<{
         </TableCell>
 
         {/* Customer Info */}
-        <TableCell className="py-5 w-48 border-r border-border/30 dark:border-gray-700/30">
+        <TableCell className="py-3 w-48 border-r border-border/30 dark:border-gray-700/30">
           <div className="flex flex-col gap-1">
             <span className="font-medium text-foreground">{sale.customer?.name || "—"}</span>
             {sale.customer?.phone && <span className="text-xs text-muted-foreground">{sale.customer.phone}</span>}
@@ -141,7 +141,7 @@ const SaleRow: React.FC<{
         </TableCell>
 
         {/* Items Count */}
-        <TableCell className="py-5 w-32 border-r border-border/30 dark:border-gray-700/30">
+        <TableCell className="py-3 w-32 border-r border-border/30 dark:border-gray-700/30">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 dark:bg-primary/20">
               <Package className="h-4 w-4 text-primary" />
@@ -151,14 +151,14 @@ const SaleRow: React.FC<{
         </TableCell>
 
         {/* Payment Method */}
-        <TableCell className="py-5 w-40 border-r border-border/30 dark:border-gray-700/30">
+        <TableCell className="py-3 w-40 border-r border-border/30 dark:border-gray-700/30">
           <Badge variant="outline" className="rounded-md font-normal">
             {getPaymentMethodLabel(sale.paymentMethod)}
           </Badge>
         </TableCell>
 
         {/* Status */}
-        <TableCell className="py-5 w-32 border-r border-border/30 dark:border-gray-700/30">
+        <TableCell className="py-3 w-32 border-r border-border/30 dark:border-gray-700/30">
           <div className="flex flex-col gap-1">
             {sale.isPaid ? (
               <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 hover:bg-emerald-100">
@@ -173,13 +173,13 @@ const SaleRow: React.FC<{
         </TableCell>
 
         {/* Financial Summary */}
-        <TableCell className="py-5 w-40 border-r border-border/30 dark:border-gray-700/30">
+        <TableCell className="py-3 w-40 border-r border-border/30 dark:border-gray-700/30">
           <div className="flex flex-col gap-1 text-right">
             <span className="font-medium">{formatCurrencyFull(sale.totalAmount)}</span>
           </div>
         </TableCell>
 
-        <TableCell className="py-5 w-40 border-r border-border/30 dark:border-gray-700/30">
+        <TableCell className="py-3 w-40 border-r border-border/30 dark:border-gray-700/30">
           <div className="flex flex-col gap-1 text-right">
             <TooltipProvider>
               <Tooltip>
@@ -196,7 +196,7 @@ const SaleRow: React.FC<{
           </div>
         </TableCell>
 
-        <TableCell className="py-5 w-40 border-r border-border/30 dark:border-gray-700/30">
+        <TableCell className="py-3 w-40 border-r border-border/30 dark:border-gray-700/30">
           <div className="flex flex-col gap-1 text-right">
             <TooltipProvider>
               <Tooltip>
@@ -212,7 +212,7 @@ const SaleRow: React.FC<{
         </TableCell>
 
         {/* Actions */}
-        <TableCell className="py-5 pr-4 w-32">
+        <TableCell className="py-3 pr-4 w-32">
           <TooltipProvider>
             <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
               {onView && (

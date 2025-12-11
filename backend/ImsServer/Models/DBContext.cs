@@ -7,6 +7,7 @@ using ImsServer.Models.ProductX;
 using ImsServer.Models.PurchaseX;
 using ImsServer.Models.SaleX;
 using ImsServer.Models.ExpenditureX;
+using ImsServer.Models.SalesDebtsTrackerX;
     
 
 using Microsoft.EntityFrameworkCore;
@@ -43,6 +44,7 @@ namespace ImsServer.Models
         public DbSet<SalesItem> SalesItems { get; set; }
         public DbSet<Expenditure> Expenditures { get; set; }
         public DbSet<ExpenditureCategory> ExpenditureCategories { get; set; }
+        public DbSet<SalesDebtsTracker> SalesDebtsTrackers { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -67,6 +69,7 @@ namespace ImsServer.Models
 
             modelBuilder.Entity<Expenditure>().HasQueryFilter(c => !c.DeletedAt.HasValue);
             modelBuilder.Entity<ExpenditureCategory>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+            modelBuilder.Entity<SalesDebtsTracker>().HasQueryFilter(c => !c.DeletedAt.HasValue);
 
             modelBuilder.Entity<ProductStorage>()
                 .HasOne(ps => ps.ProductGeneric)
@@ -149,6 +152,8 @@ namespace ImsServer.Models
 
                     || e.Entity is Purchase
                     || e.Entity is PurchaseItem
+
+                    || e.Entity is SalesDebtsTracker
 
                     )
                 .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);
