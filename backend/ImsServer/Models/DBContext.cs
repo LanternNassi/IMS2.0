@@ -4,6 +4,11 @@ using ImsServer.Models.CustomerX;
 using ImsServer.Models.StoreX;
 using ImsServer.Models.SupplierX;
 using ImsServer.Models.ProductX;
+using ImsServer.Models.PurchaseX;
+using ImsServer.Models.SaleX;
+using ImsServer.Models.ExpenditureX;
+    
+
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography.X509Certificates;
 
@@ -31,6 +36,14 @@ namespace ImsServer.Models
         public DbSet<ProductVariation> ProductVariations { get; set; }
         public DbSet<ProductStorage> ProductStorages { get; set; }
 
+        public DbSet<Purchase> Purchases { get; set; }
+        public DbSet<PurchaseItem> PurchaseItems { get; set; }
+
+        public DbSet<Sale> Sales { get; set; }
+        public DbSet<SalesItem> SalesItems { get; set; }
+        public DbSet<Expenditure> Expenditures { get; set; }
+        public DbSet<ExpenditureCategory> ExpenditureCategories { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             
@@ -47,6 +60,13 @@ namespace ImsServer.Models
             modelBuilder.Entity<Product>().HasQueryFilter(c => !c.DeletedAt.HasValue);
             modelBuilder.Entity<ProductGeneric>().HasQueryFilter(c => !c.DeletedAt.HasValue);
             modelBuilder.Entity<ProductVariation>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+            modelBuilder.Entity<SalesItem>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+            modelBuilder.Entity<Sale>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+            modelBuilder.Entity<Purchase>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+            modelBuilder.Entity<PurchaseItem>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+
+            modelBuilder.Entity<Expenditure>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+            modelBuilder.Entity<ExpenditureCategory>().HasQueryFilter(c => !c.DeletedAt.HasValue);
 
             modelBuilder.Entity<ProductStorage>()
                 .HasOne(ps => ps.ProductGeneric)
@@ -67,6 +87,25 @@ namespace ImsServer.Models
                 .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<ProductStorage>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+
+            // Configure SalesItem to prevent cascade delete conflicts
+            modelBuilder.Entity<SalesItem>()
+                .HasOne(si => si.ProductStorage)
+                .WithMany()
+                .HasForeignKey(si => si.ProductStorageId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<SalesItem>()
+                .HasOne(si => si.ProductVariation)
+                .WithMany()
+                .HasForeignKey(si => si.ProductVariationId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<SalesItem>()
+                .HasOne(si => si.Sale)
+                .WithMany(s => s.SaleItems)
+                .HasForeignKey(si => si.SaleId)
+                .OnDelete(DeleteBehavior.Cascade);
 
 
             base.OnModelCreating(modelBuilder);
@@ -102,6 +141,14 @@ namespace ImsServer.Models
                     || e.Entity is ProductGeneric
                     || e.Entity is ProductVariation
                     || e.Entity is ProductStorage
+                    || e.Entity is Expenditure
+                    || e.Entity is ExpenditureCategory
+
+                    || e.Entity is Sale
+                    || e.Entity is SalesItem
+
+                    || e.Entity is Purchase
+                    || e.Entity is PurchaseItem
 
                     )
                 .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);

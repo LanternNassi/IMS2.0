@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { Plus, Trash2, Pill, ChevronRight, Home } from "lucide-react"
 
-import { Button, TextField } from "@mui/material"
+import { Button, TextField, Snackbar } from "@mui/material"
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -23,9 +23,11 @@ import {
 } from "@/components/ui/alert-dialog"
 import { SearchableSelect } from "@/components/searchable-select"
 import { SupplierAutocomplete } from "@/components/SupplierAutocomplete"
-import { ProductAutocomplete, type Product } from "@/components/ProductAutocomplete"
+import { ProductAutocomplete, type ProductVariation } from "@/components/ProductAutocomplete"
 import { BatchModal } from "@/components/batch-modal"
 import type { Purchase, PurchaseItem } from "@/app/Purchases/page"
+import api from "@/Utils/Request"
+import { useRouter } from "next/navigation"
 
 import { supplier, useSupplierStore } from "@/store/useSupplierStore"
 
@@ -37,8 +39,6 @@ const purchaseFormSchema = z.object({
 type PurchaseFormProps = {
   purchase?: Purchase
   suppliers: Array<{ id: string; name: string }>
-  products: Array<{ id: string; name: string; baseCostPrice: number }>
-  onSubmit: (purchase: Purchase) => void
 }
 
 // Mock data
@@ -50,35 +50,29 @@ const mockSuppliers = [
   { id: "5", name: "Global Medical Supplies" },
 ]
 
-const mockProducts = [
-  { id: "1", name: "Paracetamol", baseCostPrice: 5.0 },
-  { id: "2", name: "Ibuprofen", baseCostPrice: 6.0 },
-  { id: "3", name: "Aspirin", baseCostPrice: 4.5 },
-  { id: "4", name: "Amoxicillin", baseCostPrice: 8.5 },
-  { id: "5", name: "Metformin", baseCostPrice: 3.2 },
-]
-
 export default function PurchaseForm({
   purchase,
   suppliers = mockSuppliers,
-  products = mockProducts,
-  onSubmit,
 }: PurchaseFormProps) {
   const [items, setItems] = useState<PurchaseItem[]>(purchase?.items || [])
   const [selectedProductId, setSelectedProductId] = useState("")
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [selectedProduct, setSelectedProduct] = useState<ProductVariation | null>(null)
   const [selectedQuantity, setSelectedQuantity] = useState("")
-  const [editingBaseCost, setEditingBaseCost] = useState<{ [key: string]: number }>({})
-  const [priceChangeAlert, setPriceChangeAlert] = useState<{ show: boolean; itemId: string; newPrice: number }>({
-    show: false,
-    itemId: "",
-    newPrice: 0,
-  })
+  const [editingItemId, setEditingItemId] = useState<string | null>(null)
+  const [editingItemData, setEditingItemData] = useState<{
+    quantity: string;
+    baseCostPrice: string;
+  }>({ quantity: "", baseCostPrice: "" })
   const [selectedSupplierDetails, setSelectedSupplierDetails] = useState<supplier | null>(null)
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<PurchaseItem | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [paidAmount, setPaidAmount] = useState(0)
+  const [discount, setDiscount] = useState(0)
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string }>({ open: false, message: "" })
   const { getSupplierById } = useSupplierStore()
-  
+  const router = useRouter()
+
   // Refs for keyboard navigation
   const supplierSearchRef = useRef<HTMLInputElement>(null)
   const productSearchRef = useRef<HTMLInputElement>(null)
@@ -100,7 +94,7 @@ export default function PurchaseForm({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement
-      
+
       // Number keys for quick section navigation
       if (e.altKey && !e.shiftKey && !e.ctrlKey) {
         switch (e.key) {
@@ -127,7 +121,7 @@ export default function PurchaseForm({
       if (e.key === "ArrowDown" && e.altKey) {
         e.preventDefault()
         const activeElement = document.activeElement
-        
+
         if (activeElement === supplierSearchRef.current || target.closest('[data-section="supplier"]')) {
           productSearchRef.current?.focus()
         } else if (activeElement === productSearchRef.current || target.closest('[data-section="product"]')) {
@@ -144,7 +138,7 @@ export default function PurchaseForm({
       if (e.key === "ArrowUp" && e.altKey) {
         e.preventDefault()
         const activeElement = document.activeElement
-        
+
         if (activeElement === submitButtonRef.current || activeElement === notesRef.current) {
           productQtyRef.current?.focus()
         } else if (activeElement === productQtyRef.current || activeElement === addButtonRef.current || target.closest('[data-section="product"]')) {
@@ -166,17 +160,17 @@ export default function PurchaseForm({
       // Enter key behavior
       if (e.key === "Enter") {
         const activeElement = document.activeElement
-        
+
         // If Add button is focused or we're in quantity field with valid data
-        if (activeElement === addButtonRef.current || 
-            (activeElement === productQtyRef.current && selectedProduct && selectedQuantity)) {
+        if (activeElement === addButtonRef.current ||
+          (activeElement === productQtyRef.current && selectedProduct && selectedQuantity)) {
           e.preventDefault()
           addProduct()
           productSearchRef.current?.focus()
         }
         // If notes textarea or any other input (except autocomplete dropdown)
-        else if (activeElement === notesRef.current || 
-                 (target.tagName === 'INPUT' && !target.closest('[role="combobox"]'))) {
+        else if (activeElement === notesRef.current ||
+          (target.tagName === 'INPUT' && !target.closest('[role="combobox"]'))) {
           // Don't prevent default in textarea to allow line breaks
           if (activeElement !== notesRef.current) {
             e.preventDefault()
@@ -199,13 +193,16 @@ export default function PurchaseForm({
     }
 
     const quantity = Number.parseFloat(selectedQuantity)
-    const totalPrice = (selectedProduct.baseCostPrice || 0) * quantity
+    // Use wholeSalePrice as the cost price for purchases
+    const costPrice = selectedProduct.wholeSalePrice || 0
+    const totalPrice = costPrice * quantity
 
     const newItem: PurchaseItem = {
       id: crypto.randomUUID(),
-      productId: selectedProduct.id,
+      productId: selectedProduct.productId,
+      productVariationId: selectedProduct.id,
       productName: selectedProduct.name,
-      baseCostPrice: selectedProduct.baseCostPrice || 0,
+      baseCostPrice: costPrice,
       quantity,
       totalPrice,
       hasGeneric: false,
@@ -221,62 +218,43 @@ export default function PurchaseForm({
     setItems(items.filter((item) => item.id !== id))
   }
 
-  const updateItemQuantity = (id: string, quantity: number) => {
-    setItems(
-      items.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              quantity,
-              totalPrice: item.baseCostPrice * quantity,
-            }
-          : item,
-      ),
-    )
+  const startEditingItem = (item: PurchaseItem) => {
+    setEditingItemId(item.id)
+    setEditingItemData({
+      quantity: item.quantity.toString(),
+      baseCostPrice: (item.baseCostPrice || 0).toString(),
+    })
   }
 
-  const handleBaseCostPriceChange = (id: string, newPrice: number) => {
-    setEditingBaseCost((prev) => ({ ...prev, [id]: newPrice }))
+  const cancelEditingItem = () => {
+    setEditingItemId(null)
+    setEditingItemData({ quantity: "", baseCostPrice: "" })
   }
 
-  const confirmPriceChange = (id: string) => {
-    const newPrice = editingBaseCost[id]
-    const item = items.find((i) => i.id === id)
-    if (!item || newPrice === item.baseCostPrice) {
-      setEditingBaseCost((prev) => {
-        const updated = { ...prev }
-        delete updated[id]
-        return updated
-      })
+  const saveEditingItem = () => {
+    if (!editingItemId) return
+
+    const quantity = parseFloat(editingItemData.quantity)
+    const baseCostPrice = parseFloat(editingItemData.baseCostPrice)
+
+    if (isNaN(quantity) || isNaN(baseCostPrice) || quantity <= 0 || baseCostPrice <= 0) {
       return
     }
 
-    setPriceChangeAlert({
-      show: true,
-      itemId: id,
-      newPrice,
-    })
-  }
-
-  const applyPriceChange = () => {
-    const { itemId, newPrice } = priceChangeAlert
     setItems(
       items.map((item) =>
-        item.id === itemId
+        item.id === editingItemId
           ? {
-              ...item,
-              baseCostPrice: newPrice,
-              totalPrice: newPrice * item.quantity,
-            }
+            ...item,
+            quantity,
+            baseCostPrice,
+            totalPrice: baseCostPrice * quantity,
+          }
           : item,
       ),
     )
-    setEditingBaseCost((prev) => {
-      const updated = { ...prev }
-      delete updated[itemId]
-      return updated
-    })
-    setPriceChangeAlert({ show: false, itemId: "", newPrice: 0 })
+
+    cancelEditingItem()
   }
 
   const handleBatchClick = (item: PurchaseItem) => {
@@ -296,30 +274,64 @@ export default function PurchaseForm({
 
   const totalAmount = items.reduce((sum, item) => sum + item.totalPrice, 0)
 
-  const handleFormSubmit = (data: z.infer<typeof purchaseFormSchema>) => {
+  const handleFormSubmit = async (data: z.infer<typeof purchaseFormSchema>) => {
     if (items.length === 0) {
+      setSnackbar({ open: true, message: "Please add at least one product to the purchase." })
       return
     }
+
+    if (!selectedSupplierDetails) {
+      setSnackbar({ open: true, message: "Please select a supplier before submitting." })
+      return
+    }
+
+    setIsSubmitting(true)
 
     const purchaseData: Purchase = {
       id: purchase?.id || crypto.randomUUID(),
       supplierId: data.supplierId,
-      supplierName: selectedSupplier?.name || "",
+      processedBy: "8F077C6B-EF9E-4802-6166-08DE28E2F419", // To be filled by backend
+      supplierName: selectedSupplierDetails.companyName || "",
       items,
       totalAmount,
+      paidAmount,
       createdAt: purchase?.createdAt || new Date(),
       notes: data.notes,
     }
 
-    onSubmit(purchaseData)
+    try {
+      if (purchase?.id) {
+        // Update existing purchase
+        await api.put(`/Purchases/${purchase.id}`, purchaseData)
+        setSnackbar({ open: true, message: `Purchase from ${selectedSupplierDetails.companyName} has been updated successfully.` })
+      } else {
+        // Create new purchase
+        console.log("Submitting purchase data:", purchaseData)
+        await api.post("/Purchases", purchaseData)
+        setSnackbar({ open: true, message: `Purchase from ${selectedSupplierDetails.companyName} has been recorded successfully.` })
+      }
+
+      // Navigate back to purchases list
+      router.push("/Purchases")
+    } catch (error: any) {
+      console.error("Error submitting purchase:", error)
+
+      const errorMessage = error.response?.data?.message ||
+        error.response?.data?.error ||
+        "Failed to save purchase. Please try again."
+
+      setSnackbar({ open: true, message: errorMessage })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
     <div className="dark:bg-gray-900 bg-white rounded-lg w-[80vw] mx-auto">
       {/* Breadcrumb Navigation */}
       <div className="mb-6 flex items-center gap-2 text-sm">
-        <Link 
-          href="/Purchases" 
+        <Link
+          href="/Purchases"
           className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
         >
           <Home className="h-4 w-4" />
@@ -408,7 +420,7 @@ export default function PurchaseForm({
 
           {/* Row 2: Product Details */}
           <Card className="dark:bg-gray-900 dark:border-gray-700">
-             <CardHeader className="pb-3">
+            <CardHeader className="pb-3">
               <CardTitle className="text-lg dark:text-gray-200">Product Details</CardTitle>
             </CardHeader>
             <CardContent data-section="product">
@@ -424,12 +436,6 @@ export default function PurchaseForm({
                       setTimeout(() => productQtyRef.current?.focus(), 100)
                     }
                   }}
-                  products={products.map(p => ({ 
-                    id: p.id, 
-                    name: p.name, 
-                    baseCostPrice: p.baseCostPrice,
-                    inventory: 0 
-                  }))}
                   label="Search (Alt+2)"
                   fullWidth
                   size="small"
@@ -446,20 +452,20 @@ export default function PurchaseForm({
                   sx={{ backgroundColor: 'rgba(0, 0, 0, 0.02)' }}
                 />
 
-                {/* Inventory */}
+                {/* Unit of Measure */}
                 <TextField
-                  label="Inventory"
-                  value={selectedProduct?.inventory || "0"}
+                  label="Unit"
+                  value={selectedProduct?.unitofMeasure || ""}
                   InputProps={{ readOnly: true }}
                   fullWidth
                   size="small"
                   sx={{ backgroundColor: 'rgba(0, 0, 0, 0.02)' }}
                 />
 
-                {/* Rate */}
+                {/* Wholesale Price (Cost) */}
                 <TextField
-                  label="Rate"
-                  value={selectedProduct?.baseCostPrice || ""}
+                  label="Cost Price"
+                  value={selectedProduct?.wholeSalePrice?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || ""}
                   InputProps={{ readOnly: true }}
                   fullWidth
                   size="small"
@@ -526,43 +532,113 @@ export default function PurchaseForm({
                             <TableHead className="dark:text-gray-300 text-xs">Rate</TableHead>
                             <TableHead className="dark:text-gray-300 text-xs">Total</TableHead>
                             <TableHead className="dark:text-gray-300 text-xs w-10">Generic</TableHead>
-                            <TableHead className="dark:text-gray-300 text-xs w-10"></TableHead>
+                            <TableHead className="dark:text-gray-300 text-xs w-20">Actions</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {items.map((item) => (
-                            <TableRow key={item.id} className="dark:border-gray-700">
-                              <TableCell className="font-medium dark:text-gray-200 text-sm">
-                                {item.productName}
-                              </TableCell>
-                              <TableCell className="dark:text-gray-300 text-sm">{item.quantity}</TableCell>
-                              <TableCell className="dark:text-gray-300 text-sm">
-                                {item.baseCostPrice.toFixed(0)}
-                              </TableCell>
-                              <TableCell className="font-semibold dark:text-gray-200 text-sm">
-                                {item.totalPrice.toFixed(0)}
-                              </TableCell>
-                              <TableCell>
-                                <Button
-                                  variant="outlined"
-                                  onClick={() => handleBatchClick(item)}
-                                  title="Add batch/generic information"
-                                  className={`h-7 w-7 ${item.hasGeneric ? "dark:bg-gray-600" : ""}`}
-                                >
-                                  <Pill className="h-3 w-3" />
-                                </Button>
-                              </TableCell>
-                              <TableCell>
-                                <Button
-                                  variant="contained"
-                                  onClick={() => removeItem(item.id)}
-                                  className="h-7 w-7"
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
+                          {items.map((item) => {
+                            const isEditing = editingItemId === item.id
+                            return (
+                              <TableRow key={item.id} className="dark:border-gray-700">
+                                <TableCell className="font-medium dark:text-gray-200 text-sm">
+                                  {item.productName}
+                                </TableCell>
+                                <TableCell className="dark:text-gray-300 text-sm">
+                                  {isEditing ? (
+                                    <TextField
+                                      type="number"
+                                      value={editingItemData.quantity}
+                                      onChange={(e) => setEditingItemData({ ...editingItemData, quantity: e.target.value })}
+                                      size="small"
+                                      sx={{ width: '80px' }}
+                                      inputProps={{ min: 0, step: 0.01 }}
+                                    />
+                                  ) : (
+                                    item.quantity
+                                  )}
+                                </TableCell>
+                                <TableCell className="dark:text-gray-300 text-sm">
+                                  {isEditing ? (
+                                    <TextField
+                                      type="number"
+                                      value={editingItemData.baseCostPrice}
+                                      onChange={(e) => setEditingItemData({ ...editingItemData, baseCostPrice: e.target.value })}
+                                      size="small"
+                                      sx={{ width: '100px' }}
+                                      inputProps={{ min: 0, step: 0.01 }}
+                                    />
+                                  ) : (
+                                    (item.baseCostPrice || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                  )}
+                                </TableCell>
+                                <TableCell className="font-semibold dark:text-gray-200 text-sm">
+                                  {isEditing ? (
+                                    (parseFloat(editingItemData.quantity || "0") * parseFloat(editingItemData.baseCostPrice || "0")).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                  ) : (
+                                    item.totalPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  <Button
+                                    variant="outlined"
+                                    onClick={() => handleBatchClick(item)}
+                                    title="Add batch/generic information"
+                                    className={`h-7 w-7 min-w-0 ${item.hasGeneric ? "dark:bg-gray-600" : ""}`}
+                                    disabled={isEditing}
+                                  >
+                                    <Pill className="h-3 w-3" />
+                                  </Button>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex gap-1">
+                                    {isEditing ? (
+                                      <>
+                                        <Button
+                                          variant="contained"
+                                          color="success"
+                                          onClick={saveEditingItem}
+                                          className="h-7 w-7 min-w-0"
+                                          size="small"
+                                        >
+                                          ✓
+                                        </Button>
+                                        <Button
+                                          variant="outlined"
+                                          onClick={cancelEditingItem}
+                                          className="h-7 w-7 min-w-0"
+                                          size="small"
+                                        >
+                                          ✕
+                                        </Button>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Button
+                                          variant="outlined"
+                                          onClick={() => startEditingItem(item)}
+                                          className="h-7 w-7 min-w-0"
+                                          size="small"
+                                          title="Edit item"
+                                        >
+                                          ✎
+                                        </Button>
+                                        <Button
+                                          variant="contained"
+                                          color="error"
+                                          onClick={() => removeItem(item.id)}
+                                          className="h-7 w-7 min-w-0"
+                                          size="small"
+                                          title="Delete item"
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                      </>
+                                    )}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            )
+                          })}
                         </TableBody>
                       </Table>
                     </div>
@@ -576,7 +652,7 @@ export default function PurchaseForm({
                   <div className="flex justify-between items-center">
                     <span className="text-blue-500 dark:text-blue-400 font-medium">Sub Total</span>
                     <TextField
-                      value={totalAmount.toFixed(0)}
+                      value={totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       InputProps={{ readOnly: true }}
                       size="small"
                       sx={{ width: '150px', '& input': { textAlign: 'right' }, backgroundColor: 'rgba(0, 0, 0, 0.02)' }}
@@ -587,9 +663,12 @@ export default function PurchaseForm({
                     <span className="text-blue-500 dark:text-blue-400 font-medium">Discount</span>
                     <TextField
                       type="number"
-                      defaultValue="0"
+                      value={discount}
                       size="small"
                       sx={{ width: '150px', '& input': { textAlign: 'right' } }}
+                      onChange={(value) => {
+                        setDiscount(Number(value.target.value))
+                      }}
                     />
                   </div>
 
@@ -597,16 +676,19 @@ export default function PurchaseForm({
                     <span className="text-blue-500 dark:text-blue-400 font-medium">Paid amount</span>
                     <TextField
                       type="number"
-                      defaultValue="0"
+                      value = {paidAmount || 0}
                       size="small"
                       sx={{ width: '150px', '& input': { textAlign: 'right' } }}
+                      onChange={(value) => {
+                        setPaidAmount(Number(value.target.value))
+                      }}
                     />
                   </div>
 
                   <div className="border-t dark:border-gray-700 pt-3">
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-blue-500 dark:text-blue-400 font-medium text-lg">Grand Total</span>
-                      <span className="text-2xl font-bold dark:text-white">{totalAmount.toFixed(0)}</span>
+                      <span className="text-2xl font-bold dark:text-white">{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
 
                     <div className="flex justify-between items-center">
@@ -662,45 +744,19 @@ export default function PurchaseForm({
             </Card>
 
             <div className="flex items-end">
-              <Button 
-                type="submit" 
-                variant="contained" 
-                disabled={items.length === 0} 
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={items.length === 0 || isSubmitting}
                 className="w-full h-12 text-lg font-semibold"
                 ref={submitButtonRef}
               >
-                SAVE TRANSACTION
+                {isSubmitting ? "SAVING..." : "SAVE TRANSACTION"}
               </Button>
             </div>
           </div>
         </form>
       </Form>
-
-      {/* Price Change Confirmation Dialog */}
-      <AlertDialog open={priceChangeAlert.show}>
-        <AlertDialogContent className="dark:bg-gray-800 dark:border-gray-700">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="dark:text-gray-200">Update Product Base Cost Price?</AlertDialogTitle>
-            <AlertDialogDescription className="dark:text-gray-400">
-              You changed the base cost price. Do you also want to update the base cost price for the actual product?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="py-4 dark:text-gray-300">
-            <p>
-              New Price: <span className="font-semibold">${priceChangeAlert.newPrice.toFixed(2)}</span>
-            </p>
-          </div>
-          <div className="flex justify-end gap-4">
-            <AlertDialogCancel
-              onClick={() => setPriceChangeAlert({ show: false, itemId: "", newPrice: 0 })}
-              className="dark:border-gray-600"
-            >
-              Only Update Purchase
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={applyPriceChange}>Update Product & Purchase</AlertDialogAction>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Batch Modal */}
       {selectedItem && (
@@ -711,6 +767,18 @@ export default function PurchaseForm({
           onSave={(batchData) => handleBatchSave(selectedItem, batchData)}
         />
       )}
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar({ open: false, message: "" })}
+        message={snackbar.message}
+        sx={{
+          "& .MuiSnackbarContent-root": {
+            borderRadius: 2,
+          },
+        }}
+      />
     </div>
   )
 }

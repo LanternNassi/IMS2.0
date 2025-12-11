@@ -24,4 +24,24 @@ namespace ImsServer.Models
         UGX
     }
 
+
+    public enum PaymentMethod
+    {
+        CASH,
+        CARD,
+        MOBILE_MONEY,
+        BANK_TRANSFER,
+        CHEQUE,
+        OTHER 
+    }
+
+
+    public enum ExpenditureType
+    {
+        UTILITIES,
+        PAYMENTS,
+        BENEFITS,
+        MISCELLANEOUS
+    }
+
 }

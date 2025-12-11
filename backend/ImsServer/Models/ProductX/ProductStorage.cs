@@ -35,8 +35,8 @@ namespace ImsServer.Models.ProductX
 
     public class SimpleProductStorageDto
     {
-        public Guid Id { get; set; }
-        public Guid ProductGenericId { get; set; }
+        public Guid? Id { get; set; }
+        public Guid? ProductGenericId { get; set; }
         public Guid ProductVariationId { get; set; }
         public decimal Quantity { get; set; }
         public Guid StorageId { get; set; }

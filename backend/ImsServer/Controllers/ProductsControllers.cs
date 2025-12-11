@@ -249,6 +249,7 @@ namespace ImsServer.Controllers
                             existingVariation.UnitSize = variationDto.UnitSize;
                             existingVariation.RetailPrice = variationDto.RetailPrice;
                             existingVariation.WholeSalePrice = variationDto.WholeSalePrice;
+                            existingVariation.CostPrice = variationDto.CostPrice;
                             existingVariation.Discount = variationDto.Discount;
                             existingVariation.UnitofMeasure = variationDto.UnitofMeasure;
                             existingVariation.IsActive = variationDto.IsActive;
@@ -418,7 +419,9 @@ namespace ImsServer.Controllers
                 return Problem(ex.Message);
             }
         }
+        
 
+        
         private async Task<bool> ProductExists(Guid id)
         {
             return await _dbcontext.Products.AnyAsync(e => e.Id == id);

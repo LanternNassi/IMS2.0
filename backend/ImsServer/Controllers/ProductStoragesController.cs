@@ -158,6 +158,24 @@ namespace ImsServer.Controllers
             return Ok(_mapper.Map<List<ProductStorageDto>>(storages));
         }
 
+        [HttpGet("ByProductVariation/{variationId}")]
+        public async Task<ActionResult<IEnumerable<ProductStorageDto>>> GetStorageByProductVariation(Guid variationId)
+        {
+            if (_dbcontext.ProductStorages == null)
+            {
+                return NotFound();
+            }
+
+            var storages = await _dbcontext.ProductStorages
+                .Include(ps => ps.ProductGeneric)
+                    .ThenInclude(pg => pg.Product)
+                .Include(ps => ps.Store)
+                .Where(ps => ps.ProductVariationId == variationId)
+                .ToListAsync();
+
+            return Ok(_mapper.Map<List<ProductStorageDto>>(storages));
+        }
+
         // GET: api/ProductStorages/DeletedStorages
         [HttpGet("DeletedStorages")]
         public async Task<ActionResult<IEnumerable<ProductStorageDto>>> GetDeletedProductStorages(
@@ -224,64 +242,96 @@ namespace ImsServer.Controllers
                 return Problem("Entity set 'DBContext.ProductStorages' is null.");
             }
 
-            // Validate that the product generic exists
-            var genericExists = await _dbcontext.ProductGenerics.AnyAsync(pg => pg.Id == productStorage.ProductGenericId);
-            if (!genericExists)
+            if (_dbcontext.ProductGenerics == null || _dbcontext.ProductVariations == null)
             {
-                return BadRequest("The specified product generic does not exist.");
+                return Problem("Related entity sets are null.");
             }
 
-            // Validate that the product variation exists
-            var variationExists = await _dbcontext.ProductVariations.AnyAsync(pv => pv.Id == productStorage.ProductVariationId);
-            if (!variationExists)
+            var variation = await _dbcontext.ProductVariations
+                .Include(pv => pv.Product)
+                .FirstOrDefaultAsync(pv => pv.Id == productStorage.ProductVariationId);
+
+            var product = await _dbcontext.Products
+                .Include(p => p.ProductGenerics)
+                .FirstOrDefaultAsync(p => p.Id == variation.ProductId);
+
+            if (product == null)
+            {
+                return BadRequest("The product associated with the specified variation does not exist.");
+            }
+
+            if (variation == null)
             {
                 return BadRequest("The specified product variation does not exist.");
             }
-
-            // Validate that the store exists
-            var storeExists = await _dbcontext.Stores.AnyAsync(s => s.Id == productStorage.StorageId);
-            if (!storeExists)
+            
+            // Handle ProductGenericId - use most recent or create dummy if not provided
+            ProductGeneric generic = null;
+            if (productStorage.ProductGenericId == Guid.Empty || productStorage.ProductGenericId == null)
             {
-                return BadRequest("The specified store does not exist.");
+                // Try to get the most recent generic for this product (by Id descending)
+                generic = await _dbcontext.ProductGenerics
+                    .Where(pg => pg.ProductId == variation.ProductId)
+                    .OrderByDescending(pg => pg.Id)
+                    .FirstOrDefaultAsync();
+
+                if (generic == null)
+                {
+                    // Create a dummy generic
+                    generic = new ProductGeneric
+                    {
+                        Id = Guid.NewGuid(),
+                        ProductId = variation.ProductId,
+                        ExpiryDate = DateTime.UtcNow.AddYears(10), // Default 10 year expiry
+                        ManufactureDate = DateTime.UtcNow,
+                        BatchNumber = $"DEFAULT-{DateTime.UtcNow:yyyyMMddHHmmss}",
+                        SupplierId = await _dbcontext.Suppliers.Select(s => s.Id).FirstOrDefaultAsync() // Use first available supplier
+                    };
+
+                    if (generic.SupplierId == Guid.Empty)
+                    {
+                        return BadRequest("No suppliers available. Cannot create default product generic.");
+                    }
+
+                    // product.ProductGenerics.Add(generic);
+                    _dbcontext.ProductGenerics.Add(generic);
+                    await _dbcontext.SaveChangesAsync();
+                }
+
+                productStorage.ProductGenericId = generic.Id;
+
+            }
+            else
+            {
+                // Validate that the provided product generic exists
+                generic = await _dbcontext.ProductGenerics
+                    .FirstOrDefaultAsync(pg => pg.Id == productStorage.ProductGenericId);
+                
+                if (generic == null)
+                {
+                    return BadRequest("The specified product generic does not exist.");
+                }
             }
 
-            // Validate that the variation belongs to the same product as the generic
-            var generic = await _dbcontext.ProductGenerics
-                .FirstOrDefaultAsync(pg => pg.Id == productStorage.ProductGenericId);
-            var variation = await _dbcontext.ProductVariations
-                .FirstOrDefaultAsync(pv => pv.Id == productStorage.ProductVariationId);
+            
+            // Map DTO to entity
+            var storageEntity = _mapper.Map<ProductStorage>(productStorage);
 
-            if (generic != null && variation != null && generic.ProductId != variation.ProductId)
-            {
-                return BadRequest("The product variation must belong to the same product as the product generic.");
-            }
+            
 
-            // Check for duplicate storage entry
-            var duplicateExists = await _dbcontext.ProductStorages.AnyAsync(ps => 
-                ps.ProductGenericId == productStorage.ProductGenericId && 
-                ps.ProductVariationId == productStorage.ProductVariationId && 
-                ps.StorageId == productStorage.StorageId);
+            // generic.ProductStorages.Add(storageEntity);
+            _dbcontext.ProductStorages.Add(storageEntity);
 
-            if (duplicateExists)
-            {
-                return BadRequest("A storage entry for this combination of generic, variation, and store already exists.");
-            }
-
-            // Validate quantity and reorder level
-            if (productStorage.Quantity < 0)
-            {
-                return BadRequest("Quantity cannot be negative.");
-            }
-
-            if (productStorage.ReorderLevel < 0)
-            {
-                return BadRequest("Reorder level cannot be negative.");
-            }
-
-            _dbcontext.ProductStorages.Add(_mapper.Map<ProductStorage>(productStorage));
             await _dbcontext.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetProductStorage), new { id = productStorage.Id }, _mapper.Map<ProductStorageDto>(productStorage));
+            // Add them to their respective collections
+            generic.ProductStorages.Add(storageEntity);
+            variation.ProductStorages.Add(storageEntity);
+
+            await _dbcontext.SaveChangesAsync();
+
+            return Ok(_mapper.Map<ProductStorageDto>(storageEntity));
+
         }
 
         // POST: api/ProductStorages/Bulk
@@ -359,7 +409,7 @@ namespace ImsServer.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutProductStorage(Guid id, SimpleProductStorageDto productStorage)
         {
-            if (id != productStorage.Id)
+            if (id != productStorage.Id.GetValueOrDefault())
             {
                 return BadRequest("ID mismatch.");
             }

@@ -27,6 +27,7 @@ export type ProductVariation = {
   unitSize: number
   retailPrice: number
   wholeSalePrice: number
+  costPrice: number
   discount?: number
   unitofMeasure?: string
   isActive: boolean
@@ -54,7 +55,7 @@ export type ProductStorage = {
   storageName?: string
   reorderLevel: number
   store?: Store
-
+  productVariation?: ProductVariation
 }
 
 export type Supplier = {

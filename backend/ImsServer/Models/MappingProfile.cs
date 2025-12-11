@@ -5,6 +5,7 @@ using ImsServer.Models.CategoryX;
 using ImsServer.Models.CustomerX;
 using ImsServer.Models.SupplierX;
 using ImsServer.Models.ProductX;
+using ImsServer.Models.ExpenditureX;
 
 namespace ImsServer.Models{
 
@@ -52,6 +53,9 @@ namespace ImsServer.Models{
                 .ForMember(dest => dest.ProductVariation, opt => opt.MapFrom(src => src.ProductVariation))
                 .ReverseMap();
             CreateMap<SimpleProductStorageDto, ProductStorageDto>().ReverseMap();
+
+            CreateMap<Expenditure, ExpenditureDto>().ReverseMap();
+            CreateMap<ExpenditureCategory, ExpenditureCategoryDto>().ReverseMap();
             
         }
     }

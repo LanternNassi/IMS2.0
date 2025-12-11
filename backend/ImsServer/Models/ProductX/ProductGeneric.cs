@@ -21,7 +21,6 @@ namespace ImsServer.Models.ProductX
 
         public virtual ICollection<ProductStorage> ProductStorages { get; set; } = new List<ProductStorage>();
         
-
     }
 
     public class ProductGenericDto : GeneralFields

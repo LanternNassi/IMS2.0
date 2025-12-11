@@ -7,39 +7,27 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { Plus, Trash2, Pill, ChevronRight, Home } from "lucide-react"
 
-import { Button, TextField, Select, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material"
+import { Button, TextField, Select, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar, Checkbox, FormControlLabel } from "@mui/material"
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { SearchableSelect } from "@/components/searchable-select"
-import { SupplierAutocomplete } from "@/components/SupplierAutocomplete"
-import { ProductAutocomplete, type Product } from "@/components/ProductAutocomplete"
-import { BatchModal } from "@/components/batch-modal"
+
+import { CustomerAutocomplete } from "@/components/CustomerAutocomplete"
+import { ProductAutocomplete, type ProductVariation } from "@/components/ProductAutocomplete"
 import type { Sale, SalesItem } from "@/app/Sales/page"
 
-import { supplier, useSupplierStore } from "@/store/useSupplierStore"
-import { set } from "date-fns"
+import { customer, useCustomerStore } from "@/store/useCustomerStore"
+import api from "@/Utils/Request"
+import { useRouter } from "next/navigation"
 
 const saleFormSchema = z.object({
-    supplierId: z.string().min(1, "Supplier is required"),
+    customerId: z.string().min(1, "Customer is required"),
     notes: z.string().optional(),
 })
 
 type SaleFormProps = {
     sale?: Sale
-    suppliers: Array<{ id: string; name: string }>
-    products: Product[]
-    onSubmit: (sale: Sale) => void
+    suppliers?: Array<{ id: string; name: string }>
 }
 
 // Mock data
@@ -51,23 +39,18 @@ const mockSuppliers = [
     { id: "5", name: "Global Medical Supplies" },
 ]
 
-const mockProducts: Product[] = [
-    { id: "1", name: "Paracetamol", baseWholeSalePrice: 120000, baseSellingPrice: 150000, stores: { 'Front store': 4, 'Back store': 3 } },
-    { id: "2", name: "Ibuprofen", baseWholeSalePrice: 100000, baseSellingPrice: 130000, stores: { 'Front store': 6, 'Back store': 2 } },
-    { id: "3", name: "Aspirin", baseWholeSalePrice: 90000, baseSellingPrice: 110000, stores: { 'Front store': 5, 'Back store': 4 } },
-    { id: "4", name: "Amoxicillin", baseWholeSalePrice: 85000, baseSellingPrice: 100000, stores: { 'Front store': 7, 'Back store': 3 } },
-    { id: "5", name: "Metformin", baseWholeSalePrice: 32000, baseSellingPrice: 50000, stores: { 'Front store': 8, 'Back store': 6 } },
-]
-
 export default function SaleForm({
     sale,
     suppliers = mockSuppliers,
-    products = mockProducts,
-    onSubmit,
 }: SaleFormProps) {
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const { getCustomerById } = useCustomerStore()
+    const [snackbar, setSnackbar] = useState<{ open: boolean; message: string }>({ open: false, message: "" })
+    const router = useRouter()
+    
     const [items, setItems] = useState<SalesItem[]>(sale?.items || [])
     const [selectedProductId, setSelectedProductId] = useState("")
-    const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+    const [selectedProduct, setSelectedProduct] = useState<ProductVariation | null>(null)
     const [selectedQuantity, setSelectedQuantity] = useState("")
     const [editingItemId, setEditingItemId] = useState<string | null>(null)
     const [editingItemData, setEditingItemData] = useState<{
@@ -75,13 +58,13 @@ export default function SaleForm({
         basePrice: string;
     }>({ quantity: "", basePrice: "" })
 
-    const [selectedSupplierDetails, setSelectedSupplierDetails] = useState<supplier | null>(null)
+    const [selectedCustomerDetails, setSelectedCustomerDetails] = useState<customer | null>(null)
     const [selectedStore, setSelectedStore] = useState<string>("")
+    const [selectedStorage, setSelectedStorage] = useState<string>("") // Storage location name
     const [selectedRateType, setSelectedRateType] = useState<"wholeSale" | "selling" | "custom">("selling")
     const [customPrice, setCustomPrice] = useState<string>("")
     const [showCustomPriceDialog, setShowCustomPriceDialog] = useState(false)
     const [tempCustomPrice, setTempCustomPrice] = useState<string>("")
-    const { getSupplierById } = useSupplierStore()
 
 
 
@@ -89,6 +72,8 @@ export default function SaleForm({
     const [paidAmount, setPaidAmount] = useState(0)
     const [returnAmount, setReturnAmount] = useState(0)
     const [discount, setDiscount] = useState(0)
+    const [isTaken, setIsTaken] = useState(true)
+    const [paymentMethod, setPaymentMethod] = useState<string>("CASH")
 
     useEffect(() => {
 
@@ -106,7 +91,7 @@ export default function SaleForm({
     }, [items, discount, paidAmount])
 
     // Refs for keyboard navigation
-    const supplierSearchRef = useRef<HTMLInputElement>(null)
+    const customerSearchRef = useRef<HTMLInputElement>(null)
     const productSearchRef = useRef<HTMLInputElement>(null)
     const productQtyRef = useRef<HTMLInputElement>(null)
     const addButtonRef = useRef<HTMLButtonElement>(null)
@@ -116,12 +101,12 @@ export default function SaleForm({
     const form = useForm<z.infer<typeof saleFormSchema>>({
         resolver: zodResolver(saleFormSchema),
         defaultValues: {
-            supplierId: sale?.supplierId || "",
+            customerId: sale?.customerId || "",
             notes: sale?.notes || "",
         },
     })
 
-    const selectedSupplier = suppliers?.find((s) => s.id === form.watch("supplierId"))
+    const selectedCustomer = suppliers?.find((s) => s.id === form.watch("customerId"))
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -132,7 +117,7 @@ export default function SaleForm({
                 switch (e.key) {
                     case "1":
                         e.preventDefault()
-                        supplierSearchRef.current?.focus()
+                        customerSearchRef.current?.focus()
                         return
                     case "2":
                         e.preventDefault()
@@ -154,7 +139,7 @@ export default function SaleForm({
                 e.preventDefault()
                 const activeElement = document.activeElement
 
-                if (activeElement === supplierSearchRef.current || target.closest('[data-section="supplier"]')) {
+                if (activeElement === customerSearchRef.current || target.closest('[data-section="customer"]')) {
                     productSearchRef.current?.focus()
                 } else if (activeElement === productSearchRef.current || target.closest('[data-section="product"]')) {
                     productQtyRef.current?.focus()
@@ -175,15 +160,15 @@ export default function SaleForm({
                     productQtyRef.current?.focus()
                 } else if (activeElement === productQtyRef.current || activeElement === addButtonRef.current || target.closest('[data-section="product"]')) {
                     productSearchRef.current?.focus()
-                } else if (activeElement === productSearchRef.current || target.closest('[data-section="supplier"]')) {
-                    supplierSearchRef.current?.focus()
+                } else if (activeElement === productSearchRef.current || target.closest('[data-section="customer"]')) {
+                    customerSearchRef.current?.focus()
                 }
                 return
             }
 
             // Tab from quantity field to Add button
             if (e.key === "Tab" && target === productQtyRef.current && !e.shiftKey) {
-                if (selectedProduct && selectedQuantity) {
+                if (selectedProduct && selectedQuantity && selectedStorage) {
                     e.preventDefault()
                     addButtonRef.current?.focus()
                 }
@@ -195,10 +180,11 @@ export default function SaleForm({
 
                 // If Add button is focused or we're in quantity field with valid data
                 if (activeElement === addButtonRef.current ||
-                    (activeElement === productQtyRef.current && selectedProduct && selectedQuantity)) {
+                    (activeElement === productQtyRef.current && selectedProduct && selectedQuantity && selectedStorage)) {
                     e.preventDefault()
                     addProduct()
                     productSearchRef.current?.focus()
+                    return // Prevent further processing
                 }
                 // If notes textarea or any other input (except autocomplete dropdown)
                 else if (activeElement === notesRef.current ||
@@ -217,25 +203,38 @@ export default function SaleForm({
 
         window.addEventListener("keydown", handleKeyDown)
         return () => window.removeEventListener("keydown", handleKeyDown)
-    }, [selectedProduct, selectedQuantity, items.length])
+    }, [selectedProduct, selectedQuantity, selectedStorage, items.length])
 
     const addProduct = () => {
         if (!selectedProduct || !selectedQuantity) {
             return
         }
 
+        if (!selectedStorage) {
+            setSnackbar({ open: true, message: "Please select a storage location" })
+            return
+        }
+
         const quantity = Number.parseFloat(selectedQuantity)
+
+        // Check if selected storage has enough quantity
+        const storageData = selectedProduct.storages?.[selectedStorage]
+        const availableQuantity = storageData?.quantity || 0
+        if (quantity > availableQuantity) {
+            setSnackbar({ open: true, message: `Only ${availableQuantity} units available in ${selectedStorage}` })
+            return
+        }
 
         // Determine the price based on selected rate type
         let pricePerUnit = 0
         if (selectedRateType === "wholeSale") {
-            pricePerUnit = selectedProduct.baseWholeSalePrice || 0
+            pricePerUnit = selectedProduct.wholeSalePrice || 0
         } else if (selectedRateType === "selling") {
-            pricePerUnit = selectedProduct.baseSellingPrice || 0
+            pricePerUnit = selectedProduct.retailPrice || 0
         } else if (selectedRateType === "custom") {
             pricePerUnit = parseFloat(customPrice) || 0
         } else {
-            pricePerUnit = selectedProduct.baseSellingPrice || 0
+            pricePerUnit = selectedProduct.retailPrice || 0
         }
 
         console.log("Product added ", selectedProduct, quantity, pricePerUnit)
@@ -244,20 +243,21 @@ export default function SaleForm({
 
         const newItem: SalesItem = {
             id: crypto.randomUUID(),
-            productId: selectedProduct.id,
+            productId: selectedProduct.productId,
+            productVariationId: selectedProduct.id,
             productName: selectedProduct.name,
             basePrice: pricePerUnit,
             quantity,
             totalPrice,
-            hasGeneric: false,
+            storageId: storageData?.storeId, // Store the storage ID
         }
 
         setItems([...items, newItem])
         setSelectedProduct(null)
         setSelectedProductId("")
         setSelectedQuantity("")
-        setSelectedStore("")
         setSelectedRateType("wholeSale")
+        setSelectedStorage("")
     }
 
     const removeItem = (id: string) => {
@@ -305,22 +305,52 @@ export default function SaleForm({
 
 
 
-    const handleFormSubmit = (data: z.infer<typeof saleFormSchema>) => {
+    const handleFormSubmit = async (data: z.infer<typeof saleFormSchema>) => {
         if (items.length === 0) {
+            setSnackbar({ open: true, message: "Please add at least one item to the sale." })
             return
         }
 
+        // if (!selectedCustomer?.name) {
+        //     setSnackbar({ open: true, message: "Please select a customer." })
+        //     return
+        // }
+
+        setIsSubmitting(true)
+
         const saleData: Sale = {
             id: sale?.id || crypto.randomUUID(),
-            supplierId: data.supplierId,
-            supplierName: selectedSupplier?.name || "",
+            customerId: data.customerId,
+            customerName: selectedCustomer?.name || "",
             items,
             totalAmount,
+            paidAmount: paidAmount,
+            changeAmount: returnAmount,
+            discount: discount,
+            isPaid: paidAmount >= (totalAmount - discount),
+            isTaken: isTaken,
+            paymentMethod: paymentMethod,
+            processedById: "8F077C6B-EF9E-4802-6166-08DE28E2F419",
+            finalAmount: totalAmount - discount,
             createdAt: sale?.createdAt || new Date(),
+            isCompleted: paidAmount >= (totalAmount - discount),
             notes: data.notes,
         }
 
-        onSubmit(saleData)
+        try {
+            if (sale?.id) {
+                await api.put(`/Sales/${sale.id}`, saleData)
+                setSnackbar({ open: true, message: "Sale updated successfully." })
+            } else {
+                await api.post("/Sales", saleData)
+                setSnackbar({ open: true, message: "Sale created successfully." })
+            }
+            router.push("/Sales")
+        } catch (error: any) {
+            setSnackbar({ open: true, message: error.response?.data?.message || "Failed to save sale. Please try again." })
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     return (
@@ -342,39 +372,39 @@ export default function SaleForm({
                 <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-8">
 
 
-                    {/* Row 1: Supplier Details */}
+                    {/* Row 1: Customer Details */}
                     <Card className="dark:bg-gray-900 dark:border-gray-700">
                         <CardHeader className="pb-3">
                             <CardTitle className="text-lg dark:text-gray-200">Customer Details</CardTitle>
                         </CardHeader>
-                        <CardContent className="pt-0" data-section="supplier">
+                        <CardContent className="pt-0" data-section="customer">
                             <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
-                                {/* Search Supplier */}
-                                <SupplierAutocomplete
-                                    value={selectedSupplierDetails}
-                                    onChange={async (supplier) => {
-                                        if (supplier) {
-                                            form.setValue("supplierId", supplier.id)
-                                            const fullSupplier = await getSupplierById(supplier.id)
-                                            setSelectedSupplierDetails(fullSupplier)
-                                            // Auto-focus to product search after supplier selection
+                                {/* Search Customer */}
+                                <CustomerAutocomplete
+                                    value={selectedCustomerDetails}
+                                    onChange={async (customer) => {
+                                        if (customer) {
+                                            form.setValue("customerId", customer.id)
+                                            const fullCustomer = await getCustomerById(customer.id)
+                                            setSelectedCustomerDetails(fullCustomer)
+                                            // Auto-focus to product search after customer selection
                                             setTimeout(() => productSearchRef.current?.focus(), 100)
                                         } else {
-                                            form.setValue("supplierId", "")
-                                            setSelectedSupplierDetails(null)
+                                            form.setValue("customerId", "")
+                                            setSelectedCustomerDetails(null)
                                         }
                                     }}
                                     label="Search (Alt+1)"
                                     fullWidth
                                     size="small"
                                     required
-                                    inputRef={supplierSearchRef}
+                                    inputRef={customerSearchRef}
                                 />
 
                                 {/* Contact */}
                                 <TextField
                                     label="Contact"
-                                    value={selectedSupplierDetails?.phoneNumber || ""}
+                                    value={selectedCustomerDetails?.phone || ""}
                                     InputProps={{ readOnly: true }}
                                     fullWidth
                                     size="small"
@@ -384,7 +414,7 @@ export default function SaleForm({
                                 {/* Address */}
                                 <TextField
                                     label="Address"
-                                    value={selectedSupplierDetails?.address || ""}
+                                    value={selectedCustomerDetails?.address || ""}
                                     InputProps={{ readOnly: true }}
                                     fullWidth
                                     size="small"
@@ -394,7 +424,7 @@ export default function SaleForm({
                                 {/* Name */}
                                 <TextField
                                     label="Name"
-                                    value={selectedSupplierDetails?.companyName || ""}
+                                    value={selectedCustomerDetails?.name || ""}
                                     InputProps={{ readOnly: true }}
                                     fullWidth
                                     size="small"
@@ -404,7 +434,7 @@ export default function SaleForm({
                                 {/* Email */}
                                 <TextField
                                     label="Email"
-                                    value={selectedSupplierDetails?.emailAddress || ""}
+                                    value={selectedCustomerDetails?.email || ""}
                                     InputProps={{ readOnly: true }}
                                     fullWidth
                                     size="small"
@@ -428,25 +458,23 @@ export default function SaleForm({
                                     onChange={(product) => {
                                         setSelectedProduct(product)
                                         setSelectedProductId(product?.id || "")
-                                        // Reset store and rate selections
-                                        setSelectedStore(product ? product.stores ? Object.keys(product.stores)[0] : "" : "")
+                                        // Reset rate selections and storage
                                         setSelectedRateType("wholeSale")
                                         setCustomPrice("")
+                                        
+                                        // Auto-select first storage location if available
+                                        if (product?.storages && Object.keys(product.storages).length > 0) {
+                                            const firstStorage = Object.keys(product.storages)[0]
+                                            setSelectedStorage(firstStorage)
+                                        } else {
+                                            setSelectedStorage("")
+                                        }
 
                                         // Auto-focus to quantity after product selection
                                         if (product) {
                                             setTimeout(() => productQtyRef.current?.focus(), 100)
                                         }
                                     }}
-                                    products={products.map(p => ({
-                                        id: p.id,
-                                        name: p.name,
-                                        baseCostPrice: p.baseCostPrice,
-                                        baseSellingPrice: p.baseSellingPrice,
-                                        baseWholeSalePrice: p.baseWholeSalePrice,
-                                        stores: p.stores,
-                                        inventory: Object.values(p.stores ?? {}).reduce((acc, curr) => acc + curr, 0)
-                                    }))}
                                     label="Search (Alt+2)"
                                     fullWidth
                                     size="small"
@@ -463,27 +491,33 @@ export default function SaleForm({
                                     sx={{ backgroundColor: 'rgba(0, 0, 0, 0.02)' }}
                                 />
 
-                                {/* Inventory - Store Selection */}
+                                {/* Storage Location Selection */}
                                 <Select
-                                    value={selectedStore}
-                                    onChange={(e) => setSelectedStore(e.target.value)}
-                                    displayEmpty
+                                    value={selectedStorage}
+                                    onChange={(e) => setSelectedStorage(e.target.value)}
                                     fullWidth
                                     size="small"
                                     disabled={!selectedProduct}
+                                    displayEmpty
                                     sx={{
                                         backgroundColor: selectedProduct ? 'transparent' : 'rgba(0, 0, 0, 0.02)',
                                         '& .MuiSelect-select': { py: '8.5px' }
                                     }}
                                 >
                                     <MenuItem value="" disabled>
-                                        <em>Select Store</em>
+                                        Select Storage ({selectedProduct?.unitofMeasure || 'Unit'})
                                     </MenuItem>
-                                    {selectedProduct?.stores && Object.entries(selectedProduct.stores).map(([storeName, qty]) => (
-                                        <MenuItem key={storeName} value={storeName}>
-                                            {storeName} ({qty} units)
+                                    {selectedProduct?.storages && Object.keys(selectedProduct.storages).length > 0 ? (
+                                        Object.entries(selectedProduct.storages).map(([storageName, storageData]) => (
+                                            <MenuItem key={storageName} value={storageName}>
+                                                {storageName}: {storageData.quantity.toLocaleString()} {selectedProduct.unitofMeasure}
+                                            </MenuItem>
+                                        ))
+                                    ) : (
+                                        <MenuItem value="" disabled>
+                                            No storage locations available
                                         </MenuItem>
-                                    ))}
+                                    )}
                                 </Select>
 
                                 {/* Rate - Price Type Selection */}
@@ -506,15 +540,15 @@ export default function SaleForm({
                                     }}
                                 >
                                     <MenuItem value="wholeSale">
-                                        {selectedProduct?.baseWholeSalePrice != null
-                                            ? selectedProduct.baseWholeSalePrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                        {selectedProduct?.wholeSalePrice != null
+                                            ? selectedProduct.wholeSalePrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                                             : "0.00"}
                                     </MenuItem>
                                     <MenuItem value="selling">
-                                        {selectedProduct?.baseSellingPrice?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "0.00"}
+                                        {selectedProduct?.retailPrice?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "0.00"}
                                     </MenuItem>
                                     <MenuItem value="custom">
-                                        Custom Price {customPrice ? `(${parseFloat(customPrice).toFixed(2)})` : ""}
+                                        {customPrice ? `(${parseFloat(customPrice).toFixed(2)})` : ""}
                                     </MenuItem>
                                 </Select>
 
@@ -529,8 +563,9 @@ export default function SaleForm({
                                     fullWidth
                                     size="small"
                                     onKeyDown={(e) => {
-                                        if (e.key === "Enter" && selectedProduct && selectedQuantity) {
+                                        if (e.key === "Enter" && selectedProduct && selectedQuantity && selectedStorage) {
                                             e.preventDefault()
+                                            e.stopPropagation()
                                             addProduct()
                                             productSearchRef.current?.focus()
                                         }
@@ -541,7 +576,7 @@ export default function SaleForm({
                                 <div className="flex items-end">
                                     <Button
                                         onClick={addProduct}
-                                        disabled={!selectedProduct || !selectedQuantity}
+                                        disabled={!selectedProduct || !selectedQuantity || !selectedStorage}
                                         className="w-full"
                                         variant="contained"
                                         color="primary"
@@ -726,9 +761,38 @@ export default function SaleForm({
                                             <span className="text-2xl font-bold dark:text-white">{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                         </div>
 
-                                        <div className="flex justify-between items-center">
+                                        <div className="flex justify-between items-center mb-3">
                                             <span className="text-blue-500 dark:text-blue-400 font-medium">Return amount</span>
                                             <span className="text-xl font-semibold dark:text-white">{returnAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                        </div>
+
+                                        <div className="border-t dark:border-gray-700 pt-3">
+                                            <FormControlLabel
+                                                control={
+                                                    <Checkbox
+                                                        checked={isTaken}
+                                                        onChange={(e) => setIsTaken(e.target.checked)}
+                                                        sx={{
+                                                            color: 'rgb(59 130 246)',
+                                                            '&.Mui-checked': {
+                                                                color: 'rgb(59 130 246)',
+                                                            },
+                                                        }}
+                                                    />
+                                                }
+                                                label="Products Taken"
+                                                sx={{
+                                                    '& .MuiFormControlLabel-label': {
+                                                        color: 'rgb(59 130 246)',
+                                                        fontWeight: 500,
+                                                    },
+                                                    '.dark &': {
+                                                        '& .MuiFormControlLabel-label': {
+                                                            color: 'rgb(96 165 250)',
+                                                        },
+                                                    },
+                                                }}
+                                            />
                                         </div>
                                     </div>
                                 </CardContent>
@@ -739,11 +803,35 @@ export default function SaleForm({
                         <div className="space-y-6">
                             <Card className="dark:bg-gray-900 dark:border-gray-700">
                                 <CardHeader className="pb-3">
-                                    <CardTitle className="text-lg dark:text-gray-200">Overview</CardTitle>
+                                    <CardTitle className="text-lg dark:text-gray-200">Payment Method</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <Select
+                                        value={paymentMethod}
+                                        onChange={(e) => setPaymentMethod(e.target.value)}
+                                        fullWidth
+                                        size="small"
+                                        sx={{
+                                            '& .MuiSelect-select': { py: '8.5px' }
+                                        }}
+                                    >
+                                        <MenuItem value="CASH">Cash</MenuItem>
+                                        <MenuItem value="CARD">Card</MenuItem>
+                                        <MenuItem value="MOBILE_MONEY">Mobile Money</MenuItem>
+                                        <MenuItem value="BANK_TRANSFER">Bank Transfer</MenuItem>
+                                        <MenuItem value="CHEQUE">Cheque</MenuItem>
+                                        <MenuItem value="OTHER">Other</MenuItem>
+                                    </Select>
+                                </CardContent>
+                            </Card>
+
+                            <Card className="dark:bg-gray-900 dark:border-gray-700">
+                                <CardHeader className="pb-3">
+                                    <CardTitle className="text-lg dark:text-gray-200">Preview</CardTitle>
                                 </CardHeader>
                                 <CardContent>
                                     <div className="h-96 bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center text-gray-400">
-                                        Preview Area
+                                        Receipt Preview Area
                                     </div>
                                 </CardContent>
                             </Card>
@@ -782,11 +870,11 @@ export default function SaleForm({
                             <Button
                                 type="submit"
                                 variant="contained"
-                                disabled={items.length === 0}
+                                disabled={items.length === 0 || isSubmitting || !paidAmount || paidAmount <= 0}
                                 className="w-full h-12 text-lg font-semibold"
                                 ref={submitButtonRef}
                             >
-                                SAVE TRANSACTION
+                                {isSubmitting ? "SAVING..." : "SAVE TRANSACTION"}
                             </Button>
                         </div>
                     </div>
@@ -837,6 +925,18 @@ export default function SaleForm({
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={4000}
+                onClose={() => setSnackbar({ open: false, message: "" })}
+                message={snackbar.message}
+                sx={{
+                    "& .MuiSnackbarContent-root": {
+                        borderRadius: 2,
+                    },
+                }}
+            />
         </div>
     )
 }

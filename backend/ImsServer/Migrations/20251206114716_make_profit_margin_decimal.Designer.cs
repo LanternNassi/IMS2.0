@@ -4,6 +4,7 @@ using ImsServer.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ImsServer.Migrations
 {
     [DbContext(typeof(DBContext))]
-    partial class DBContextModelSnapshot : ModelSnapshot
+    [Migration("20251206114716_make_profit_margin_decimal")]
+    partial class make_profit_margin_decimal
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -152,84 +155,6 @@ namespace ImsServer.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("CustomerTags");
-                });
-
-            modelBuilder.Entity("ImsServer.Models.ExpenditureX.Expenditure", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("AddedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("AddedBy")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("ExpenditureCategoryId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("LastUpdatedBy")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ExpenditureCategoryId");
-
-                    b.ToTable("Expenditures");
-                });
-
-            modelBuilder.Entity("ImsServer.Models.ExpenditureX.ExpenditureCategory", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("AddedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("AddedBy")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("LastUpdatedBy")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ExpenditureCategories");
                 });
 
             modelBuilder.Entity("ImsServer.Models.ProductX.Product", b =>
@@ -905,17 +830,6 @@ namespace ImsServer.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("ImsServer.Models.ExpenditureX.Expenditure", b =>
-                {
-                    b.HasOne("ImsServer.Models.ExpenditureX.ExpenditureCategory", "ExpenditureCategory")
-                        .WithMany("Expenditures")
-                        .HasForeignKey("ExpenditureCategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ExpenditureCategory");
-                });
-
             modelBuilder.Entity("ImsServer.Models.ProductX.ProductGeneric", b =>
                 {
                     b.HasOne("ImsServer.Models.ProductX.Product", "Product")
@@ -1084,11 +998,6 @@ namespace ImsServer.Migrations
                         .HasForeignKey("SuppliersId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("ImsServer.Models.ExpenditureX.ExpenditureCategory", b =>
-                {
-                    b.Navigation("Expenditures");
                 });
 
             modelBuilder.Entity("ImsServer.Models.ProductX.Product", b =>

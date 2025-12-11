@@ -294,6 +294,14 @@ export function ProductDetails({ productId, onEdit }: ProductDetailsProps) {
                       </Grid>
                       <Grid item xs={6}>
                         <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                          Cost Price
+                        </Typography>
+                        <Typography fontWeight="bold" color="primary">
+                          ${variation.costPrice.toFixed(2)}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                           Retail Price
                         </Typography>
                         <Typography fontWeight="bold" color="success.main">
@@ -308,7 +316,7 @@ export function ProductDetails({ productId, onEdit }: ProductDetailsProps) {
                           ${variation.wholeSalePrice.toFixed(2)}
                         </Typography>
                       </Grid>
-                      <Grid item xs={12}>
+                      <Grid item xs={6}>
                         <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                           Discount
                         </Typography>
@@ -405,34 +413,83 @@ export function ProductDetails({ productId, onEdit }: ProductDetailsProps) {
                   ) : (
                     <Grid container spacing={2}>
                       {generic.productStorages.map((storage) => (
-                        <Grid item xs={12} md={4} key={storage.id}>
-                          <Box sx={{ p: 2, borderRadius: 1 }}>
+                        <Grid item xs={12} md={6} lg={4} key={storage.id}>
+                          <Box 
+                            sx={{ 
+                              p: 2.5, 
+                              borderRadius: 2,
+                              border: 1,
+                              borderColor: 'divider',
+                              backgroundColor: 'background.paper',
+                              height: '100%',
+                              transition: 'all 0.2s',
+                              '&:hover': {
+                                boxShadow: 2,
+                                borderColor: 'primary.main',
+                              }
+                            }}
+                          >
                             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                               Store Location
                             </Typography>
-                            <Typography fontWeight="bold" gutterBottom>
+                            <Typography 
+                              fontWeight="bold" 
+                              gutterBottom
+                              sx={{
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                display: '-webkit-box',
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: 'vertical',
+                                minHeight: '2.5em',
+                                mb: 2
+                              }}
+                            >
                               {storage.store?.name || "Unknown Store"}
                             </Typography>
 
-                            <Divider sx={{ my: 1 }} />
+                            <Divider sx={{ my: 2 }} />
 
-                            <Stack direction="row" justifyContent="space-between" mb={1}>
-                              <Typography variant="body2" color="text.secondary">
-                                Quantity:
-                              </Typography>
-                              <Typography variant="body2" fontWeight="medium">
-                                {storage.quantity}
-                              </Typography>
+                            <Stack spacing={1.5}>
+                              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                <Typography variant="body2" color="text.secondary">
+                                  Quantity:
+                                </Typography>
+                                <Typography variant="body2" fontWeight="medium">
+                                  {storage.quantity}
+                                </Typography>
+                              </Stack>
+
+                              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                <Typography variant="body2" color="text.secondary">
+                                  Reorder Level:
+                                </Typography>
+                                <Typography variant="body2" fontWeight="medium">
+                                  {storage.reorderLevel}
+                                </Typography>
+                              </Stack>
+
+                              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                <Typography variant="body2" color="text.secondary" sx={{ flexShrink: 0 }}>
+                                  Variation:
+                                </Typography>
+                                <Typography 
+                                  variant="body2" 
+                                  fontWeight="medium"
+                                  sx={{
+                                    textAlign: 'right',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                    maxWidth: '60%'
+                                  }}
+                                  title={storage.productVariation?.name || "N/A"}
+                                >
+                                  {storage.productVariation?.name || "N/A"}
+                                </Typography>
+                              </Stack>
                             </Stack>
 
-                            <Stack direction="row" justifyContent="space-between">
-                              <Typography variant="body2" color="text.secondary">
-                                Reorder Level:
-                              </Typography>
-                              <Typography variant="body2" fontWeight="medium">
-                                {storage.reorderLevel}
-                              </Typography>
-                            </Stack>
                           </Box>
                         </Grid>
                       ))}

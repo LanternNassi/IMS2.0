@@ -1,22 +1,30 @@
 "use client"
 
-import { useState } from "react"
-import { Plus, Pencil, Trash2, AlertCircle, Download, X } from "lucide-react"
-
-
-import { Button } from "@mui/material"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { useToast } from "@/hooks/use-toast"
-import { PurchaseDocumentation } from "@/components/purchase-documentation"
-import {useRouter} from "next/navigation"
+import { useState, useEffect } from "react"
+import { Plus, Download, TrendingUp, ShoppingCart, DollarSign, Package } from "lucide-react"
+import {
+  Box,
+  Button,
+  TextField,
+  InputAdornment,
+  Typography,
+  Stack,
+  Card as MuiCard,
+  CardContent,
+  Snackbar,
+  CircularProgress,
+} from "@mui/material"
+import { Search, FilterList } from "@mui/icons-material"
+import { Card } from "@/components/ui/card"
+import { TransactionTable, Transaction } from "@/components/TransactionTable"
+import { useRouter } from "next/navigation"
+import api from "@/Utils/Request"
 
 // Types
 export type PurchaseItem = {
   id: string
   productId: string
+  productVariationId: string
   productName: string
   baseCostPrice?: number
   quantity: number
@@ -28,175 +36,305 @@ export type PurchaseItem = {
 export type Purchase = {
   id: string
   supplierId: string
+  processedBy: string
   supplierName: string
   items: PurchaseItem[]
   totalAmount: number
+  paidAmount: number
   createdAt: Date
   notes?: string
 }
 
-// Mock data
-const mockSuppliers = [
-  { id: "1", name: "Supplier A" },
-  { id: "2", name: "Supplier B" },
-  { id: "3", name: "Supplier C" },
-  { id: "4", name: "Premium Pharma Distributors" },
-  { id: "5", name: "Global Medical Supplies" },
-]
-
-const mockProducts = [
-  { id: "1", name: "Paracetamol", baseCostPrice: 5.0 },
-  { id: "2", name: "Ibuprofen", baseCostPrice: 6.0 },
-  { id: "3", name: "Aspirin", baseCostPrice: 4.5 },
-  { id: "4", name: "Amoxicillin", baseCostPrice: 8.5 },
-  { id: "5", name: "Metformin", baseCostPrice: 3.2 },
-]
+interface PurchaseMetadata {
+  totalAmount: number
+  paidAmount: number
+  grandTotal: number
+  paidPurchases: number
+  totalPurchases: number
+  supplierBreakdown: Array<{
+    supplierId: string
+    supplierName: string
+    count: number
+    totalAmount: number
+    paidAmount: number
+    grandTotal: number
+  }>
+}
 
 export default function PurchasesPage() {
-  const [purchases, setPurchases] = useState<Purchase[]>([])
-  const [isFormOpen, setIsFormOpen] = useState(false)
-  const [isEditOpen, setIsEditOpen] = useState(false)
-  const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null)
-  const [docPurchase, setDocPurchase] = useState<Purchase | null>(null)
-  const { toast } = useToast()
-
+  const [purchases, setPurchases] = useState<Transaction[]>([])
+  const [metadata, setMetadata] = useState<PurchaseMetadata | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string }>({ open: false, message: "" })
   const router = useRouter()
 
-  const handleAddPurchase = (purchase: Purchase) => {
-    setPurchases([...purchases, { ...purchase, id: crypto.randomUUID(), createdAt: new Date() }])
-    setIsFormOpen(false)
-    toast({
-      title: "Purchase Created",
-      description: `Purchase from ${purchase.supplierName} has been recorded.`,
-    })
+  useEffect(() => {
+    fetchPurchases()
+  }, [])
+
+  const fetchPurchases = async () => {
+    setLoading(true)
+    try {
+      const response = await api.get("/Purchases?includeMetadata=true")
+      setPurchases(response.data.purchases || [])
+      setMetadata(response.data.metadata || null)
+    } catch (error: any) {
+      console.error("Error fetching purchases:", error)
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || "Failed to load purchases",
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleEditPurchase = (purchase: Purchase) => {
-    setPurchases(purchases.map((p) => (p.id === purchase.id ? purchase : p)))
-    setIsEditOpen(false)
-    setSelectedPurchase(null)
-    toast({
-      title: "Purchase Updated",
-      description: "Purchase details have been updated successfully.",
-    })
+  const filteredPurchases = purchases.filter(
+    (purchase) =>
+      purchase.supplier?.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      purchase.purchaseNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      purchase.notes?.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  const handleView = (purchase: Transaction) => {
+    // TODO: Implement view details
+    console.log("View purchase:", purchase)
   }
 
-  const handleDeletePurchase = (id: string) => {
-    const purchase = purchases.find((p) => p.id === id)
-    setPurchases(purchases.filter((p) => p.id !== id))
-    toast({
-      title: "Purchase Deleted",
-      description: `Purchase from ${purchase?.supplierName} has been deleted.`,
-    })
+  const handleEdit = (purchase: Transaction) => {
+    router.push(`/Purchases/edit/${purchase.id}`)
   }
 
-  const handleEditClick = (purchase: Purchase) => {
-    setSelectedPurchase(purchase)
-    setIsEditOpen(true)
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this purchase?")) return
+
+    try {
+      await api.delete(`/Purchases/${id}`)
+      setSnackbar({ open: true, message: "Purchase deleted successfully" })
+      fetchPurchases()
+    } catch (error: any) {
+      console.error("Error deleting purchase:", error)
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || "Failed to delete purchase",
+      })
+    }
   }
 
-  const handleViewDoc = (purchase: Purchase) => {
-    setDocPurchase(purchase)
+  const handleAllocate = async (purchase: Transaction) => {
+    // After allocation is complete, refetch purchases to update allocation status
+    await fetchPurchases()
+    setSnackbar({ open: true, message: "Products allocated to storages successfully" })
   }
+
 
   return (
-    <div className="min-h-screen dark:bg-gray-900 bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold dark:text-white text-gray-900">Purchase Management</h1>
-            <p className="text-sm dark:text-gray-400 text-gray-600 mt-1">Record and manage product purchases</p>
-          </div>
-          <Button onClick={() => {
-            router.push('/Purchases/add')
-          }} variant="contained" color="primary">
-            <Plus className="mr-2 h-4 w-4" /> Record Purchase
+    <Box sx={{ p: { xs: 2, md: 4 }, minHeight: "100vh" }}>
+      {/* Header Section */}
+      <Box sx={{ mb: 4 }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
+          <Box>
+            <Typography variant="h4" fontWeight="bold" gutterBottom>
+              Purchase Management
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Track and manage all your purchase transactions
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<Plus />}
+            onClick={() => router.push("/Purchases/add")}
+            sx={{
+              borderRadius: 2,
+              px: 3,
+              py: 1.5,
+              textTransform: "none",
+              fontWeight: 600,
+            }}
+          >
+            Record Purchase
           </Button>
-        </div>
+        </Stack>
 
-        {/* Purchase List */}
-        <Card className="dark:bg-gray-800 bg-white">
-          <CardHeader>
-            <CardTitle className="dark:text-gray-200">Purchase Records</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {purchases.length === 0 ? (
-              <Alert className="dark:bg-gray-900 dark:border-gray-700">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  No purchases recorded yet. Click "Record Purchase" to add a new purchase order.
-                </AlertDescription>
-              </Alert>
-            ) : (
-              <div className="rounded-md border dark:border-gray-700 overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="dark:border-gray-700">
-                      <TableHead>Supplier</TableHead>
-                      <TableHead>Items</TableHead>
-                      <TableHead>Total Amount</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {purchases.map((purchase) => (
-                      <TableRow key={purchase.id} className="dark:border-gray-700">
-                        <TableCell className="font-medium dark:text-gray-200">{purchase.supplierName}</TableCell>
-                        <TableCell className="dark:text-gray-300">{purchase.items.length}</TableCell>
-                        <TableCell className="font-semibold dark:text-gray-200">
-                          ${purchase.totalAmount.toFixed(2)}
-                        </TableCell>
-                        <TableCell className="dark:text-gray-300">{purchase.createdAt.toLocaleDateString()}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              variant="contained"
-                              onClick={() => handleViewDoc(purchase)}
-                              title="View Documentation"
-                            >
-                              <Download className="h-4 w-4" />
-                              <span className="sr-only">View Doc</span>
-                            </Button>
-                            <Button variant="contained" onClick={() => handleEditClick(purchase)}>
-                              <Pencil className="h-4 w-4" />
-                              <span className="sr-only">Edit</span>
-                            </Button>
-                            <Button variant="contained" onClick={() => handleDeletePurchase(purchase.id)}>
-                              <Trash2 className="h-4 w-4" />
-                              <span className="sr-only">Delete</span>
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-  
+        {/* Metadata Cards */}
+        {metadata && (
+          <Box sx={{ mb: 3 }}>
+            <Stack direction="row" spacing={2} sx={{ overflowX: "auto", pb: 1 }}>
+              <MuiCard sx={{ minWidth: 200, flex: 1, borderRadius: 2 }} className="dark:bg-gray-800">
+                <CardContent>
+                  <Stack direction="row" spacing={2} alignItems="center">
+                    <Box
+                      sx={{
+                        bgcolor: "primary.50",
+                        color: "primary.main",
+                        p: 1.5,
+                        borderRadius: 2,
+                      }}
+                    >
+                      <ShoppingCart />
+                    </Box>
+                    <Box>
+                      <Typography variant="h5" fontWeight="bold">
+                        {metadata.totalPurchases}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Total Purchases
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </CardContent>
+              </MuiCard>
 
-      {/* Documentation Modal */}
-      {docPurchase && (
-        <Dialog open={!!docPurchase} onOpenChange={() => setDocPurchase(null)}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto dark:bg-gray-800 bg-white">
-            <DialogHeader className="flex flex-row items-center justify-between">
-              <div>
-                <DialogTitle>Purchase Documentation</DialogTitle>
-                <DialogDescription>Purchase record and receipt</DialogDescription>
-              </div>
-              <Button variant="contained" onClick={() => setDocPurchase(null)}>
-                <X className="h-4 w-4" />
-              </Button>
-            </DialogHeader>
-            <PurchaseDocumentation purchase={docPurchase} />
-          </DialogContent>
-        </Dialog>
-      )}
-    </div>
+              <MuiCard sx={{ minWidth: 200, flex: 1, borderRadius: 2 }} className="dark:bg-gray-800">
+                <CardContent>
+                  <Stack direction="row" spacing={2} alignItems="center">
+                    <Box
+                      sx={{
+                        bgcolor: "success.50",
+                        color: "success.main",
+                        p: 1.5,
+                        borderRadius: 2,
+                      }}
+                    >
+                      <DollarSign />
+                    </Box>
+                    <Box>
+                      <Typography variant="h5" fontWeight="bold">
+                        UGX {metadata.totalAmount.toLocaleString()}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Total Amount
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </CardContent>
+              </MuiCard>
+
+              <MuiCard sx={{ minWidth: 200, flex: 1, borderRadius: 2 }} className="dark:bg-gray-800">
+                <CardContent>
+                  <Stack direction="row" spacing={2} alignItems="center">
+                    <Box
+                      sx={{
+                        bgcolor: "warning.50",
+                        color: "warning.main",
+                        p: 1.5,
+                        borderRadius: 2,
+                      }}
+                    >
+                      <TrendingUp />
+                    </Box>
+                    <Box>
+                      <Typography variant="h5" fontWeight="bold">
+                        UGX {metadata.paidAmount.toLocaleString()}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Amount Paid
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </CardContent>
+              </MuiCard>
+
+              <MuiCard sx={{ minWidth: 200, flex: 1, borderRadius: 2 }} className="dark:bg-gray-800">
+                <CardContent>
+                  <Stack direction="row" spacing={2} alignItems="center">
+                    <Box
+                      sx={{
+                        bgcolor: "info.50",
+                        color: "info.main",
+                        p: 1.5,
+                        borderRadius: 2,
+                      }}
+                    >
+                      <Package />
+                    </Box>
+                    <Box>
+                      <Typography variant="h5" fontWeight="bold" color="success.main">
+                        {metadata.paidPurchases}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Paid Purchases
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </CardContent>
+              </MuiCard>
+            </Stack>
+          </Box>
+        )}
+
+        {/* Search and Filter Section */}
+        <Box sx={{ mb: 3, p: 3, border: 1, borderColor: "divider", borderRadius: 2 }}>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <TextField
+              variant="outlined"
+              placeholder="Search by supplier, purchase number, or notes..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search color="action" />
+                  </InputAdornment>
+                ),
+              }}
+              fullWidth
+              size="medium"
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: 2,
+                },
+              }}
+            />
+            <Button
+              variant="outlined"
+              startIcon={<FilterList />}
+              sx={{
+                borderRadius: 2,
+                px: 3,
+                textTransform: "none",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Filters
+            </Button>
+          </Stack>
+        </Box>
+      </Box>
+
+      {/* Purchases Table */}
+      <Box sx={{ border: 1, borderColor: "divider", borderRadius: 2, overflow: "hidden" }}>
+        {loading ? (
+          <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", py: 8 }}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <TransactionTable
+            transactions={filteredPurchases}
+            type="purchase"
+            onView={handleView}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onAllocate={handleAllocate}
+          />
+        )}
+      </Box>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar({ open: false, message: "" })}
+        message={snackbar.message}
+        sx={{
+          "& .MuiSnackbarContent-root": {
+            borderRadius: 2,
+          },
+        }}
+      />
+    </Box>
   )
 }
+

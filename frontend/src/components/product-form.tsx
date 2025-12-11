@@ -93,6 +93,7 @@ export function ProductForm({
           id: existingMainId || crypto.randomUUID(),
           name: form.productName || "Main",
           unitSize: form.stackSize,
+          costPrice: form.baseCostPrice,
           retailPrice: form.baseRetailPrice,
           wholeSalePrice: form.baseWholeSalePrice,
           discount: form.baseDiscount,
@@ -108,7 +109,7 @@ export function ProductForm({
         }
       })
     }
-  }, [productId, form.productName, form.stackSize, form.baseRetailPrice, form.baseWholeSalePrice, form.baseDiscount, form.basicUnitofMeasure, form.isActive])
+  }, [productId, form.productName, form.stackSize, form.baseCostPrice, form.baseRetailPrice, form.baseWholeSalePrice, form.baseDiscount, form.basicUnitofMeasure, form.isActive])
 
   // Handlers for form fields
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -129,6 +130,7 @@ export function ProductForm({
       id: crypto.randomUUID(),
       name: "",
       unitSize: 1,
+      costPrice: 0,
       retailPrice: 0,
       wholeSalePrice: 0,
       discount: 0,
@@ -571,7 +573,7 @@ export function ProductForm({
                           disabled={variation.isMain}
                         />
                       </Grid>
-                      <Grid item xs={6}>
+                      <Grid item xs={12}>
                         <TextField
                           label="Unit of Measure"
                           value={variation.unitofMeasure || ""}
@@ -581,7 +583,19 @@ export function ProductForm({
                           disabled={variation.isMain}
                         />
                       </Grid>
-                      <Grid item xs={4}>
+                      <Grid item xs={6} md={4}>
+                        <TextField
+                          label="Cost Price"
+                          type="number"
+                          value={variation.costPrice}
+                          onChange={(e) => updateVariation(index, "costPrice", Number(e.target.value))}
+                          fullWidth
+                          variant="outlined"
+                          InputProps={{ startAdornment: "$" }}
+                          disabled={variation.isMain}
+                        />
+                      </Grid>
+                      <Grid item xs={6} md={4}>
                         <TextField
                           label="Retail Price"
                           type="number"
@@ -593,7 +607,7 @@ export function ProductForm({
                           disabled={variation.isMain}
                         />
                       </Grid>
-                      <Grid item xs={4}>
+                      <Grid item xs={6} md={4}>
                         <TextField
                           label="Wholesale Price"
                           type="number"
@@ -605,7 +619,7 @@ export function ProductForm({
                           disabled={variation.isMain}
                         />
                       </Grid>
-                      <Grid item xs={4}>
+                      <Grid item xs={6} md={12}>
                         <TextField
                           label="Discount (%)"
                           type="number"
