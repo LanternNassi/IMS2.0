@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import api from "@/Utils/Request";
 import { AxiosResponse } from "axios";
-import { defaultProperties } from "@/Utils/defaultProperties";
+import { defaultProperties } from "@/Utils/DefaultProperties";
 
 export interface User extends defaultProperties {
   id: string;
@@ -64,7 +64,7 @@ export const useUserStore = create<IUserStore>((set) => ({
     api
       .post("/Users", user)
       .then((response: AxiosResponse) => {
-        if (response.status == 200) {
+        if (response.status == 201) {
           onsuccess();
         }
       })

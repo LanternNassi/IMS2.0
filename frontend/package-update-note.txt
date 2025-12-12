@@ -1,0 +1,6 @@
+// Add this to your package.json scripts in the frontend folder
+{
+  "scripts": {
+    "export": "next export"
+  }
+}

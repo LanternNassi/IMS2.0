@@ -33,7 +33,7 @@ export function ThemeSwitcher() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [theme, setTheme, setMode]);
 
   if (!mounted) return null;
 

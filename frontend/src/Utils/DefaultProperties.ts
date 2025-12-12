@@ -6,3 +6,12 @@ export type defaultProperties = {
     lastUpdatedBy: number;
     deletedAt: string | null;
 }
+
+export type pagination = {
+    page: number;
+    pages: number;
+    pageSize: number;
+    totalCount: number;
+    next: number;
+    previous: number;
+}

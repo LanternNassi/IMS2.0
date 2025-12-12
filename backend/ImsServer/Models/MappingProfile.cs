@@ -2,6 +2,10 @@ using AutoMapper;
 using ImsServer.Models.UserX;
 using ImsServer.Models.StoreX;
 using ImsServer.Models.CategoryX;
+using ImsServer.Models.CustomerX;
+using ImsServer.Models.SupplierX;
+using ImsServer.Models.ProductX;
+using ImsServer.Models.ExpenditureX;
 
 namespace ImsServer.Models{
 
@@ -18,7 +22,41 @@ namespace ImsServer.Models{
             CreateMap<Category, CategoryDto>().ReverseMap();
             CreateMap<Category, SimpleCategoryDto>().ReverseMap();
 
+            CreateMap<Customer, SimpleCustomerDto>().ReverseMap();
+            CreateMap<Customer, CustomerDto>().ReverseMap();
+            CreateMap<SimpleCustomerDto, CustomerDto>().ReverseMap();
 
+            CreateMap<CustomerTag, CustomerTagDto>().ReverseMap();
+            CreateMap<CustomerTag, SimpleCustomerTagDto>().ReverseMap();
+
+            CreateMap<Supplier, SimpleSupplierDto>().ReverseMap();
+            CreateMap<Supplier, SupplierDto>().ReverseMap();
+            CreateMap<SimpleSupplierDto, SupplierDto>().ReverseMap();
+
+            CreateMap<SupplierTag, SupplierTagDto>().ReverseMap();
+            CreateMap<SupplierTag, SimpleSupplierTagDto>().ReverseMap();
+
+            CreateMap<Product, SimpleProductDto>().ReverseMap();
+            CreateMap<Product, ProductDto>().ReverseMap();
+
+            CreateMap<ProductVariation, SimpleProductVariationDto>().ReverseMap();
+            CreateMap<ProductVariation, ProductVariationDto>().ReverseMap();
+
+            CreateMap<ProductGeneric, SimpleProductGenericDto>().ReverseMap();
+            CreateMap<ProductGeneric, ProductGenericDto>().ReverseMap();
+            CreateMap<ProductGenericDto, SimpleProductGenericDto>().ReverseMap();
+
+            CreateMap<ProductStorage, SimpleProductStorageDto>().ReverseMap();
+            CreateMap<ProductStorage, ProductStorageDto>()
+                .ForMember(dest => dest.ProductGeneric, opt => opt.MapFrom(src => src.ProductGeneric))
+                .ForMember(dest => dest.Store, opt => opt.MapFrom(src => src.Store))
+                .ForMember(dest => dest.ProductVariation, opt => opt.MapFrom(src => src.ProductVariation))
+                .ReverseMap();
+            CreateMap<SimpleProductStorageDto, ProductStorageDto>().ReverseMap();
+
+            CreateMap<Expenditure, ExpenditureDto>().ReverseMap();
+            CreateMap<ExpenditureCategory, ExpenditureCategoryDto>().ReverseMap();
+            
         }
     }
 

@@ -1,6 +1,15 @@
 using ImsServer.Models.UserX;
 using ImsServer.Models.CategoryX;
+using ImsServer.Models.CustomerX;
 using ImsServer.Models.StoreX;
+using ImsServer.Models.SupplierX;
+using ImsServer.Models.ProductX;
+using ImsServer.Models.PurchaseX;
+using ImsServer.Models.SaleX;
+using ImsServer.Models.ExpenditureX;
+using ImsServer.Models.SalesDebtsTrackerX;
+    
+
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography.X509Certificates;
 
@@ -17,6 +26,25 @@ namespace ImsServer.Models
         public DbSet<Store> Stores { get; set; }
         public DbSet<Category> Categories { get; set; }
 
+        public DbSet<Customer> Customers { get; set; }
+        public DbSet<CustomerTag> CustomerTags { get; set; }
+        
+        public DbSet<Supplier> Suppliers { get; set;}
+        public DbSet<SupplierTag> SupplierTags { get; set; }
+
+        public DbSet<Product> Products { get; set;}
+        public DbSet<ProductGeneric> ProductGenerics { get; set; }
+        public DbSet<ProductVariation> ProductVariations { get; set; }
+        public DbSet<ProductStorage> ProductStorages { get; set; }
+
+        public DbSet<Purchase> Purchases { get; set; }
+        public DbSet<PurchaseItem> PurchaseItems { get; set; }
+
+        public DbSet<Sale> Sales { get; set; }
+        public DbSet<SalesItem> SalesItems { get; set; }
+        public DbSet<Expenditure> Expenditures { get; set; }
+        public DbSet<ExpenditureCategory> ExpenditureCategories { get; set; }
+        public DbSet<SalesDebtsTracker> SalesDebtsTrackers { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -24,6 +52,65 @@ namespace ImsServer.Models
             modelBuilder.Entity<User>().HasQueryFilter(c => !c.DeletedAt.HasValue);
             modelBuilder.Entity<Store>().HasQueryFilter(c => !c.DeletedAt.HasValue);
             modelBuilder.Entity<Category>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+
+            modelBuilder.Entity<Customer>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+            modelBuilder.Entity<CustomerTag>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+
+            modelBuilder.Entity<Supplier>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+            modelBuilder.Entity<SupplierTag>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+
+            modelBuilder.Entity<Product>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+            modelBuilder.Entity<ProductGeneric>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+            modelBuilder.Entity<ProductVariation>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+            modelBuilder.Entity<SalesItem>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+            modelBuilder.Entity<Sale>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+            modelBuilder.Entity<Purchase>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+            modelBuilder.Entity<PurchaseItem>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+
+            modelBuilder.Entity<Expenditure>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+            modelBuilder.Entity<ExpenditureCategory>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+            modelBuilder.Entity<SalesDebtsTracker>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+
+            modelBuilder.Entity<ProductStorage>()
+                .HasOne(ps => ps.ProductGeneric)
+                .WithMany()
+                .HasForeignKey(ps => ps.ProductGenericId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ProductStorage>()
+                .HasOne(ps => ps.Store)
+                .WithMany()
+                .HasForeignKey(ps => ps.StorageId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ProductStorage>()
+                .HasOne(ps => ps.ProductVariation)
+                .WithMany(pv => pv.ProductStorages)
+                .HasForeignKey(ps => ps.ProductVariationId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ProductStorage>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+
+            // Configure SalesItem to prevent cascade delete conflicts
+            modelBuilder.Entity<SalesItem>()
+                .HasOne(si => si.ProductStorage)
+                .WithMany()
+                .HasForeignKey(si => si.ProductStorageId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<SalesItem>()
+                .HasOne(si => si.ProductVariation)
+                .WithMany()
+                .HasForeignKey(si => si.ProductVariationId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<SalesItem>()
+                .HasOne(si => si.Sale)
+                .WithMany(s => s.SaleItems)
+                .HasForeignKey(si => si.SaleId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+
             base.OnModelCreating(modelBuilder);
 
         }
@@ -46,7 +133,28 @@ namespace ImsServer.Models
                 .Where(e => e.Entity is User
                     || e.Entity is Store
                     || e.Entity is Category
-                    
+
+                    || e.Entity is Customer
+                    || e.Entity is CustomerTag
+
+                    || e.Entity is Supplier
+                    || e.Entity is SupplierTag
+
+                    || e.Entity is Product
+                    || e.Entity is ProductGeneric
+                    || e.Entity is ProductVariation
+                    || e.Entity is ProductStorage
+                    || e.Entity is Expenditure
+                    || e.Entity is ExpenditureCategory
+
+                    || e.Entity is Sale
+                    || e.Entity is SalesItem
+
+                    || e.Entity is Purchase
+                    || e.Entity is PurchaseItem
+
+                    || e.Entity is SalesDebtsTracker
+
                     )
                 .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);
 

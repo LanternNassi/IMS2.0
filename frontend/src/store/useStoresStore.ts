@@ -19,11 +19,12 @@ export type storeDto = {
 interface IStoreStore {
     stores: store[] | null;
     isLoading: boolean;
-    fetchStores: (keywords: string | null) => Promise<void>;
+    fetchStores: (keywords: string | null) => Promise<store[]>;
     getStoreById: (id: string) => Promise<store>;
     createStore: (store: storeDto, onsuccess: () => void, onFailure: () => void) => Promise<void>;
     updateStore: (store: store, onsuccess: () => void, onFailure: () => void) => Promise<void>;
     deleteStore: (id: string, onsuccess: () => void, onFailure: () => void) => Promise<void>;
+    setStores: (stores: store[] | null) => void;
 }
 
 export const useStoresStore = create<IStoreStore>((set) => ({
@@ -31,12 +32,11 @@ export const useStoresStore = create<IStoreStore>((set) => ({
     isLoading: false,
     fetchStores: async (keywords: string | null) => {
         set({isLoading: true});
-        api.get('/Stores', {params: {keywords}}).then((response: AxiosResponse) => {
-            if (response.status == 200) {
-                set({stores: response.data, isLoading: false});
-            }
-        });
+        const response: AxiosResponse = await api.get('/Stores', {params: {keywords}});
+        set({isLoading: false});
+        return response.data;
     },
+    setStores: (stores: store[] | null) => set({stores}),
     getStoreById: async (id: string) => {
         const response: AxiosResponse = await api.get(`/Stores/${id}`);
         return response.data;

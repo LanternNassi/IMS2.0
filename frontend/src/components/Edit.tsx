@@ -49,6 +49,7 @@ export default function Edit({
         <Divider style={{ width: "28vw" }} />
       </div>
       <Box
+        
         onSubmit={(event) => {
           onSubmit(event);
         }}
