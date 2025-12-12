@@ -190,7 +190,7 @@ export default function DebtsAnalysis() {
                 params.append('maxOutstanding', maxOutstanding)
             }
 
-            const response = await api.get(`/Sales/Debtors?${params}`)
+            const response = await api.get(`/Sales/Receivables?${params}`)
             setDebts(response.data.debtors || [])
             setMetadata(response.data.metadata || null)
             setPagination(response.data.pagination || {
@@ -321,7 +321,7 @@ export default function DebtsAnalysis() {
         <div className="min-h-screen dark:bg-gray-900 bg-gray-50 p-6 space-y-6">
             {/* Header */}
             <div>
-                <h1 className="text-4xl font-bold dark:text-white text-gray-900 mb-2">Debts Analysis</h1>
+                <h1 className="text-4xl font-bold dark:text-white text-gray-900 mb-2">Receivables Analysis</h1>
                 <p className="dark:text-gray-400 text-gray-600">Monitor and analyze customer debts and payment status</p>
             </div>
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { DollarSign, CreditCard } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -31,12 +31,32 @@ export function RecordPaymentDialog({ debt, onPaymentRecorded, trigger }: Record
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [financialAccounts, setFinancialAccounts] = useState<Array<{
+    id: string;
+    accountName: string;
+    bankName: string;
+    type: string;
+  }>>([])
   const [formData, setFormData] = useState({
     amount: "",
     paymentMethod: "CASH",
     notes: "",
     paymentDate: new Date().toISOString().split("T")[0],
+    linkedFinancialAccountId: "",
   })
+
+  // Fetch financial accounts on component mount
+  useEffect(() => {
+    const fetchFinancialAccounts = async () => {
+      try {
+        const response = await api.get('/FinancialAccounts?includeMetadata=false&page=1&pageSize=100')
+        setFinancialAccounts(response.data.financialAccounts || [])
+      } catch (error) {
+        console.error('Error fetching financial accounts:', error)
+      }
+    }
+    fetchFinancialAccounts()
+  }, [])
 
   const validateAmount = (value: string) => {
     const amount = parseFloat(value)
@@ -57,7 +77,7 @@ export function RecordPaymentDialog({ debt, onPaymentRecorded, trigger }: Record
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     const validationError = validateAmount(formData.amount)
     if (validationError) {
       setError(validationError)
@@ -74,21 +94,23 @@ export function RecordPaymentDialog({ debt, onPaymentRecorded, trigger }: Record
         paymentMethod: formData.paymentMethod,
         description: formData.notes || `Payment for ${debt.customer.name}'s debt`,
         debtType: "Receivable",
+        linkedFinancialAccountId: formData.linkedFinancialAccountId || null,
       }
 
       // Call the API to record payment
       await api.post('/SalesDebtsTracker', paymentData)
-      
+
       console.log("Payment recorded successfully:", paymentData)
-      
+
       onPaymentRecorded(paymentData)
-      
+
       // Reset form and close dialog
       setFormData({
         amount: "",
         paymentMethod: "CASH",
         notes: "",
         paymentDate: new Date().toISOString().split("T")[0],
+        linkedFinancialAccountId: "",
       })
       setIsDialogOpen(false)
     } catch (err: any) {
@@ -105,6 +127,7 @@ export function RecordPaymentDialog({ debt, onPaymentRecorded, trigger }: Record
       paymentMethod: "CASH",
       notes: "",
       paymentDate: new Date().toISOString().split("T")[0],
+      linkedFinancialAccountId: "",
     })
     setError(null)
   }
@@ -205,7 +228,38 @@ export function RecordPaymentDialog({ debt, onPaymentRecorded, trigger }: Record
                 <SelectItem value="CASH">Cash</SelectItem>
                 <SelectItem value="MOBILE_MONEY">Mobile Money</SelectItem>
                 <SelectItem value="BANK_TRANSFER">Bank Transfer</SelectItem>
+                <SelectItem value="BANK">Bank</SelectItem>
+                <SelectItem value="SAVINGS">Savings</SelectItem>
                 <SelectItem value="CREDIT">Credit</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Financial Account */}
+          <div className="space-y-2">
+            <Label htmlFor="financialAccount">Financial Account (Optional)</Label>
+            <Select
+              value={formData.linkedFinancialAccountId || undefined}
+              onValueChange={(value) => {
+                setFormData({ ...formData, linkedFinancialAccountId: value })
+                // Auto-set payment method based on account type
+                const selectedAccount = financialAccounts.find(acc => acc.id === value)
+                if (selectedAccount) {
+                  setFormData(prev => ({ ...prev, paymentMethod: selectedAccount.type, linkedFinancialAccountId: value }))
+                }
+              }}
+            >
+              <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600">
+                <SelectValue placeholder="Select financial account (optional)" />
+              </SelectTrigger>
+              <SelectContent className="dark:bg-gray-700">
+                {financialAccounts
+                  .filter(account => account.type !== 'CREDIT')
+                  .map((account) => (
+                    <SelectItem key={account.id} value={account.id}>
+                      {account.accountName} - {account.bankName} ({account.type})
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>

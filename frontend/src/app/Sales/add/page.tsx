@@ -74,6 +74,13 @@ export default function SaleForm({
     const [discount, setDiscount] = useState(0)
     const [isTaken, setIsTaken] = useState(true)
     const [paymentMethod, setPaymentMethod] = useState<string>("CASH")
+    const [financialAccounts, setFinancialAccounts] = useState<Array<{
+        id: string;
+        accountName: string;
+        bankName: string;
+        type: string;
+    }>>([])
+    const [linkedFinancialAccountId, setLinkedFinancialAccountId] = useState<string | null>(null)
 
     useEffect(() => {
 
@@ -89,6 +96,19 @@ export default function SaleForm({
 
         setTotalAmount(amount)
     }, [items, discount, paidAmount])
+
+    // Fetch financial accounts
+    useEffect(() => {
+        const fetchFinancialAccounts = async () => {
+            try {
+                const response = await api.get('/FinancialAccounts?includeMetadata=false&page=1&pageSize=100')
+                setFinancialAccounts(response.data.financialAccounts || [])
+            } catch (error) {
+                console.error('Error fetching financial accounts:', error)
+            }
+        }
+        fetchFinancialAccounts()
+    }, [])
 
     // Refs for keyboard navigation
     const customerSearchRef = useRef<HTMLInputElement>(null)
@@ -331,6 +351,7 @@ export default function SaleForm({
             isTaken: isTaken,
             paymentMethod: paymentMethod,
             processedById: "8F077C6B-EF9E-4802-6166-08DE28E2F419",
+            linkedFinancialAccountId: linkedFinancialAccountId || undefined,
             finalAmount: totalAmount - discount,
             createdAt: sale?.createdAt || new Date(),
             isCompleted: paidAmount >= (totalAmount - discount),
@@ -807,20 +828,33 @@ export default function SaleForm({
                                 </CardHeader>
                                 <CardContent>
                                     <Select
-                                        value={paymentMethod}
-                                        onChange={(e) => setPaymentMethod(e.target.value)}
+                                        value={linkedFinancialAccountId || ""}
+                                        onChange={(e) => {
+                                            const selectedId = e.target.value
+                                            setLinkedFinancialAccountId(selectedId || null)
+                                            // Set payment method based on account type
+                                            const selectedAccount = financialAccounts.find(acc => acc.id === selectedId)
+                                            if (selectedAccount) {
+                                                setPaymentMethod(selectedAccount.type)
+                                            } else {
+                                                setPaymentMethod("CASH")
+                                            }
+                                        }}
                                         fullWidth
                                         size="small"
+                                        displayEmpty
                                         sx={{
                                             '& .MuiSelect-select': { py: '8.5px' }
                                         }}
                                     >
-                                        <MenuItem value="CASH">Cash</MenuItem>
-                                        <MenuItem value="CARD">Card</MenuItem>
-                                        <MenuItem value="MOBILE_MONEY">Mobile Money</MenuItem>
-                                        <MenuItem value="BANK_TRANSFER">Bank Transfer</MenuItem>
-                                        <MenuItem value="CHEQUE">Cheque</MenuItem>
-                                        <MenuItem value="OTHER">Other</MenuItem>
+                                        <MenuItem value="">Select Account</MenuItem>
+                                        {financialAccounts
+                                            .filter(account => account.type !== 'CREDIT')
+                                            .map((account) => (
+                                                <MenuItem key={account.id} value={account.id}>
+                                                    {account.accountName} - {account.bankName} ({account.type})
+                                                </MenuItem>
+                                            ))}
                                     </Select>
                                 </CardContent>
                             </Card>

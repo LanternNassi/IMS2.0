@@ -32,6 +32,8 @@ namespace ImsServer.Models
         MOBILE_MONEY,
         BANK_TRANSFER,
         CHEQUE,
+        BANK,
+        SAVINGS,
         OTHER 
     }
 

@@ -300,6 +300,25 @@ namespace ImsServer.Controllers
                 // Update sale profit
                 sale.Profit = totalProfit;
 
+                // Update balance of linked financial account if provided
+                if (dto.LinkedFinancialAccountId.HasValue)
+                {
+                    var account = await _db.FinancialAccounts
+                        .FirstOrDefaultAsync(fa => fa.Id == dto.LinkedFinancialAccountId.Value);
+
+                    if (account == null)
+                    {
+                        await tran.RollbackAsync();
+                        return BadRequest("Linked financial account not found. Provide a valid LinkedFinancialAccountId.");
+                    }
+
+                    // Update account balance based on payment method
+                    if (dto.PaidAmount >= 0)
+                    {
+                        account.Balance += dto.PaidAmount;
+                    }
+                }
+
                 await _db.SaveChangesAsync();
                 await tran.CommitAsync();
 
@@ -392,7 +411,7 @@ namespace ImsServer.Controllers
             }
         }
 
-        [HttpGet("Debtors")]
+        [HttpGet("Receivables")]
         public async Task<IActionResult> GetDebtors(
             [FromQuery] Guid? customerId,
             [FromQuery] DateTime? startDate,

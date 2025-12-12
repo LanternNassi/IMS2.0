@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { Plus, Trash2, Pill, ChevronRight, Home } from "lucide-react"
 
-import { Button, TextField, Snackbar } from "@mui/material"
+import { Button, TextField, Snackbar, Select, MenuItem } from "@mui/material"
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -72,6 +72,14 @@ export default function PurchaseForm({
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string }>({ open: false, message: "" })
   const { getSupplierById } = useSupplierStore()
   const router = useRouter()
+  const [paymentMethod, setPaymentMethod] = useState<string>("CASH")
+  const [financialAccounts, setFinancialAccounts] = useState<Array<{
+    id: string;
+    accountName: string;
+    bankName: string;
+    type: string;
+  }>>([])
+  const [linkedFinancialAccountId, setLinkedFinancialAccountId] = useState<string | null>(null)
 
   // Refs for keyboard navigation
   const supplierSearchRef = useRef<HTMLInputElement>(null)
@@ -90,6 +98,19 @@ export default function PurchaseForm({
   })
 
   const selectedSupplier = suppliers?.find((s) => s.id === form.watch("supplierId"))
+
+  // Fetch financial accounts
+  useEffect(() => {
+    const fetchFinancialAccounts = async () => {
+      try {
+        const response = await api.get('/FinancialAccounts?includeMetadata=false&page=1&pageSize=100')
+        setFinancialAccounts(response.data.financialAccounts || [])
+      } catch (error) {
+        console.error('Error fetching financial accounts:', error)
+      }
+    }
+    fetchFinancialAccounts()
+  }, [])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -295,7 +316,9 @@ export default function PurchaseForm({
       items,
       totalAmount,
       paidAmount,
+      grandTotal: totalAmount - discount,
       createdAt: purchase?.createdAt || new Date(),
+      linkedFinancialAccountId: linkedFinancialAccountId || undefined,
       notes: data.notes,
     }
 
@@ -676,7 +699,7 @@ export default function PurchaseForm({
                     <span className="text-blue-500 dark:text-blue-400 font-medium">Paid amount</span>
                     <TextField
                       type="number"
-                      value = {paidAmount || 0}
+                      value={paidAmount || 0}
                       size="small"
                       sx={{ width: '150px', '& input': { textAlign: 'right' } }}
                       onChange={(value) => {
@@ -702,6 +725,42 @@ export default function PurchaseForm({
 
             {/* Right Column - Overview */}
             <div className="space-y-6">
+              <Card className="dark:bg-gray-900 dark:border-gray-700">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg dark:text-gray-200">Payment Method</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Select
+                    value={linkedFinancialAccountId || ""}
+                    onChange={(e) => {
+                      const selectedId = e.target.value
+                      setLinkedFinancialAccountId(selectedId || null)
+                      // Set payment method based on account type
+                      const selectedAccount = financialAccounts.find(acc => acc.id === selectedId)
+                      if (selectedAccount) {
+                        setPaymentMethod(selectedAccount.type)
+                      } else {
+                        setPaymentMethod("CASH")
+                      }
+                    }}
+                    fullWidth
+                    size="small"
+                    displayEmpty
+                    sx={{
+                      '& .MuiSelect-select': { py: '8.5px' }
+                    }}
+                  >
+                    <MenuItem value="">Select Account</MenuItem>
+                    {financialAccounts
+                      .filter(account => account.type !== 'CREDIT')
+                      .map((account) => (
+                        <MenuItem key={account.id} value={account.id}>
+                          {account.accountName} - {account.bankName} ({account.type})
+                        </MenuItem>
+                      ))}
+                  </Select>
+                </CardContent>
+              </Card>
               <Card className="dark:bg-gray-900 dark:border-gray-700">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg dark:text-gray-200">Overview</CardTitle>

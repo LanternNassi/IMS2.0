@@ -1,5 +1,6 @@
+using ImsServer.Models.FinancialAccountX;
 using ImsServer.Models.SaleX;
-
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ImsServer.Models.SalesDebtsTrackerX
 {
@@ -11,7 +12,11 @@ namespace ImsServer.Models.SalesDebtsTrackerX
         public string? Description { get; set; }
         public DebtType DebtType { get; set; }
         public Guid SaleId { get; set; }
+        public Guid? LinkedFinancialAccountId { get; set; }
         public virtual Sale Sale { get; set; }
+
+        [ForeignKey("LinkedFinancialAccountId")]
+        public FinancialAccount? LinkedFinancialAccount { get; set; }
         public PaymentMethod PaymentMethod { get; set; }
     }
 
@@ -22,6 +27,7 @@ namespace ImsServer.Models.SalesDebtsTrackerX
         public string? Description { get; set; }
         public DebtType DebtType { get; set; }
         public Guid SaleId { get; set; }
+        public Guid? LinkedFinancialAccountId { get; set; }
         public SimpleSaleDto Sale { get; set; }
         public PaymentMethod PaymentMethod { get; set; }
     }
@@ -33,6 +39,7 @@ namespace ImsServer.Models.SalesDebtsTrackerX
         public string? Description { get; set; }
         public DebtType DebtType { get; set; }
         public Guid SaleId { get; set; }
+        public Guid? LinkedFinancialAccountId { get; set; }
         public PaymentMethod PaymentMethod { get; set; }
     }
 
@@ -41,5 +48,6 @@ namespace ImsServer.Models.SalesDebtsTrackerX
         public decimal? PaidAmount { get; set; }
         public string? Description { get; set; }
         public PaymentMethod? PaymentMethod { get; set; }
+        public Guid? LinkedFinancialAccountId { get; set; }
     }
 }

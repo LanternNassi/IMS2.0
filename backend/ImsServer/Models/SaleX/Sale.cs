@@ -1,4 +1,5 @@
 using ImsServer.Models.CustomerX;
+using ImsServer.Models.FinancialAccountX;
 using ImsServer.Models.SaleX;
 using ImsServer.Models.UserX;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -24,6 +25,11 @@ namespace ImsServer.Models.SaleX
         public PaymentMethod PaymentMethod { get; set; } // e.g., Cash, Card, etc.
         public bool IsCompleted { get; set; }
         public bool WasPartialPayment { get; set; } = false; // Indicates if sale had partial payment (debt) at creation
+
+        public Guid? LinkedFinancialAccountId { get; set; }
+
+        [ForeignKey("LinkedFinancialAccountId")]
+        public FinancialAccount? LinkedFinancialAccount { get; set; }
 
         [ForeignKey("CustomerId")]
         public virtual Customer Customer { get; set; }
@@ -52,6 +58,7 @@ namespace ImsServer.Models.SaleX
         public bool IsTaken { get; set; }
         public bool WasPartialPayment { get; set; }
         public PaymentMethod PaymentMethod { get; set; } 
+        public Guid? LinkedFinancialAccountId { get; set; }
         public bool IsCompleted { get; set; }
         public SimpleCustomerDto Customer { get; set; }
         public UserDto ProcessedBy { get; set; }
@@ -82,6 +89,7 @@ namespace ImsServer.Models.SaleX
         public bool IsTaken { get; set; }
         public bool WasPartialPayment { get; set; }
         public PaymentMethod PaymentMethod { get; set; }
+        public Guid? LinkedFinancialAccountId { get; set; }
         public bool IsCompleted { get; set; }
         public string? Notes { get; set; }
         public List<CreateSaleItemDto> Items { get; set; } = new List<CreateSaleItemDto>();

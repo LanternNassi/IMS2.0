@@ -47,6 +47,7 @@ export type Sale = {
   isTaken?: boolean
   paymentMethod?: string
   processedById?: string
+  linkedFinancialAccountId?: string
   isCompleted?: boolean
   discount?: number
   createdAt: Date

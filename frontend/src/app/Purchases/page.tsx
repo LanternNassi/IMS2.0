@@ -42,6 +42,8 @@ export type Purchase = {
   items: PurchaseItem[]
   totalAmount: number
   paidAmount: number
+  grandTotal: number
+  linkedFinancialAccountId?: string
   createdAt: Date
   notes?: string
 }

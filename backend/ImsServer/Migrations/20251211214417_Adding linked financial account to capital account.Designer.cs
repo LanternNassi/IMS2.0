@@ -4,6 +4,7 @@ using ImsServer.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ImsServer.Migrations
 {
     [DbContext(typeof(DBContext))]
-    partial class DBContextModelSnapshot : ModelSnapshot
+    [Migration("20251211214417_Adding linked financial account to capital account")]
+    partial class Addinglinkedfinancialaccounttocapitalaccount
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -321,9 +324,6 @@ namespace ImsServer.Migrations
                         .HasColumnType("nvarchar(500)");
 
                     b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsDefault")
                         .HasColumnType("bit");
 
                     b.Property<int>("LastUpdatedBy")
@@ -660,9 +660,6 @@ namespace ImsServer.Migrations
                     b.Property<int>("LastUpdatedBy")
                         .HasColumnType("int");
 
-                    b.Property<Guid?>("LinkedFinancialAccountId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<decimal>("PaidAmount")
                         .HasColumnType("decimal(18,2)");
 
@@ -682,8 +679,6 @@ namespace ImsServer.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("LinkedFinancialAccountId");
 
                     b.HasIndex("PurchaseId");
 
@@ -713,9 +708,6 @@ namespace ImsServer.Migrations
 
                     b.Property<int>("LastUpdatedBy")
                         .HasColumnType("int");
-
-                    b.Property<Guid?>("LinkedFinancialAccountId")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Notes")
                         .HasColumnType("nvarchar(max)");
@@ -752,8 +744,6 @@ namespace ImsServer.Migrations
                         .HasColumnType("bit");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("LinkedFinancialAccountId");
 
                     b.HasIndex("ProcessedBy");
 
@@ -857,9 +847,6 @@ namespace ImsServer.Migrations
                     b.Property<int>("LastUpdatedBy")
                         .HasColumnType("int");
 
-                    b.Property<Guid?>("LinkedFinancialAccountId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<decimal?>("OutstandingAmount")
                         .HasColumnType("decimal(18,2)");
 
@@ -891,8 +878,6 @@ namespace ImsServer.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CustomerId");
-
-                    b.HasIndex("LinkedFinancialAccountId");
 
                     b.HasIndex("ProcessedById");
 
@@ -976,9 +961,6 @@ namespace ImsServer.Migrations
                     b.Property<int>("LastUpdatedBy")
                         .HasColumnType("int");
 
-                    b.Property<Guid?>("LinkedFinancialAccountId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<decimal>("PaidAmount")
                         .HasColumnType("decimal(18,2)");
 
@@ -992,8 +974,6 @@ namespace ImsServer.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("LinkedFinancialAccountId");
 
                     b.HasIndex("SaleId");
 
@@ -1355,27 +1335,17 @@ namespace ImsServer.Migrations
 
             modelBuilder.Entity("ImsServer.Models.PurchaseDebtX.PurchaseDebtTracker", b =>
                 {
-                    b.HasOne("ImsServer.Models.FinancialAccountX.FinancialAccount", "LinkedFinancialAccount")
-                        .WithMany()
-                        .HasForeignKey("LinkedFinancialAccountId");
-
                     b.HasOne("ImsServer.Models.PurchaseX.Purchase", "Purchase")
                         .WithMany()
                         .HasForeignKey("PurchaseId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("LinkedFinancialAccount");
-
                     b.Navigation("Purchase");
                 });
 
             modelBuilder.Entity("ImsServer.Models.PurchaseX.Purchase", b =>
                 {
-                    b.HasOne("ImsServer.Models.FinancialAccountX.FinancialAccount", "LinkedFinancialAccount")
-                        .WithMany()
-                        .HasForeignKey("LinkedFinancialAccountId");
-
                     b.HasOne("ImsServer.Models.UserX.User", "ProcessedUser")
                         .WithMany()
                         .HasForeignKey("ProcessedBy")
@@ -1387,8 +1357,6 @@ namespace ImsServer.Migrations
                         .HasForeignKey("SupplierId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("LinkedFinancialAccount");
 
                     b.Navigation("ProcessedUser");
 
@@ -1428,10 +1396,6 @@ namespace ImsServer.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("ImsServer.Models.FinancialAccountX.FinancialAccount", "LinkedFinancialAccount")
-                        .WithMany()
-                        .HasForeignKey("LinkedFinancialAccountId");
-
                     b.HasOne("ImsServer.Models.UserX.User", "ProcessedBy")
                         .WithMany()
                         .HasForeignKey("ProcessedById")
@@ -1439,8 +1403,6 @@ namespace ImsServer.Migrations
                         .IsRequired();
 
                     b.Navigation("Customer");
-
-                    b.Navigation("LinkedFinancialAccount");
 
                     b.Navigation("ProcessedBy");
                 });
@@ -1474,17 +1436,11 @@ namespace ImsServer.Migrations
 
             modelBuilder.Entity("ImsServer.Models.SalesDebtsTrackerX.SalesDebtsTracker", b =>
                 {
-                    b.HasOne("ImsServer.Models.FinancialAccountX.FinancialAccount", "LinkedFinancialAccount")
-                        .WithMany()
-                        .HasForeignKey("LinkedFinancialAccountId");
-
                     b.HasOne("ImsServer.Models.SaleX.Sale", "Sale")
                         .WithMany()
                         .HasForeignKey("SaleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("LinkedFinancialAccount");
 
                     b.Navigation("Sale");
                 });

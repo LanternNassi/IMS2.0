@@ -4,6 +4,7 @@ using ImsServer.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ImsServer.Migrations
 {
     [DbContext(typeof(DBContext))]
-    partial class DBContextModelSnapshot : ModelSnapshot
+    [Migration("20251212072307_Adding payment methods and default accounts")]
+    partial class Addingpaymentmethodsanddefaultaccounts
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -660,9 +663,6 @@ namespace ImsServer.Migrations
                     b.Property<int>("LastUpdatedBy")
                         .HasColumnType("int");
 
-                    b.Property<Guid?>("LinkedFinancialAccountId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<decimal>("PaidAmount")
                         .HasColumnType("decimal(18,2)");
 
@@ -682,8 +682,6 @@ namespace ImsServer.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("LinkedFinancialAccountId");
 
                     b.HasIndex("PurchaseId");
 
@@ -976,9 +974,6 @@ namespace ImsServer.Migrations
                     b.Property<int>("LastUpdatedBy")
                         .HasColumnType("int");
 
-                    b.Property<Guid?>("LinkedFinancialAccountId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<decimal>("PaidAmount")
                         .HasColumnType("decimal(18,2)");
 
@@ -992,8 +987,6 @@ namespace ImsServer.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("LinkedFinancialAccountId");
 
                     b.HasIndex("SaleId");
 
@@ -1355,17 +1348,11 @@ namespace ImsServer.Migrations
 
             modelBuilder.Entity("ImsServer.Models.PurchaseDebtX.PurchaseDebtTracker", b =>
                 {
-                    b.HasOne("ImsServer.Models.FinancialAccountX.FinancialAccount", "LinkedFinancialAccount")
-                        .WithMany()
-                        .HasForeignKey("LinkedFinancialAccountId");
-
                     b.HasOne("ImsServer.Models.PurchaseX.Purchase", "Purchase")
                         .WithMany()
                         .HasForeignKey("PurchaseId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("LinkedFinancialAccount");
 
                     b.Navigation("Purchase");
                 });
@@ -1474,17 +1461,11 @@ namespace ImsServer.Migrations
 
             modelBuilder.Entity("ImsServer.Models.SalesDebtsTrackerX.SalesDebtsTracker", b =>
                 {
-                    b.HasOne("ImsServer.Models.FinancialAccountX.FinancialAccount", "LinkedFinancialAccount")
-                        .WithMany()
-                        .HasForeignKey("LinkedFinancialAccountId");
-
                     b.HasOne("ImsServer.Models.SaleX.Sale", "Sale")
                         .WithMany()
                         .HasForeignKey("SaleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("LinkedFinancialAccount");
 
                     b.Navigation("Sale");
                 });

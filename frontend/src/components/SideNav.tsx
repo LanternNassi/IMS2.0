@@ -25,6 +25,7 @@ import {
   Bell,
   HelpCircle,
   User,
+  ChevronDown,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -41,6 +42,15 @@ import { Separator } from "@/components/ui/separator"
 
 const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/Dashboard" },
+  { 
+    label: "Accounts", 
+    icon: User, 
+    path: "/Accounts",
+    subItems: [
+      { label: "Capital Account", icon: CreditCard, path: "/Accounts/capital" },
+      { label: "Financial Account", icon: Wallet, path: "/Accounts/financial" },
+    ]
+  },
   { label: "Users", icon: Users, path: "/Users" },
   { label: "Categories", icon: FolderOpen, path: "/Categories" },
   { label: "Store Management", icon: Store, path: "/Stores" },
@@ -51,7 +61,15 @@ const navItems = [
   { label: "Purchases", icon: ShoppingBag, path: "/Purchases" },
   { label: "Sales", icon: Receipt, path: "/Sales" },
   { label: "Product Analysis", icon: BarChart3, path: "/Analysis" },
-  { label: "Debts", icon: CreditCard, path: "/Debts" },
+  { 
+    label: "Debts",
+    icon: CreditCard,
+    path: "/Debts",
+    subItems: [
+        { label: "Payables", icon: CreditCard, path: "/Debts/Payables" },
+        { label: "Receivables", icon: CreditCard, path: "/Debts/Receivables" },
+    ]
+ },
   { label: "Expenditure", icon: Wallet, path: "/Expenditure" },
 ]
 
@@ -69,11 +87,20 @@ const SideNav = ({ defaultCollapsed = false }: SideNavProps) => {
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed)
   const [currentPage, setCurrentPage] = useState(0)
   const [isDarkMode, setIsDarkMode] = useState(true)
+  const [expandedItems, setExpandedItems] = useState<number[]>([])
   const router = useRouter()
 
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode)
     document.documentElement.classList.toggle("dark")
+  }
+
+  const toggleExpanded = (index: number) => {
+    setExpandedItems(prev => 
+      prev.includes(index) 
+        ? prev.filter(i => i !== index)
+        : [...prev, index]
+    )
   }
 
   const NavItem = ({
@@ -86,38 +113,129 @@ const SideNav = ({ defaultCollapsed = false }: SideNavProps) => {
     isActive: boolean
   }) => {
     const Icon = item.icon
+    const hasSubItems = item.subItems && item.subItems.length > 0
+    const isExpanded = expandedItems.includes(index)
 
     const content = (
-      <button
-        onClick={() => {
-          router.push(item.path)
-          setCurrentPage(index)
-        }}
-        className={cn(
-          "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
-          "hover:bg-gray-100 dark:hover:bg-gray-800",
-          "focus:outline-none focus:ring-2 focus:ring-primary/50",
-          "group relative",
-          isActive
-            ? "bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary-foreground font-medium"
-            : "text-gray-600 dark:text-gray-400",
-          isCollapsed && "justify-center px-2",
-        )}
-      >
-        <Icon
+      <div>
+        <button
+          onClick={() => {
+            if (hasSubItems) {
+              toggleExpanded(index)
+            } else {
+              router.push(item.path)
+              setCurrentPage(index)
+            }
+          }}
           className={cn(
-            "w-5 h-5 flex-shrink-0 transition-colors",
+            "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
+            "hover:bg-gray-100 dark:hover:bg-gray-800",
+            "focus:outline-none focus:ring-2 focus:ring-primary/50",
+            "group relative",
             isActive
-              ? "text-primary dark:text-blue-400"
-              : "text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200",
+              ? "bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary-foreground font-medium"
+              : "text-gray-600 dark:text-gray-400",
+            isCollapsed && "justify-center px-2",
           )}
-        />
-        {!isCollapsed && <span className="text-sm truncate">{item.label}</span>}
-        {isActive && (
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary dark:bg-blue-400 rounded-r-full" />
+        >
+          <Icon
+            className={cn(
+              "w-5 h-5 flex-shrink-0 transition-colors",
+              isActive
+                ? "text-primary dark:text-blue-400"
+                : "text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200",
+            )}
+          />
+          {!isCollapsed && (
+            <>
+              <span className="text-sm truncate flex-1 text-left">{item.label}</span>
+              {hasSubItems && (
+                <ChevronDown 
+                  className={cn(
+                    "w-4 h-4 transition-transform",
+                    isExpanded && "rotate-180"
+                  )}
+                />
+              )}
+            </>
+          )}
+          {isActive && (
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary dark:bg-blue-400 rounded-r-full" />
+          )}
+        </button>
+
+        {/* Sub Items */}
+        {hasSubItems && !isCollapsed && isExpanded && (
+          <div className="ml-8 mt-1 space-y-1">
+            {item.subItems!.map((subItem, subIndex) => (
+              <button
+                key={subIndex}
+                onClick={() => {
+                  router.push(subItem.path)
+                  setCurrentPage(index)
+                }}
+                className={cn(
+                  "w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200",
+                  "hover:bg-gray-100 dark:hover:bg-gray-800",
+                  "text-sm text-gray-600 dark:text-gray-400",
+                  "hover:text-gray-900 dark:hover:text-gray-200"
+                )}
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-600" />
+                {subItem.icon && <subItem.icon className="w-4 h-4 mr-2" />}
+                <span className="truncate">{subItem.label}</span>
+              </button>
+            ))}
+          </div>
         )}
-      </button>
+      </div>
     )
+
+    if (isCollapsed && hasSubItems) {
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className={cn(
+                "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
+                "hover:bg-gray-100 dark:hover:bg-gray-800",
+                "focus:outline-none focus:ring-2 focus:ring-primary/50",
+                "group relative justify-center px-2",
+                isActive
+                  ? "bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary-foreground font-medium"
+                  : "text-gray-600 dark:text-gray-400",
+              )}
+            >
+              <Icon
+                className={cn(
+                  "w-5 h-5 flex-shrink-0 transition-colors",
+                  isActive
+                    ? "text-primary dark:text-blue-400"
+                    : "text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200",
+                )}
+              />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="right" className="dark:bg-gray-900 dark:border-gray-800">
+            <DropdownMenuLabel className="dark:text-white">{item.label}</DropdownMenuLabel>
+            <DropdownMenuSeparator className="dark:bg-gray-800" />
+            {item.subItems!.map((subItem, subIndex) => (
+              <DropdownMenuItem
+                key={subIndex}
+                onClick={() => {
+                  router.push(subItem.path)
+                  setCurrentPage(index)
+                }}
+                className="cursor-pointer dark:text-gray-300 dark:focus:bg-gray-800"
+              >
+                {subItem.icon && <subItem.icon className="w-4 h-4 mr-2" />}
+                {subItem.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )
+    }
 
     if (isCollapsed) {
       return (
