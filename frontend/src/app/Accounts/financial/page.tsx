@@ -34,6 +34,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis
 import api from "@/Utils/Request"
 import { useToast } from "@/hooks/use-toast"
 import PaginationControls from "@/components/PaginationControls"
+import { set } from "date-fns"
 
 // Types
 interface FinancialAccount {
@@ -45,6 +46,7 @@ interface FinancialAccount {
   bankName: string
   description: string
   isActive: boolean
+  isDefault: boolean
   addedAt: string
   addedBy: number
   updatedAt: string
@@ -83,108 +85,15 @@ interface AccountFormData {
   bankName: string
   description: string
   isActive: boolean
+  isDefault: boolean
 }
 
-// Mock data
-const mockData = {
-  pagination: {
-    currentPage: 1,
-    pageSize: 50,
-    totalCount: 5,
-    totalPages: 1,
-    hasPreviousPage: false,
-    hasNextPage: false,
-  },
-  metadata: {
-    totalBalance: 15750000,
-    totalAccounts: 5,
-    activeAccounts: 4,
-    inactiveAccounts: 1,
-    accountTypeBreakdown: [
-      { type: "BANK", count: 2, totalBalance: 12500000 },
-      { type: "MOBILE_MONEY", count: 1, totalBalance: 2500000 },
-      { type: "CASH", count: 1, totalBalance: 500000 },
-      { type: "SAVINGS", count: 1, totalBalance: 250000 },
-    ],
-  },
-  financialAccounts: [
-    {
-      id: "f3108e4d-8a99-4d87-925b-649c5fad2ab7",
-      accountName: "ABSA Main",
-      type: "BANK" as const,
-      accountNumber: "192039301",
-      balance: 8500000,
-      bankName: "ABSA Bank",
-      description: "Primary business bank account",
-      isActive: true,
-      addedAt: "2024-01-15T10:30:00",
-      addedBy: 1,
-      updatedAt: "2025-01-10T14:20:00",
-      lastUpdatedBy: 1,
-      deletedAt: null,
-    },
-    {
-      id: "a96f0e23-be78-4432-829d-5ff20b6046da",
-      accountName: "Stanbic Operations",
-      type: "BANK" as const,
-      accountNumber: "304958271",
-      balance: 4000000,
-      bankName: "Stanbic Bank",
-      description: "Secondary operations account",
-      isActive: true,
-      addedAt: "2024-03-20T09:15:00",
-      addedBy: 1,
-      updatedAt: "2025-01-08T11:45:00",
-      lastUpdatedBy: 2,
-      deletedAt: null,
-    },
-    {
-      id: "b12c3d4e-5f6g-7h8i-9j0k-1l2m3n4o5p6q",
-      accountName: "MTN Mobile Money",
-      type: "MOBILE_MONEY" as const,
-      accountNumber: "0771234567",
-      balance: 2500000,
-      bankName: "MTN",
-      description: "Mobile money for quick transactions",
-      isActive: true,
-      addedAt: "2024-05-10T08:00:00",
-      addedBy: 1,
-      updatedAt: "2025-01-12T16:30:00",
-      lastUpdatedBy: 1,
-      deletedAt: null,
-    },
-    {
-      id: "c23d4e5f-6g7h-8i9j-0k1l-2m3n4o5p6q7r",
-      accountName: "Petty Cash",
-      type: "CASH" as const,
-      accountNumber: "CASH-001",
-      balance: 500000,
-      bankName: "N/A",
-      description: "Office petty cash for small expenses",
-      isActive: true,
-      addedAt: "2024-02-01T07:30:00",
-      addedBy: 1,
-      updatedAt: "2025-01-11T09:00:00",
-      lastUpdatedBy: 3,
-      deletedAt: null,
-    },
-    {
-      id: "d34e5f6g-7h8i-9j0k-1l2m-3n4o5p6q7r8s",
-      accountName: "Emergency Fund",
-      type: "SAVINGS" as const,
-      accountNumber: "SAV-192039",
-      balance: 250000,
-      bankName: "ABSA Bank",
-      description: "Emergency savings fund - inactive",
-      isActive: false,
-      addedAt: "2024-06-15T10:00:00",
-      addedBy: 1,
-      updatedAt: "2024-12-01T12:00:00",
-      lastUpdatedBy: 1,
-      deletedAt: null,
-    },
-  ],
+type ReconciliationRow = {
+  financialAccountId: string
+  countedBalance: number
+  notes: string
 }
+
 
 const accountTypeConfig = {
   BANK: { icon: Building2, color: "bg-blue-500", bgColor: "bg-blue-500/10", textColor: "text-blue-400" },
@@ -246,11 +155,22 @@ export default function FinancialAccountsPage() {
     bankName: "",
     description: "",
     isActive: true,
+    isDefault: false,
   })
+
+  // Reconciliation states
+  const [isOpenDayDialogOpen, setIsOpenDayDialogOpen] = useState(false)
+  const [isCloseDayDialogOpen, setIsCloseDayDialogOpen] = useState(false)
+  const [openBusinessDate, setOpenBusinessDate] = useState(new Date().toISOString().split("T")[0])
+  const [closeBusinessDate, setCloseBusinessDate] = useState(new Date().toISOString().split("T")[0])
+  const [openRows, setOpenRows] = useState<ReconciliationRow[]>([])
+  const [closeRows, setCloseRows] = useState<ReconciliationRow[]>([])
+  const [businessDayIsOpen, setBusinessDayIsOpen] = useState<boolean>(false)
 
   useEffect(() => {
     fetchFinancialAccounts()
-  }, [])
+    CheckIfBusinessDayisOpen()
+  })
 
   const fetchFinancialAccounts = async (page: number = 1, pageSize: number = 50) => {
     setIsLoading(true)
@@ -290,8 +210,14 @@ export default function FinancialAccountsPage() {
     fetchFinancialAccounts(newPage, pagination.pageSize)
   }
 
-  const handlePageSizeChange = (newPageSize: number) => {
-    fetchFinancialAccounts(1, newPageSize)
+  const CheckIfBusinessDayisOpen = async () => {
+    const response = await api.get('/CashReconciliations/is-today-open')
+    setBusinessDayIsOpen(response.data.isOpen as boolean)
+  }
+
+
+  const toBusinessDateUtc = (dateStr: string) => {
+    return new Date(`${dateStr}T00:00:00Z`).toISOString()
   }
 
   // Filter accounts
@@ -332,6 +258,7 @@ export default function FinancialAccountsPage() {
         bankName: account.bankName,
         description: account.description,
         isActive: account.isActive,
+        isDefault: account.isDefault,
       })
     } else {
       setEditingAccount(null)
@@ -343,6 +270,7 @@ export default function FinancialAccountsPage() {
         bankName: "",
         description: "",
         isActive: true,
+        isDefault: false,
       })
     }
     setIsFormOpen(true)
@@ -364,6 +292,7 @@ export default function FinancialAccountsPage() {
           bankName: formData.bankName,
           description: formData.description,
           isActive: formData.isActive,
+          isDefault: formData.isDefault,
         }
 
         await api.put(`/FinancialAccounts/${editingAccount.id}`, updatePayload)
@@ -382,6 +311,7 @@ export default function FinancialAccountsPage() {
           bankName: formData.bankName,
           description: formData.description,
           isActive: formData.isActive,
+          isDefault: formData.isDefault,
         }
 
         await api.post("/FinancialAccounts", createPayload)
@@ -454,8 +384,110 @@ export default function FinancialAccountsPage() {
     }
   }
 
+  const handleOpenBusinessDay = async () => {
+    try {
+      if (openRows.length === 0) {
+        toast({
+          title: "No Accounts",
+          variant: "destructive",
+          description: "No accounts available to reconcile.",
+        })
+        return
+      }
+
+      const businessDateUtc = toBusinessDateUtc(openBusinessDate)
+      const results = await Promise.allSettled(
+        openRows.map((row) =>
+          api.post("/CashReconciliations/open", {
+            financialAccountId: row.financialAccountId,
+            businessDateUtc,
+            openingCountedBalance: row.countedBalance,
+            notes: row.notes,
+          })
+        )
+      )
+
+      const failedCount = results.filter((r) => r.status === "rejected").length
+      const successCount = results.length - failedCount
+
+      if (failedCount === 0) {
+        toast({
+          title: "Business Day Opened",
+          description: `Opened for ${successCount} account(s).`,
+          className: "bg-primary text-black dark:bg-gray-700 dark:text-white",
+        })
+        setIsOpenDayDialogOpen(false)
+        setOpenRows([])
+      } else {
+        toast({
+          title: "Partial Success",
+          variant: "destructive",
+          description: `Opened for ${successCount} account(s). Failed for ${failedCount} account(s).`,
+        })
+      }
+    } catch (error) {
+      console.error("Error opening business day:", error)
+      toast({
+        title: "Error",
+        variant: "destructive",
+        description: "Failed to open business day. Please try again.",
+      })
+    }
+  }
+
+  const handleCloseBusinessDay = async () => {
+    try {
+      if (closeRows.length === 0) {
+        toast({
+          title: "No Accounts",
+          variant: "destructive",
+          description: "No accounts available to reconcile.",
+        })
+        return
+      }
+
+      const businessDateUtc = toBusinessDateUtc(closeBusinessDate)
+      const results = await Promise.allSettled(
+        closeRows.map((row) =>
+          api.post("/CashReconciliations/close", {
+            financialAccountId: row.financialAccountId,
+            businessDateUtc,
+            closingCountedBalance: row.countedBalance,
+            notes: row.notes,
+          })
+        )
+      )
+
+      const failedCount = results.filter((r) => r.status === "rejected").length
+      const successCount = results.length - failedCount
+
+      if (failedCount === 0) {
+        toast({
+          title: "Business Day Closed",
+          description: `Closed for ${successCount} account(s).`,
+          className: "bg-primary text-black dark:bg-gray-700 dark:text-white",
+        })
+        setIsCloseDayDialogOpen(false)
+        setCloseRows([])
+      } else {
+        toast({
+          title: "Partial Success",
+          variant: "destructive",
+          description: `Closed for ${successCount} account(s). Failed for ${failedCount} account(s).`,
+        })
+      }
+    } catch (error) {
+      console.error("Error closing business day:", error)
+      toast({
+        title: "Error",
+        variant: "destructive",
+        description: "Failed to close business day. Please try again.",
+      })
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -468,13 +500,55 @@ export default function FinancialAccountsPage() {
             </h1>
             <p className="text-slate-400 mt-1">Manage and monitor all your financial accounts</p>
           </div>
-          <Button
-            onClick={() => handleOpenForm()}
-            className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Add Account
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              disabled={businessDayIsOpen}
+              onClick={() => {
+                setOpenBusinessDate(new Date().toISOString().split("T")[0])
+                setOpenRows(
+                  accounts
+                    .filter((acc) => acc.isActive)
+                    .map((acc) => ({
+                      financialAccountId: acc.id,
+                      countedBalance: acc.balance || 0,
+                      notes: "",
+                    }))
+                )
+                setIsOpenDayDialogOpen(true)
+              }}
+              className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white gap-2"
+            >
+              <CheckCircle2 className="h-4 w-4" />
+              Open Day
+            </Button>
+            <Button
+            disabled={!businessDayIsOpen}
+              onClick={() => {
+                setCloseBusinessDate(new Date().toISOString().split("T")[0])
+                setCloseRows(
+                  accounts
+                    .filter((acc) => acc.isActive)
+                    .map((acc) => ({
+                      financialAccountId: acc.id,
+                      countedBalance: acc.balance || 0,
+                      notes: "",
+                    }))
+                )
+                setIsCloseDayDialogOpen(true)
+              }}
+              className="bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white gap-2"
+            >
+              <XCircle className="h-4 w-4" />
+              Close Day
+            </Button>
+            <Button
+              onClick={() => handleOpenForm()}
+              className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Add Account
+            </Button>
+          </div>
         </div>
 
         {/* Metrics Cards */}
@@ -764,11 +838,10 @@ export default function FinancialAccountsPage() {
                           <div className="flex items-center gap-3">
                             <h4 className="text-white font-semibold truncate">{account.accountName}</h4>
                             <span
-                              className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                                account.isActive
+                              className={`px-2 py-0.5 rounded-full text-xs font-medium ${account.isActive
                                   ? "bg-emerald-500/20 text-emerald-400"
                                   : "bg-slate-500/20 text-slate-400"
-                              }`}
+                                }`}
                             >
                               {account.isActive ? "Active" : "Inactive"}
                             </span>
@@ -1019,6 +1092,17 @@ export default function FinancialAccountsPage() {
                 onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
               />
             </div>
+
+            <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-lg">
+              <div>
+                <p className="text-white font-medium">Default Account</p>
+                <p className="text-sm text-slate-400">Set as the default account for this type</p>
+              </div>
+              <Switch
+                checked={formData.isDefault}
+                onCheckedChange={(checked) => setFormData({ ...formData, isDefault: checked })}
+              />
+            </div>
           </div>
 
           <DialogFooter className="gap-2">
@@ -1035,6 +1119,266 @@ export default function FinancialAccountsPage() {
               className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
             >
               {editingAccount ? "Save Changes" : "Create Account"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Open Business Day Dialog */}
+      <Dialog open={isOpenDayDialogOpen} onOpenChange={setIsOpenDayDialogOpen}>
+        <DialogContent className="bg-slate-900 border-slate-800 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+              <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+              Open Business Day
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label className="text-slate-300">Business Date</Label>
+              <Input
+                type="date"
+                value={openBusinessDate}
+                onChange={(e) => setOpenBusinessDate(e.target.value)}
+                className="bg-slate-800 border-slate-700 text-white"
+              />
+              <p className="text-xs text-slate-400">Applies to all accounts below</p>
+            </div>
+
+            <div className="space-y-3 max-h-[50vh] overflow-auto pr-1">
+              {openRows.map((row) => {
+                const account = accounts.find((acc) => acc.id === row.financialAccountId)
+                const actualBalance = account?.balance || 0
+                const difference = row.countedBalance - actualBalance
+                const notesRequired = difference !== 0
+
+                return (
+                  <div key={row.financialAccountId} className="border border-slate-800 rounded-lg p-3 bg-slate-900/40">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-white font-medium truncate">{account?.accountName ?? "Unknown Account"}</p>
+                        <p className="text-xs text-slate-400">
+                          {account?.type?.replace("_", " ") ?? ""}
+                          {account?.isDefault ? " • Default" : ""}
+                        </p>
+                        <p className="text-xs text-slate-400 mt-1">Actual: {formatCurrency(actualBalance)}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        {difference === 0 ? (
+                          <p className="text-xs text-emerald-400">✓ Matches</p>
+                        ) : (
+                          <p className="text-xs text-amber-400">
+                            Diff: {formatCurrency(Math.abs(difference))} {difference > 0 ? "excess" : "shortage"}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3 mt-3">
+                      <div className="space-y-2">
+                        <Label className="text-slate-300">Opening Counted Balance</Label>
+                        <Input
+                          type="number"
+                          value={row.countedBalance}
+                          onChange={(e) => {
+                            const next = Number(e.target.value)
+                            setOpenRows((prev) =>
+                              prev.map((r) =>
+                                r.financialAccountId === row.financialAccountId ? { ...r, countedBalance: next } : r
+                              )
+                            )
+                          }}
+                          className="bg-slate-800 border-slate-700 text-white"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-slate-300">
+                          Notes {notesRequired ? <span className="text-rose-400">*</span> : "(Optional)"}
+                        </Label>
+                        <Textarea
+                          value={row.notes}
+                          onChange={(e) =>
+                            setOpenRows((prev) =>
+                              prev.map((r) =>
+                                r.financialAccountId === row.financialAccountId ? { ...r, notes: e.target.value } : r
+                              )
+                            )
+                          }
+                          placeholder={
+                            notesRequired
+                              ? "Required: Explain the difference between counted and actual balance..."
+                              : "Any notes for this account..."
+                          }
+                          rows={2}
+                          className="bg-slate-800 border-slate-700 text-white resize-none"
+                        />
+                        {notesRequired && !row.notes.trim() ? (
+                          <p className="text-xs text-rose-400">* Notes are required when there is a difference</p>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsOpenDayDialogOpen(false)}
+              className="border-slate-700 text-slate-300 hover:bg-slate-800 bg-transparent"
+            >
+              <X className="h-4 w-4 mr-2" />
+              Cancel
+            </Button>
+            <Button
+              onClick={handleOpenBusinessDay}
+              disabled={(() => {
+                if (openRows.length === 0) return true
+                return openRows.some((row) => {
+                  const account = accounts.find((acc) => acc.id === row.financialAccountId)
+                  const actualBalance = account?.balance || 0
+                  const difference = row.countedBalance - actualBalance
+                  return difference !== 0 && !row.notes.trim()
+                })
+              })()}
+              className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
+            >
+              <CheckCircle2 className="h-4 w-4 mr-2" />
+              Open Day
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Close Business Day Dialog */}
+      <Dialog open={isCloseDayDialogOpen} onOpenChange={setIsCloseDayDialogOpen}>
+        <DialogContent className="bg-slate-900 border-slate-800 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+              <XCircle className="h-6 w-6 text-rose-500" />
+              Close Business Day
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label className="text-slate-300">Business Date</Label>
+              <Input
+                type="date"
+                value={closeBusinessDate}
+                onChange={(e) => setCloseBusinessDate(e.target.value)}
+                className="bg-slate-800 border-slate-700 text-white"
+              />
+              <p className="text-xs text-slate-400">Applies to all accounts below</p>
+            </div>
+
+            <div className="space-y-3 max-h-[50vh] overflow-auto pr-1">
+              {closeRows.map((row) => {
+                const account = accounts.find((acc) => acc.id === row.financialAccountId)
+                const actualBalance = account?.balance || 0
+                const difference = row.countedBalance - actualBalance
+                const notesRequired = difference !== 0
+
+                return (
+                  <div key={row.financialAccountId} className="border border-slate-800 rounded-lg p-3 bg-slate-900/40">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-white font-medium truncate">{account?.accountName ?? "Unknown Account"}</p>
+                        <p className="text-xs text-slate-400">
+                          {account?.type?.replace("_", " ") ?? ""}
+                          {account?.isDefault ? " • Default" : ""}
+                        </p>
+                        <p className="text-xs text-slate-400 mt-1">Actual: {formatCurrency(actualBalance)}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        {difference === 0 ? (
+                          <p className="text-xs text-emerald-400">✓ Matches</p>
+                        ) : (
+                          <p className="text-xs text-amber-400">
+                            Diff: {formatCurrency(Math.abs(difference))} {difference > 0 ? "excess" : "shortage"}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3 mt-3">
+                      <div className="space-y-2">
+                        <Label className="text-slate-300">Closing Counted Balance</Label>
+                        <Input
+                          type="number"
+                          value={row.countedBalance}
+                          onChange={(e) => {
+                            const next = Number(e.target.value)
+                            setCloseRows((prev) =>
+                              prev.map((r) =>
+                                r.financialAccountId === row.financialAccountId ? { ...r, countedBalance: next } : r
+                              )
+                            )
+                          }}
+                          className="bg-slate-800 border-slate-700 text-white"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-slate-300">
+                          Notes {notesRequired ? <span className="text-rose-400">*</span> : "(Optional)"}
+                        </Label>
+                        <Textarea
+                          value={row.notes}
+                          onChange={(e) =>
+                            setCloseRows((prev) =>
+                              prev.map((r) =>
+                                r.financialAccountId === row.financialAccountId ? { ...r, notes: e.target.value } : r
+                              )
+                            )
+                          }
+                          placeholder={
+                            notesRequired
+                              ? "Required: Explain the difference between counted and actual balance..."
+                              : "Any notes for this account..."
+                          }
+                          rows={2}
+                          className="bg-slate-800 border-slate-700 text-white resize-none"
+                        />
+                        {notesRequired && !row.notes.trim() ? (
+                          <p className="text-xs text-rose-400">* Notes are required when there is a difference</p>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsCloseDayDialogOpen(false)}
+              className="border-slate-700 text-slate-300 hover:bg-slate-800 bg-transparent"
+            >
+              <X className="h-4 w-4 mr-2" />
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCloseBusinessDay}
+              disabled={(() => {
+                if (closeRows.length === 0) return true
+                return closeRows.some((row) => {
+                  const account = accounts.find((acc) => acc.id === row.financialAccountId)
+                  const actualBalance = account?.balance || 0
+                  const difference = row.countedBalance - actualBalance
+                  return difference !== 0 && !row.notes.trim()
+                })
+              })()}
+              className="bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700"
+            >
+              <XCircle className="h-4 w-4 mr-2" />
+              Close Day
             </Button>
           </DialogFooter>
         </DialogContent>

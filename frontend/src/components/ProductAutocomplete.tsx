@@ -9,6 +9,7 @@ export interface ProductVariation {
   unitSize: number
   retailPrice: number
   wholeSalePrice: number
+  costPrice: number
   discount: number
   unitofMeasure: string
   isActive: boolean

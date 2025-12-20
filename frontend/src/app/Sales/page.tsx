@@ -36,8 +36,8 @@ export type SalesItem = {
 
 export type Sale = {
   id: string
-  customerId: string
-  customerName: string
+  customerId: string | null | undefined
+  customerName: string | null | undefined
   items: SalesItem[]
   totalAmount: number
   paidAmount?: number

@@ -33,7 +33,7 @@ export const useStorageStore = create<StorageState>((set, get) => ({
     set({ loading: true, error: null })
     try {
       await api.post('/ProductStorages', storage)
-      await get().fetchStorages(storage.productGenericId, storage.variationId, storage.storageId)
+      await get().fetchStorages(storage.productGenericId, storage.productVariationId, storage.storageId)
     } catch (error: any) {
       set({ error: error.message, loading: false })
     }
@@ -42,7 +42,7 @@ export const useStorageStore = create<StorageState>((set, get) => ({
     set({ loading: true, error: null })
     try {
       await api.put(`/ProductStorages/${storage.id}`, storage)
-      await get().fetchStorages(storage.productGenericId, storage.variationId, storage.storageId)
+      await get().fetchStorages(storage.productGenericId, storage.productVariationId, storage.storageId)
     } catch (error: any) {
       set({ error: error.message, loading: false })
     }

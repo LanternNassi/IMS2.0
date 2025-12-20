@@ -1,6 +1,6 @@
 "use client"
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -153,7 +153,7 @@ const CapitalAccountsPage = () => {
   const [editingAccount, setEditingAccount] = useState<CapitalAccount | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [accountToDelete, setAccountToDelete] = useState<CapitalAccount | null>(null)
-  
+
   // User autocomplete states
   const [userOptions, setUserOptions] = useState<User[]>([])
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
@@ -166,38 +166,48 @@ const CapitalAccountsPage = () => {
   const [financialAccountLoading, setFinancialAccountLoading] = useState(false)
   const [financialAccountSearchQuery, setFinancialAccountSearchQuery] = useState("")
 
+  
+  const fetchCapitalAccounts = useCallback(
+    async (page: number = 1, pageSize: number = 50) => {
+      setIsLoading(true)
+      try {
+        const response = await api.get(`/CapitalAccounts?includeMetadata=true&page=${page}&pageSize=${pageSize}`)
+        setCapitalAccounts(response.data.capitalTransactions || [])
+        setMetadata(response.data.metadata || null)
+        setPagination(response.data.pagination || {
+          currentPage: 1,
+          pageSize: 50,
+          totalCount: 0,
+          totalPages: 0,
+          hasPreviousPage: false,
+          hasNextPage: false,
+        })
+      } catch (error) {
+        console.error("Error fetching capital accounts:", error)
+        toast({
+          title: "Capital Accounts Management",
+          variant: "destructive",
+          description: "Failed to load capital accounts.",
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [toast]
+  )
+
   useEffect(() => {
     fetchCapitalAccounts()
-  }, [])
+  }, [fetchCapitalAccounts])
 
-  const fetchCapitalAccounts = async (page: number = 1, pageSize: number = 50) => {
-    setIsLoading(true)
-    try {
-      const response = await api.get(`/CapitalAccounts?includeMetadata=true&page=${page}&pageSize=${pageSize}`)
-      setCapitalAccounts(response.data.capitalTransactions || [])
-      setMetadata(response.data.metadata || null)
-      setPagination(response.data.pagination || {
-        currentPage: 1,
-        pageSize: 50,
-        totalCount: 0,
-        totalPages: 0,
-        hasPreviousPage: false,
-        hasNextPage: false,
-      })
-    } catch (error) {
-      console.error("Error fetching capital accounts:", error)
-      toast({
-        title: "Capital Accounts Management",
-        variant: "destructive",
-        description: "Failed to load capital accounts.",
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
   const handlePageChange = (newPage: number) => {
     fetchCapitalAccounts(newPage, pagination.pageSize)
+  }
+
+  const CheckIfBusinessDayisOpen = async (): Promise<boolean> => {
+    const response = await api.get('/CashReconciliations/is-today-open')
+    return response.data.isOpen as boolean
   }
 
   const handlePageSizeChange = (newPageSize: number) => {
@@ -341,6 +351,18 @@ const CapitalAccountsPage = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+
+    const isOpen = await CheckIfBusinessDayisOpen()
+
+    if (!isOpen) {
+      toast({
+        title: "Capital Accounts Management",
+        variant: "destructive",
+        description: "Cannot save capital account. Business day is not open.",
+      })
+      return
+    }
+
     const formData = new FormData(e.currentTarget)
 
     try {

@@ -5,6 +5,8 @@ using ImsServer.Models.PurchaseX;
 using ImsServer.Models.ProductX;
 using ImsServer.Models.StoreX;
 using ImsServer.Models.SupplierX;
+using ImsServer.Models.PurchaseDebtX;
+using ImsServer.Models.FinancialAccountX;
 
 namespace ImsServer.Controllers
 {
@@ -189,6 +191,8 @@ namespace ImsServer.Controllers
             using var tran = await _db.Database.BeginTransactionAsync();
             try
             {
+                AccountType? linkedAccountType = null;
+
                 var purchase = new Purchase
                 {
                     Id = dto.Id == Guid.Empty ? Guid.NewGuid() : dto.Id,
@@ -200,10 +204,11 @@ namespace ImsServer.Controllers
                     GrandTotal = dto.GrandTotal,
                     Notes = dto.Notes,
                     IsPaid = dto.PaidAmount >= dto.GrandTotal,
-                    WasPartialPayment = dto.PaidAmount > 0 && dto.PaidAmount < dto.GrandTotal,
+                    WasPartialPayment = dto.PaidAmount >= 0 && dto.PaidAmount < dto.GrandTotal,
                     LinkedFinancialAccountId = dto.LinkedFinancialAccountId,
                     PaidAmount = dto.PaidAmount,
-                    ProcessedBy = dto.ProcessedBy
+                    OutstandingAmount = dto.GrandTotal - dto.PaidAmount,
+                    ProcessedBy = dto.ProcessedBy,
                 };
 
                 _db.Purchases.Add(purchase);
@@ -309,11 +314,43 @@ namespace ImsServer.Controllers
                         await tran.RollbackAsync();
                         return BadRequest("Linked financial account not found.");
                     }
+
+                    linkedAccountType = account.Type;
                     
                     // Update account balance
                     if (dto.PaidAmount >= 0){
                         account.Balance -= purchase.PaidAmount;
                     }
+                }
+
+                // If purchase started as partial payment, record the initial payment in the tracker
+                // so dated cash-out events are consistent for reporting.
+                if (dto.PaidAmount > 0 && dto.PaidAmount < dto.GrandTotal)
+                {
+                    PaymentMethod inferredPaymentMethod = PaymentMethod.OTHER;
+
+                    inferredPaymentMethod = linkedAccountType switch
+                    {
+                        AccountType.CASH => PaymentMethod.CASH,
+                        AccountType.BANK => PaymentMethod.BANK_TRANSFER,
+                        AccountType.MOBILE_MONEY => PaymentMethod.MOBILE_MONEY,
+                        AccountType.SAVINGS => PaymentMethod.SAVINGS,
+                        _ => PaymentMethod.OTHER
+                    };
+
+                    var initialPayment = new PurchaseDebtTracker
+                    {
+                        Id = Guid.NewGuid(),
+                        PurchaseId = purchase.Id,
+                        PaidAmount = dto.PaidAmount,
+                        PaymentMethod = inferredPaymentMethod,
+                        PaymentDate = purchase.PurchaseDate,
+                        Description = string.IsNullOrWhiteSpace(dto.Notes) ? "Initial payment at purchase creation" : dto.Notes,
+                        ReceivedById = dto.ProcessedBy,
+                        LinkedFinancialAccountId = dto.LinkedFinancialAccountId
+                    };
+
+                    _db.PurchaseDebtTrackers.Add(initialPayment);
                 }
 
                 await _db.SaveChangesAsync();
@@ -378,6 +415,7 @@ namespace ImsServer.Controllers
             var query = _db.Purchases
                 .Include(p => p.Supplier)
                 .Include(p => p.PurchaseItems)
+                    .ThenInclude(pi => pi.ProductVariation)
                 .Where(p => !p.DeletedAt.HasValue && p.WasPartialPayment)
                 .OrderByDescending(p => p.PurchaseDate)
                 .AsQueryable();

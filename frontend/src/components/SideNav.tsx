@@ -25,7 +25,7 @@ import {
   Bell,
   HelpCircle,
   User,
-  ChevronDown,
+  ChevronDown
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -49,15 +49,20 @@ const navItems = [
     subItems: [
       { label: "Capital Account", icon: CreditCard, path: "/Accounts/capital" },
       { label: "Financial Account", icon: Wallet, path: "/Accounts/financial" },
+      { label: "Transactions", icon: ArrowLeftRight, path: "/Accounts/transactions" },
     ]
   },
+  
   { label: "Users", icon: Users, path: "/Users" },
   { label: "Categories", icon: FolderOpen, path: "/Categories" },
   { label: "Store Management", icon: Store, path: "/Stores" },
   { label: "Products", icon: Package, path: "/Products" },
   { label: "Customers", icon: UserCheck, path: "/Customers" },
   { label: "Suppliers", icon: Truck, path: "/Suppliers" },
-  { label: "Transactions", icon: ArrowLeftRight, path: "/Transactions" },
+  { label: "Business Assets", icon: FolderOpen, path: "/Assets" },
+  {
+    label: "Financial Reports", icon: BarChart3, path: "/Reports",
+  },
   { label: "Purchases", icon: ShoppingBag, path: "/Purchases" },
   { label: "Sales", icon: Receipt, path: "/Sales" },
   { label: "Product Analysis", icon: BarChart3, path: "/Analysis" },
@@ -181,7 +186,6 @@ const SideNav = ({ defaultCollapsed = false }: SideNavProps) => {
                   "hover:text-gray-900 dark:hover:text-gray-200"
                 )}
               >
-                <div className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-600" />
                 {subItem.icon && <subItem.icon className="w-4 h-4 mr-2" />}
                 <span className="truncate">{subItem.label}</span>
               </button>

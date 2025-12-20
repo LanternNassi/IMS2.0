@@ -52,6 +52,8 @@ namespace ImsServer.Models
         public DbSet<SalesDebtsTracker> SalesDebtsTrackers { get; set; }
 
         public DbSet<FinancialAccount> FinancialAccounts { get; set; }
+        public DbSet<Transaction> Transactions { get; set; }
+        public DbSet<DailyCashReconciliation> DailyCashReconciliations { get; set; }
         public DbSet<PurchaseDebtTracker> PurchaseDebtTrackers { get; set; }
         public DbSet<FixedAsset> FixedAssets { get; set; }
         public DbSet<CapitalAccount> CapitalAccounts { get; set; }
@@ -83,10 +85,16 @@ namespace ImsServer.Models
             modelBuilder.Entity<SalesDebtsTracker>().HasQueryFilter(c => !c.DeletedAt.HasValue);
 
             modelBuilder.Entity<FinancialAccount>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+            modelBuilder.Entity<Transaction>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+            modelBuilder.Entity<DailyCashReconciliation>().HasQueryFilter(c => !c.DeletedAt.HasValue);
             modelBuilder.Entity<PurchaseDebtTracker>().HasQueryFilter(c => !c.DeletedAt.HasValue);
             modelBuilder.Entity<FixedAsset>().HasQueryFilter(c => !c.DeletedAt.HasValue);
             modelBuilder.Entity<CapitalAccount>().HasQueryFilter(c => !c.DeletedAt.HasValue);
             modelBuilder.Entity<TaxRecord>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+
+            modelBuilder.Entity<DailyCashReconciliation>()
+                .HasIndex(x => new { x.FinancialAccountId, x.BusinessDateUtc })
+                .IsUnique();
 
             modelBuilder.Entity<ProductStorage>()
                 .HasOne(ps => ps.ProductGeneric)
@@ -171,6 +179,12 @@ namespace ImsServer.Models
                     || e.Entity is PurchaseItem
 
                     || e.Entity is SalesDebtsTracker
+                    || e.Entity is FinancialAccount
+                    || e.Entity is DailyCashReconciliation
+                    || e.Entity is PurchaseDebtTracker
+                    || e.Entity is FixedAsset
+                    || e.Entity is CapitalAccount
+                    || e.Entity is TaxRecord
 
                     )
                 .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);

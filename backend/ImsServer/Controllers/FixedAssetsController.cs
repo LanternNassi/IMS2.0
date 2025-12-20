@@ -30,6 +30,7 @@ namespace ImsServer.Controllers
             [FromQuery] int pageSize = 50)
         {
             var query = _db.FixedAssets
+                .Include(fa => fa.LinkedFinancialAccount)
                 .OrderByDescending(fa => fa.PurchaseDate)
                 .AsQueryable();
 
@@ -139,6 +140,7 @@ namespace ImsServer.Controllers
         public async Task<IActionResult> GetFixedAsset(Guid id)
         {
             var asset = await _db.FixedAssets
+                .Include(fa => fa.LinkedFinancialAccount)
                 .FirstOrDefaultAsync(fa => fa.Id == id);
 
             if (asset == null) return NotFound();
@@ -178,11 +180,26 @@ namespace ImsServer.Controllers
                 CurrentValue = dto.PurchasePrice, // Initially same as purchase price
                 DepreciationRate = dto.DepreciationRate,
                 UsefulLifeYears = dto.UsefulLifeYears,
+                LinkedFinancialAccountId = dto.LinkedFinancialAccountId,
                 SerialNumber = dto.SerialNumber,
                 Manufacturer = dto.Manufacturer,
                 Description = dto.Description,
                 IsActive = true
             };
+
+            if (dto.LinkedFinancialAccountId.HasValue)
+            {
+                var account = await _db.FinancialAccounts.FindAsync(dto.LinkedFinancialAccountId.Value);
+                if (account == null)
+                {
+                    return BadRequest("Linked financial account not found. Provide a valid LinkedFinancialAccountId.");
+                }
+
+                asset.LinkedFinancialAccount = account;
+
+                // Update account balance
+                account.Balance -= dto.PurchasePrice;
+            }
 
             _db.FixedAssets.Add(asset);
             await _db.SaveChangesAsync();

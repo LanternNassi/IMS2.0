@@ -58,6 +58,11 @@ export function RecordPaymentDialog({ debt, onPaymentRecorded, trigger }: Record
     fetchFinancialAccounts()
   }, [])
 
+  const CheckIfBusinessDayisOpen = async (): Promise<boolean> => {
+    const response = await api.get('/CashReconciliations/is-today-open')
+    return response.data.isOpen as boolean
+  }
+
   const validateAmount = (value: string) => {
     const amount = parseFloat(value)
     if (isNaN(amount) || amount <= 0) {
@@ -77,6 +82,12 @@ export function RecordPaymentDialog({ debt, onPaymentRecorded, trigger }: Record
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    const isOpen = await CheckIfBusinessDayisOpen()
+    if (!isOpen) {
+      setError("Cannot record payment. Business day is not open.")
+      return
+    }
 
     const validationError = validateAmount(formData.amount)
     if (validationError) {

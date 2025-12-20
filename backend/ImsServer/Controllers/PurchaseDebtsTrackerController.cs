@@ -144,7 +144,7 @@ namespace ImsServer.Controllers
                 .ToListAsync();
 
             var totalPaid = payments.Sum(pdt => pdt.PaidAmount);
-            var remainingBalance = purchase.GrandTotal - totalPaid;
+            var remainingBalance = purchase.GrandTotal- purchase.PaidAmount;
 
             return Ok(new
             {

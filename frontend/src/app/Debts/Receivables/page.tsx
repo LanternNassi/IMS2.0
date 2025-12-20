@@ -970,7 +970,7 @@ export default function DebtsAnalysis() {
                                                                             }
 
                                                                             <ViewSaleDetailsDialog debt={debt} />
-                                                                            <GenerateInvoiceDialog debt={debt} />
+                                                                            <GenerateInvoiceDialog data={debt} />
                                                                         </div>
                                                                     </div>
                                                                 </TableCell>

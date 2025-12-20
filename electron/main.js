@@ -132,6 +132,8 @@ function createWindow() {
     icon: path.join(__dirname, "icon.ico"),
   });
 
+  mainWindow.removeMenu();
+
   // Load the app
   if (isDev) {
     mainWindow.loadURL("http://localhost:3000");

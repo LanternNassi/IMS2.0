@@ -1,4 +1,6 @@
 using System.ComponentModel.DataAnnotations;
+using ImsServer.Models.FinancialAccountX;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ImsServer.Models.FixedAssetX
 {
@@ -40,6 +42,11 @@ namespace ImsServer.Models.FixedAssetX
 
         public DateTime? DisposalDate { get; set; }
 
+        public Guid? LinkedFinancialAccountId { get; set; }
+
+        [ForeignKey("LinkedFinancialAccountId")]
+        public FinancialAccount? LinkedFinancialAccount { get; set; }
+
         public decimal? DisposalValue { get; set; }
 
         public bool IsActive { get; set; } = true;
@@ -66,6 +73,7 @@ namespace ImsServer.Models.FixedAssetX
         public decimal DepreciationRate { get; set; }
         public int UsefulLifeYears { get; set; }
         public string? SerialNumber { get; set; }
+        public Guid? LinkedFinancialAccountId { get; set; }
         public string? Manufacturer { get; set; }
         public string? Description { get; set; }
     }
@@ -79,6 +87,7 @@ namespace ImsServer.Models.FixedAssetX
         public decimal? DepreciationRate { get; set; }
         public int? UsefulLifeYears { get; set; }
         public DateTime? DisposalDate { get; set; }
+        public Guid? LinkedFinancialAccountId { get; set; }
         public decimal? DisposalValue { get; set; }
         public bool? IsActive { get; set; }
     }

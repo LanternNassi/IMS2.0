@@ -4,6 +4,7 @@ using ImsServer.Models;
 using ImsServer.Models.SaleX;
 using ImsServer.Models.ProductX;
 using ImsServer.Models.CustomerX;
+using ImsServer.Models.SalesDebtsTrackerX;
 
 namespace ImsServer.Controllers
 {
@@ -181,17 +182,69 @@ namespace ImsServer.Controllers
             return Ok(sale);
         }
 
+        [HttpGet("SalePrefix/{idPrefix}")]
+        public async Task<IActionResult> GetSalePrefix(string idPrefix)
+        {
+            // Ensure the prefix is valid (optional validation)
+            if (string.IsNullOrWhiteSpace(idPrefix) || idPrefix.Length < 8)
+            {
+                return BadRequest("ID prefix must be at least 8 characters");
+            }
+
+            var sale = _db.Sales
+                .Where(s => !s.DeletedAt.HasValue)
+                .Include(s => s.Customer)
+                .Include(s => s.ProcessedBy)
+                .Include(s => s.SaleItems)
+                    .ThenInclude(si => si.ProductVariation)
+                .Include(s => s.SaleItems)
+                .AsEnumerable() // Switch to client-side evaluation
+                .FirstOrDefault(s => s.Id.ToString().StartsWith(idPrefix, StringComparison.OrdinalIgnoreCase));
+
+            if (sale == null) return NotFound();
+
+            var processedSale = new
+            {
+                sale.Id,
+                sale.Customer,
+                sale.ProcessedBy,
+                sale.SaleDate,
+                sale.TotalAmount,
+                sale.PaidAmount,
+                sale.ChangeAmount,
+                sale.OutstandingAmount,
+                sale.Discount,
+                sale.FinalAmount,
+                sale.Profit,
+                sale.IsPaid,
+                sale.IsRefunded,
+                sale.IsTaken,
+                sale.PaymentMethod,
+                sale.IsCompleted,
+                SaleItems = sale.SaleItems.Select(si => new
+                {
+                    id = si.ProductVariationId,
+                    productName = si.ProductVariation.Name,
+                    quantity = si.Quantity,
+                    basePrice = si.UnitPrice,
+                    totalPrice = si.TotalPrice
+                }).ToList()
+            };
+
+            return Ok(processedSale);
+        }
+
         [HttpPost]
         public async Task<IActionResult> CreateSale([FromBody] CreateSaleDto dto)
         {
             if (dto == null) return BadRequest("Payload required");
 
             // Validate customer
-            var customer = await _db.Customers.FindAsync(dto.CustomerId);
-            if (customer == null)
-            {
-                return BadRequest("Customer not found. Provide a valid CustomerId.");
-            }
+            // var customer = await _db.Customers.FindAsync(dto.CustomerId);
+            // if (customer == null)
+            // {
+            //     return BadRequest("Customer not found. Provide a valid CustomerId.");
+            // }
 
             // Validate user (ProcessedBy) if provided
             if (dto.ProcessedById.HasValue && dto.ProcessedById.Value != Guid.Empty)
@@ -215,11 +268,11 @@ namespace ImsServer.Controllers
                     TotalAmount = dto.TotalAmount,
                     PaidAmount = dto.PaidAmount,
                     ChangeAmount = dto.ChangeAmount,
-                    OutstandingAmount = dto.OutstandingAmount ?? 0,
+                    OutstandingAmount = dto.TotalAmount - dto.PaidAmount,
                     Discount = dto.Discount,
                     FinalAmount = dto.FinalAmount,
                     Profit = 0, // Will calculate from items
-                    IsPaid = dto.IsPaid,
+                    IsPaid = dto.PaidAmount >= dto.TotalAmount,
                     IsRefunded = false,
                     IsTaken = dto.IsTaken,
                     PaymentMethod = dto.PaymentMethod,
@@ -257,8 +310,8 @@ namespace ImsServer.Controllers
                     // Order by ProductGeneric's Id (ascending) to get oldest first
                     var productStorage = await _db.ProductStorages
                         .Include(ps => ps.ProductGeneric)
-                        .Where(ps => 
-                            ps.ProductVariationId == variation.Id && 
+                        .Where(ps =>
+                            ps.ProductVariationId == variation.Id &&
                             ps.StorageId == it.StorageId &&
                             ps.Quantity >= it.Quantity)
                         .OrderBy(ps => ps.ProductGeneric.Id) // Oldest generic first
@@ -319,6 +372,24 @@ namespace ImsServer.Controllers
                     }
                 }
 
+                // If sale started as partial payment, record the initial payment in the tracker
+                // so dated cash-in events are consistent for reporting.
+                if (dto.PaidAmount > 0 && dto.PaidAmount < dto.TotalAmount)
+                {
+                    var initialPayment = new SalesDebtsTracker
+                    {
+                        Id = Guid.NewGuid(),
+                        SaleId = sale.Id,
+                        PaidAmount = dto.PaidAmount,
+                        DebtType = DebtType.Receivable,
+                        PaymentMethod = dto.PaymentMethod,
+                        LinkedFinancialAccountId = dto.LinkedFinancialAccountId,
+                        Description = string.IsNullOrWhiteSpace(dto.Notes) ? "Initial payment at sale creation" : dto.Notes
+                    };
+
+                    _db.SalesDebtsTrackers.Add(initialPayment);
+                }
+
                 await _db.SaveChangesAsync();
                 await tran.CommitAsync();
 
@@ -356,7 +427,7 @@ namespace ImsServer.Controllers
         public async Task<IActionResult> CompleteSale(Guid id)
         {
             var sale = await _db.Sales.FindAsync(id);
-            
+
             if (sale == null) return NotFound();
 
             sale.IsCompleted = true;
@@ -374,7 +445,7 @@ namespace ImsServer.Controllers
                 .Include(s => s.SaleItems)
                     .ThenInclude(si => si.ProductStorage)
                 .FirstOrDefaultAsync(s => s.Id == id);
-            
+
             if (sale == null) return NotFound();
 
             if (sale.IsRefunded)
@@ -658,7 +729,7 @@ namespace ImsServer.Controllers
 
             if (!string.IsNullOrEmpty(customerName))
             {
-                query = query.Where(si => si.Sale.Customer.Name.Contains(customerName));
+                query = query.Where(si => si.Sale.Customer != null && si.Sale.Customer.Name.Contains(customerName));
             }
 
             if (minQuantity.HasValue)
@@ -685,8 +756,8 @@ namespace ImsServer.Controllers
 
             // Product-level aggregation
             var productSummary = salesItems
-                .GroupBy(si => new 
-                { 
+                .GroupBy(si => new
+                {
                     ProductId = si.ProductVariation.ProductId,
                     ProductName = si.ProductVariation.Product.ProductName,
                     ProductCode = si.ProductVariation.Product.Id
@@ -700,15 +771,19 @@ namespace ImsServer.Controllers
                     TotalSales = g.Sum(si => si.TotalPrice),
                     TotalProfit = g.Sum(si => si.ProfitMargin),
                     TransactionCount = g.Count(),
-                    UniqueCustomers = g.Select(si => si.Sale.CustomerId).Distinct().Count(),
+                    // UniqueCustomers = g.Select(si => si.Sale.CustomerId).Distinct().Count(),
+                    UniqueCustomers = g.Where(si => si.Sale.CustomerId.HasValue)
+                           .Select(si => si.Sale.CustomerId)
+                           .Distinct()
+                           .Count(),
                     AverageUnitPrice = Math.Round(g.Average(si => si.UnitPrice), 2),
                     AverageQuantityPerTransaction = Math.Round(g.Average(si => si.Quantity), 2),
                     MostRecentSale = g.Max(si => si.Sale.SaleDate),
                     OldestSale = g.Min(si => si.Sale.SaleDate),
                     // Top 3 variations for this product
-                    TopVariations = g.GroupBy(si => new 
-                    { 
-                        si.ProductVariationId, 
+                    TopVariations = g.GroupBy(si => new
+                    {
+                        si.ProductVariationId,
                         si.ProductVariation.Name,
                         si.ProductVariation.UnitSize,
                         si.ProductVariation.UnitofMeasure
@@ -762,6 +837,7 @@ namespace ImsServer.Controllers
 
             // Customer-level aggregation (top customers for filtered products)
             var customerSummary = salesItems
+                .Where(si => si.Sale.Customer != null) // Only include sales with customers
                 .GroupBy(si => new
                 {
                     si.Sale.CustomerId,
@@ -812,11 +888,15 @@ namespace ImsServer.Controllers
                 TotalTransactions = salesItems.Count,
                 UniqueProducts = salesItems.Select(si => si.ProductVariation.ProductId).Distinct().Count(),
                 UniqueVariations = salesItems.Select(si => si.ProductVariationId).Distinct().Count(),
-                UniqueCustomers = salesItems.Select(si => si.Sale.CustomerId).Distinct().Count(),
+                // UniqueCustomers = salesItems.Select(si => si.Sale.CustomerId).Distinct().Count(),
+                UniqueCustomers = salesItems.Where(si => si.Sale.CustomerId.HasValue)
+                                 .Select(si => si.Sale.CustomerId)
+                                 .Distinct()
+                                 .Count(),
                 AverageTransactionValue = salesItems.Any() ? Math.Round(salesItems.Average(si => si.TotalPrice), 2) : 0,
                 AverageQuantityPerTransaction = salesItems.Any() ? Math.Round(salesItems.Average(si => si.Quantity), 2) : 0,
-                OverallProfitMargin = salesItems.Sum(si => si.TotalPrice) > 0 
-                    ? Math.Round((salesItems.Sum(si => si.ProfitMargin) / salesItems.Sum(si => si.TotalPrice)) * 100, 2) 
+                OverallProfitMargin = salesItems.Sum(si => si.TotalPrice) > 0
+                    ? Math.Round((salesItems.Sum(si => si.ProfitMargin) / salesItems.Sum(si => si.TotalPrice)) * 100, 2)
                     : 0,
                 DateRange = new
                 {
@@ -890,13 +970,13 @@ namespace ImsServer.Controllers
                         si.Sale.SaleDate,
                         si.Sale.TotalAmount,
                         si.Sale.PaymentMethod,
-                        Customer = new
+                        Customer = si.Sale.Customer != null ? new
                         {
-                            si.Sale.Customer.Id,
-                            si.Sale.Customer.Name,
-                            si.Sale.Customer.Phone,
-                            si.Sale.Customer.CustomerType
-                        }
+                            Id = si.Sale.Customer.Id,
+                            Name = si.Sale.Customer.Name,
+                            Phone = si.Sale.Customer.Phone,
+                            CustomerType = si.Sale.Customer.CustomerType
+                        } : null
                     },
                     Product = new
                     {
@@ -917,11 +997,97 @@ namespace ImsServer.Controllers
             });
         }
 
+        [HttpGet("Invoice/{id}")]
+        public async Task<IActionResult> GetInvoice(Guid id)
+        {
+            var sale = await _db.Sales
+                .Include(s => s.Customer)
+                .Include(s => s.ProcessedBy)
+                .Include(s => s.SaleItems)
+                    .ThenInclude(si => si.ProductVariation)
+                        .ThenInclude(pv => pv.Product)
+                .Include(s => s.SaleItems)
+                    .ThenInclude(si => si.ProductStorage)
+                        .ThenInclude(ps => ps.ProductGeneric)
+                .FirstOrDefaultAsync(s => s.Id == id);
+
+            // Load the payments made towards this sale
+            var payments = await _db.SalesDebtsTrackers
+                .Where(dt => dt.SaleId == id && !dt.DeletedAt.HasValue)
+                .ToListAsync();
+
+            if (!sale.WasPartialPayment)
+            {
+                return BadRequest("Invoice generation is only available for sales with partial payments.");
+            }
+
+            if (sale == null) return NotFound();
+
+            // Prepare invoice data
+            var invoiceData = new
+            {
+                Sale = new
+                {
+                    sale.Id,
+                    sale.SaleDate,
+                    sale.TotalAmount,
+                    sale.PaidAmount,
+                    sale.OutstandingAmount,
+                    sale.FinalAmount,
+                    sale.ChangeAmount,
+                    sale.PaymentMethod,
+                    sale.IsPaid,
+                    sale.IsCompleted,
+                    sale.IsTaken,
+                    sale.IsRefunded
+                },
+                Customer = sale.Customer,
+                ProcessedBy = sale.ProcessedBy,
+                Items = sale.SaleItems.Select(si => new
+                {
+                    si.Id,
+                    si.Quantity,
+                    si.UnitPrice,
+                    si.TotalPrice,
+                    Product = new
+                    {
+                        si.ProductVariation.Product.Id,
+                        si.ProductVariation.Product.ProductName,
+                    },
+                    Variation = new
+                    {
+                        si.ProductVariation.Id,
+                        si.ProductVariation.Name,
+                        si.ProductVariation.UnitSize,
+                        si.ProductVariation.UnitofMeasure
+                    },
+                    Generic = new
+                    {
+                        si.ProductStorage.ProductGeneric.Id,
+                        si.ProductStorage.ProductGeneric.BatchNumber,
+                        si.ProductStorage.ProductGeneric.ExpiryDate
+                    }
+                }).ToList(),
+                payments = payments.Select(p => new
+                {
+                    p.Id,
+                    p.PaidAmount,
+                    p.DebtType,
+                    p.PaymentMethod,
+                    p.LinkedFinancialAccountId,
+                    p.Description,
+                    p.AddedAt
+                }).ToList()
+            };
+
+            return Ok(invoiceData);
+        }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteSale(Guid id)
         {
             var sale = await _db.Sales.FindAsync(id);
-            
+
             if (sale == null) return NotFound();
 
             _db.SoftDelete(sale);

@@ -9,19 +9,9 @@ import { Plus, Trash2, Pill, ChevronRight, Home } from "lucide-react"
 
 import { Button, TextField, Snackbar, Select, MenuItem } from "@mui/material"
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { SearchableSelect } from "@/components/searchable-select"
+
 import { SupplierAutocomplete } from "@/components/SupplierAutocomplete"
 import { ProductAutocomplete, type ProductVariation } from "@/components/ProductAutocomplete"
 import { BatchModal } from "@/components/batch-modal"
@@ -50,11 +40,8 @@ const mockSuppliers = [
   { id: "5", name: "Global Medical Supplies" },
 ]
 
-export default function PurchaseForm({
-  purchase,
-  suppliers = mockSuppliers,
-}: PurchaseFormProps) {
-  const [items, setItems] = useState<PurchaseItem[]>(purchase?.items || [])
+export default function AddPurchase() {
+  const [items, setItems] = useState<PurchaseItem[]>([])
   const [selectedProductId, setSelectedProductId] = useState("")
   const [selectedProduct, setSelectedProduct] = useState<ProductVariation | null>(null)
   const [selectedQuantity, setSelectedQuantity] = useState("")
@@ -78,6 +65,7 @@ export default function PurchaseForm({
     accountName: string;
     bankName: string;
     type: string;
+    isDefault: boolean;
   }>>([])
   const [linkedFinancialAccountId, setLinkedFinancialAccountId] = useState<string | null>(null)
 
@@ -92,19 +80,26 @@ export default function PurchaseForm({
   const form = useForm<z.infer<typeof purchaseFormSchema>>({
     resolver: zodResolver(purchaseFormSchema),
     defaultValues: {
-      supplierId: purchase?.supplierId || "",
-      notes: purchase?.notes || "",
+      supplierId: "",
+      notes: "",
     },
   })
 
-  const selectedSupplier = suppliers?.find((s) => s.id === form.watch("supplierId"))
 
   // Fetch financial accounts
   useEffect(() => {
     const fetchFinancialAccounts = async () => {
       try {
         const response = await api.get('/FinancialAccounts?includeMetadata=false&page=1&pageSize=100')
-        setFinancialAccounts(response.data.financialAccounts || [])
+        const accounts = response.data.financialAccounts || []
+        setFinancialAccounts(accounts)
+
+        // Auto-select the default account
+        const defaultAccount = accounts.find((acc: any) => acc.isDefault === true)
+        if (defaultAccount) {
+          setLinkedFinancialAccountId(defaultAccount.id)
+          setPaymentMethod(defaultAccount.type)
+        }
       } catch (error) {
         console.error('Error fetching financial accounts:', error)
       }
@@ -214,8 +209,8 @@ export default function PurchaseForm({
     }
 
     const quantity = Number.parseFloat(selectedQuantity)
-    // Use wholeSalePrice as the cost price for purchases
-    const costPrice = selectedProduct.wholeSalePrice || 0
+    // Use costPrice as the cost price for purchases
+    const costPrice = selectedProduct.costPrice || 0
     const totalPrice = costPrice * quantity
 
     const newItem: PurchaseItem = {
@@ -283,6 +278,11 @@ export default function PurchaseForm({
     setIsBatchModalOpen(true)
   }
 
+  const CheckIfBusinessDayisOpen = async (): Promise<boolean> => {
+    const response = await api.get('/CashReconciliations/is-today-open')
+    return response.data.isOpen as boolean
+  }
+
   const handleBatchSave = (item: PurchaseItem, batchData: any) => {
     setItems(
       items.map((i) =>
@@ -296,6 +296,14 @@ export default function PurchaseForm({
   const totalAmount = items.reduce((sum, item) => sum + item.totalPrice, 0)
 
   const handleFormSubmit = async (data: z.infer<typeof purchaseFormSchema>) => {
+
+    const businessDayIsOpen = await CheckIfBusinessDayisOpen()
+
+    if (!businessDayIsOpen) {
+      setSnackbar({ open: true, message: "Cannot process purchase. Business day is not open." })
+      return
+    }
+
     if (items.length === 0) {
       setSnackbar({ open: true, message: "Please add at least one product to the purchase." })
       return
@@ -309,30 +317,22 @@ export default function PurchaseForm({
     setIsSubmitting(true)
 
     const purchaseData: Purchase = {
-      id: purchase?.id || crypto.randomUUID(),
+      id: crypto.randomUUID(),
       supplierId: data.supplierId,
-      processedBy: "8F077C6B-EF9E-4802-6166-08DE28E2F419", // To be filled by backend
+      processedBy: "8DA86BE9-D0F5-43E2-48EC-08DE3CB84E68", // To be filled by backend
       supplierName: selectedSupplierDetails.companyName || "",
       items,
       totalAmount,
       paidAmount,
       grandTotal: totalAmount - discount,
-      createdAt: purchase?.createdAt || new Date(),
+      createdAt: new Date(),
       linkedFinancialAccountId: linkedFinancialAccountId || undefined,
       notes: data.notes,
     }
 
     try {
-      if (purchase?.id) {
-        // Update existing purchase
-        await api.put(`/Purchases/${purchase.id}`, purchaseData)
-        setSnackbar({ open: true, message: `Purchase from ${selectedSupplierDetails.companyName} has been updated successfully.` })
-      } else {
-        // Create new purchase
-        console.log("Submitting purchase data:", purchaseData)
-        await api.post("/Purchases", purchaseData)
-        setSnackbar({ open: true, message: `Purchase from ${selectedSupplierDetails.companyName} has been recorded successfully.` })
-      }
+      await api.post("/Purchases", purchaseData)
+      setSnackbar({ open: true, message: `Purchase from ${selectedSupplierDetails.companyName} has been recorded successfully.` })
 
       // Navigate back to purchases list
       router.push("/Purchases")
@@ -485,10 +485,10 @@ export default function PurchaseForm({
                   sx={{ backgroundColor: 'rgba(0, 0, 0, 0.02)' }}
                 />
 
-                {/* Wholesale Price (Cost) */}
+                {/* COst Price (Cost) */}
                 <TextField
                   label="Cost Price"
-                  value={selectedProduct?.wholeSalePrice?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || ""}
+                  value={selectedProduct?.costPrice?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || ""}
                   InputProps={{ readOnly: true }}
                   fullWidth
                   size="small"

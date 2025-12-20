@@ -5,7 +5,7 @@ import Link from "next/link"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import { Plus, Trash2, Pill, ChevronRight, Home } from "lucide-react"
+import { Plus, Trash2, ChevronRight, Home, Printer, X } from "lucide-react"
 
 import { Button, TextField, Select, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar, Checkbox, FormControlLabel } from "@mui/material"
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form"
@@ -14,14 +14,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 import { CustomerAutocomplete } from "@/components/CustomerAutocomplete"
 import { ProductAutocomplete, type ProductVariation } from "@/components/ProductAutocomplete"
+import { ReceiptPreview } from "@/components/ReceiptPreview"
 import type { Sale, SalesItem } from "@/app/Sales/page"
 
 import { customer, useCustomerStore } from "@/store/useCustomerStore"
 import api from "@/Utils/Request"
 import { useRouter } from "next/navigation"
+import { useReactToPrint } from 'react-to-print'
+
 
 const saleFormSchema = z.object({
-    customerId: z.string().min(1, "Customer is required"),
+    // customerId: z.string().min(1, "Customer is required"),
     notes: z.string().optional(),
 })
 
@@ -39,27 +42,26 @@ const mockSuppliers = [
     { id: "5", name: "Global Medical Supplies" },
 ]
 
-export default function SaleForm({
-    sale,
-    suppliers = mockSuppliers,
-}: SaleFormProps) {
+export default function AddSale() {
     const [isSubmitting, setIsSubmitting] = useState(false)
     const { getCustomerById } = useCustomerStore()
     const [snackbar, setSnackbar] = useState<{ open: boolean; message: string }>({ open: false, message: "" })
     const router = useRouter()
-    
-    const [items, setItems] = useState<SalesItem[]>(sale?.items || [])
+
+    const [items, setItems] = useState<SalesItem[]>([])
     const [selectedProductId, setSelectedProductId] = useState("")
     const [selectedProduct, setSelectedProduct] = useState<ProductVariation | null>(null)
     const [selectedQuantity, setSelectedQuantity] = useState("")
     const [editingItemId, setEditingItemId] = useState<string | null>(null)
+    const [createdSaleId, setCreatedSaleId] = useState<string | null>(null)
+    const [fetchedSaleData, setFetchedSaleData] = useState<any>(null)
+    const [saleIdInput, setSaleIdInput] = useState<string>("")
     const [editingItemData, setEditingItemData] = useState<{
         quantity: string;
         basePrice: string;
     }>({ quantity: "", basePrice: "" })
 
     const [selectedCustomerDetails, setSelectedCustomerDetails] = useState<customer | null>(null)
-    const [selectedStore, setSelectedStore] = useState<string>("")
     const [selectedStorage, setSelectedStorage] = useState<string>("") // Storage location name
     const [selectedRateType, setSelectedRateType] = useState<"wholeSale" | "selling" | "custom">("selling")
     const [customPrice, setCustomPrice] = useState<string>("")
@@ -79,6 +81,7 @@ export default function SaleForm({
         accountName: string;
         bankName: string;
         type: string;
+        isDefault: boolean;
     }>>([])
     const [linkedFinancialAccountId, setLinkedFinancialAccountId] = useState<string | null>(null)
 
@@ -102,7 +105,15 @@ export default function SaleForm({
         const fetchFinancialAccounts = async () => {
             try {
                 const response = await api.get('/FinancialAccounts?includeMetadata=false&page=1&pageSize=100')
-                setFinancialAccounts(response.data.financialAccounts || [])
+                const accounts = response.data.financialAccounts || []
+                setFinancialAccounts(accounts)
+
+                // Auto-select the default account
+                const defaultAccount = accounts.find((acc: any) => acc.isDefault === true)
+                if (defaultAccount) {
+                    setLinkedFinancialAccountId(defaultAccount.id)
+                    setPaymentMethod(defaultAccount.type)
+                }
             } catch (error) {
                 console.error('Error fetching financial accounts:', error)
             }
@@ -118,15 +129,44 @@ export default function SaleForm({
     const notesRef = useRef<HTMLTextAreaElement>(null)
     const submitButtonRef = useRef<HTMLButtonElement>(null)
 
+    const receiptRef = useRef<HTMLDivElement>(null)
+
+    const handlePrint = useReactToPrint({
+        contentRef: receiptRef,
+        documentTitle: `Receipt-${new Date().toISOString()}`,
+        preserveAfterPrint: true,
+    })
+
+    const CheckIfBusinessDayisOpen = async (): Promise<boolean> => {
+        const response = await api.get('/CashReconciliations/is-today-open')
+        return response.data.isOpen as boolean
+    }
+
+    const fetchSaleById = async () => {
+        if (!saleIdInput.trim()) {
+            setSnackbar({ open: true, message: "Please enter a sale ID" })
+            return
+        }
+
+        const salesPrefix = saleIdInput.trim().split("-")[1]
+
+        try {
+            const response = await api.get(`/Sales/SalePrefix/${salesPrefix}`)
+            const saleData = response.data
+            setFetchedSaleData(saleData)
+            setSnackbar({ open: true, message: "Sale data loaded successfully" })
+        } catch (error: any) {
+            setSnackbar({ open: true, message: error.response?.data?.message || "Failed to fetch sale data" })
+            setFetchedSaleData(null)
+        }
+    }
+
     const form = useForm<z.infer<typeof saleFormSchema>>({
         resolver: zodResolver(saleFormSchema),
         defaultValues: {
-            customerId: sale?.customerId || "",
-            notes: sale?.notes || "",
+            notes: "",
         },
     })
-
-    const selectedCustomer = suppliers?.find((s) => s.id === form.watch("customerId"))
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -326,25 +366,34 @@ export default function SaleForm({
 
 
     const handleFormSubmit = async (data: z.infer<typeof saleFormSchema>) => {
+        const businessDayIsOpen = await CheckIfBusinessDayisOpen()
+
+        if (!businessDayIsOpen) {
+            setSnackbar({ open: true, message: "Cannot process sale. Business day is not open." })
+            return
+        }
+
         if (items.length === 0) {
             setSnackbar({ open: true, message: "Please add at least one item to the sale." })
             return
         }
 
-        // if (!selectedCustomer?.name) {
-        //     setSnackbar({ open: true, message: "Please select a customer." })
-        //     return
-        // }
+        if (paidAmount < (totalAmount - discount)) {
+            if (!selectedCustomerDetails) {
+                setSnackbar({ open: true, message: "Please select a customer for the sale or ensure the paid amount covers the total." })
+                return
+            }
+        }
 
         setIsSubmitting(true)
 
         const saleData: Sale = {
-            id: sale?.id || crypto.randomUUID(),
-            customerId: data.customerId,
-            customerName: selectedCustomer?.name || "",
+            id: crypto.randomUUID(),
+            customerId: selectedCustomerDetails?.id || undefined,
+            customerName: selectedCustomerDetails?.name || undefined,
             items,
             totalAmount,
-            paidAmount: paidAmount,
+            paidAmount: returnAmount < 0 ? paidAmount : (totalAmount - discount),
             changeAmount: returnAmount,
             discount: discount,
             isPaid: paidAmount >= (totalAmount - discount),
@@ -352,26 +401,41 @@ export default function SaleForm({
             paymentMethod: paymentMethod,
             processedById: "8F077C6B-EF9E-4802-6166-08DE28E2F419",
             linkedFinancialAccountId: linkedFinancialAccountId || undefined,
-            finalAmount: totalAmount - discount,
-            createdAt: sale?.createdAt || new Date(),
+            finalAmount: paidAmount,
+            createdAt: new Date(),
             isCompleted: paidAmount >= (totalAmount - discount),
             notes: data.notes,
         }
 
         try {
-            if (sale?.id) {
-                await api.put(`/Sales/${sale.id}`, saleData)
-                setSnackbar({ open: true, message: "Sale updated successfully." })
-            } else {
-                await api.post("/Sales", saleData)
-                setSnackbar({ open: true, message: "Sale created successfully." })
-            }
-            router.push("/Sales")
+            const response = await api.post("/Sales", saleData)
+            setCreatedSaleId(response.data.id)
+            setSnackbar({ open: true, message: "Sale created successfully." })
+
+            // Wait for state to update before printing
+            await new Promise(resolve => setTimeout(resolve, 100))
+            handlePrint()
+
+            // Wait for print dialog before clearing
+            await new Promise(resolve => setTimeout(resolve, 500))
+            ClearAll()
+
         } catch (error: any) {
             setSnackbar({ open: true, message: error.response?.data?.message || "Failed to save sale. Please try again." })
         } finally {
             setIsSubmitting(false)
         }
+    }
+    const ClearAll = () => {
+        setSelectedCustomerDetails(null)
+        setItems([])
+        setTotalAmount(0)
+        setPaidAmount(0)
+        setReturnAmount(0)
+        setDiscount(0)
+        setCreatedSaleId(null)
+        setFetchedSaleData(null)
+        setSaleIdInput("")
     }
 
     return (
@@ -405,20 +469,20 @@ export default function SaleForm({
                                     value={selectedCustomerDetails}
                                     onChange={async (customer) => {
                                         if (customer) {
-                                            form.setValue("customerId", customer.id)
+                                            // form.setValue("customerId", customer.id)
                                             const fullCustomer = await getCustomerById(customer.id)
                                             setSelectedCustomerDetails(fullCustomer)
                                             // Auto-focus to product search after customer selection
                                             setTimeout(() => productSearchRef.current?.focus(), 100)
                                         } else {
-                                            form.setValue("customerId", "")
+                                            // form.setValue("customerId", "")
                                             setSelectedCustomerDetails(null)
                                         }
                                     }}
                                     label="Search (Alt+1)"
                                     fullWidth
                                     size="small"
-                                    required
+                                    // required
                                     inputRef={customerSearchRef}
                                 />
 
@@ -482,7 +546,7 @@ export default function SaleForm({
                                         // Reset rate selections and storage
                                         setSelectedRateType("wholeSale")
                                         setCustomPrice("")
-                                        
+
                                         // Auto-select first storage location if available
                                         if (product?.storages && Object.keys(product.storages).length > 0) {
                                             const firstStorage = Object.keys(product.storages)[0]
@@ -861,12 +925,81 @@ export default function SaleForm({
 
                             <Card className="dark:bg-gray-900 dark:border-gray-700">
                                 <CardHeader className="pb-3">
-                                    <CardTitle className="text-lg dark:text-gray-200">Preview</CardTitle>
+                                    <div className="flex items-center justify-between">
+                                        <CardTitle className="text-lg dark:text-gray-200">Preview</CardTitle>
+                                        <Button
+                                            onClick={handlePrint}
+                                            className="gap-2"
+                                        >
+                                            <Printer className="h-4 w-4" />
+                                            Print
+                                        </Button>
+                                    </div>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="h-96 bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center text-gray-400">
-                                        Receipt Preview Area
+                                    {/* Sale ID Input for fetching existing sales */}
+                                    <div className="mb-4 space-y-2">
+                                        <div className="flex justify-between items-end">
+                                            <TextField
+                                                label="Sale ID"
+                                                value={saleIdInput}
+                                                onChange={(e) => setSaleIdInput(e.target.value)}
+                                                placeholder="Enter sale ID to load receipt"
+                                                size="small"
+                                                sx={{ width: '200px' }}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === "Enter") {
+                                                        fetchSaleById()
+                                                    }
+                                                }}
+                                            />
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    onClick={fetchSaleById}
+                                                    variant="outlined"
+                                                    size="small"
+                                                    className="whitespace-nowrap"
+                                                >
+                                                    Load Sale
+                                                </Button>
+                                                {fetchedSaleData && (
+                                                    <Button
+                                                        onClick={() => {
+                                                            setFetchedSaleData(null)
+                                                            setSaleIdInput("")
+                                                        }}
+                                                        variant="outlined"
+                                                        size="small"
+                                                        color="error"
+                                                        title="Clear loaded sale"
+                                                    >
+                                                        <X className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </div>
+                                        {fetchedSaleData && (
+                                            <div className="text-sm text-green-600 dark:text-green-400">
+                                                Loaded sale: {fetchedSaleData.id}
+                                            </div>
+                                        )}
                                     </div>
+
+                                    <div ref={receiptRef}>
+                                        <ReceiptPreview
+                                            saleId={fetchedSaleData?.id || createdSaleId || undefined}
+                                            customerName={fetchedSaleData?.customer?.name || selectedCustomerDetails?.name || "Walk-in Customer"}
+                                            items={fetchedSaleData?.saleItems || items}
+                                            totalAmount={fetchedSaleData?.totalAmount || totalAmount}
+                                            discount={fetchedSaleData?.discount || discount}
+                                            paidAmount={fetchedSaleData?.paidAmount || paidAmount}
+                                            returnAmount={fetchedSaleData?.changeAmount || returnAmount}
+                                            date={fetchedSaleData?.createdAt ? new Date(fetchedSaleData.createdAt).toLocaleDateString() : new Date().toLocaleDateString()}
+                                            companyName="Inventory Management System"
+                                            companyAddress="Kampala, Uganda"
+                                        />
+                                    </div>
+
                                 </CardContent>
                             </Card>
                         </div>
