@@ -139,7 +139,7 @@ const page = () => {
           name="fromFinancialAccountId"
           label="From Account *"
           defaultValue={editRow ? editRow.fromFinancialAccountId : ""}
-          sx={{ width: "25vw" }}
+          sx={{ width: "90%" }}
           margin="normal"
           required
         >
@@ -156,7 +156,7 @@ const page = () => {
           name="toFinancialAccountId"
           label="To Account *"
           defaultValue={editRow ? editRow.toFinancialAccountId : ""}
-          sx={{ width: "25vw" }}
+          sx={{ width: "90%" }}
           margin="normal"
           required
         >
@@ -178,7 +178,7 @@ const page = () => {
               ? toDatetimeLocalValue(editRow.movementDate)
               : toDatetimeLocalValue(new Date().toISOString())
           }
-          sx={{ width: "25vw" }}
+          sx={{ width: "90%" }}
           margin="normal"
           InputLabelProps={{ shrink: true }}
           required
@@ -191,7 +191,7 @@ const page = () => {
           label="Amount (Shs)"
           type="number"
           defaultValue={editRow ? editRow.amount : ""}
-          sx={{ width: "25vw" }}
+          sx={{ width: "90%" }}
           margin="normal"
           required
         />
@@ -202,7 +202,7 @@ const page = () => {
           name="type"
           label="Transaction Type *"
           defaultValue={editRow ? editRow.type : "TRANSFER"}
-          sx={{ width: "25vw" }}
+          sx={{ width: "90%" }}
           margin="normal"
           required
         >
@@ -220,7 +220,7 @@ const page = () => {
           name="referenceNumber"
           label="Reference Number"
           defaultValue={editRow ? editRow.referenceNumber : ""}
-          sx={{ width: "25vw" }}
+          sx={{ width: "90%" }}
           margin="normal"
           required
         />
@@ -232,7 +232,7 @@ const page = () => {
           label="Fees (Shs)"
           type="number"
           defaultValue={editRow ? editRow.fees : "0"}
-          sx={{ width: "25vw" }}
+          sx={{ width: "90%" }}
           margin="normal"
           required
         />
@@ -243,7 +243,7 @@ const page = () => {
           name="description"
           label="Description"
           defaultValue={editRow ? editRow.description : ""}
-          sx={{ width: "25vw" }}
+          sx={{ width: "90%" }}
           margin="normal"
           multiline
           rows={2}
@@ -256,7 +256,7 @@ const page = () => {
           name="notes"
           label="Notes (Optional)"
           defaultValue={editRow ? editRow.notes : ""}
-          sx={{ width: "25vw" }}
+          sx={{ width: "90%" }}
           margin="normal"
           multiline
           rows={2}
@@ -264,7 +264,7 @@ const page = () => {
 
         <LoadingButton
           type="submit"
-          sx={{ width: "25vw", height: "8vh" }}
+          sx={{ width: "100%", height: "8vh" }}
           variant="contained"
           tabIndex={-1}
           loading={submitting}

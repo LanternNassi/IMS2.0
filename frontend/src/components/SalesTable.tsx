@@ -392,7 +392,7 @@ export const SalesTable: React.FC<SalesTableProps> = ({ sales, onView, onEdit, o
             <TableHead className="font-semibold text-foreground py-4 w-32 border-r border-border/30 dark:border-gray-700/30">Status</TableHead>
             <TableHead className="font-semibold text-foreground py-4 text-right w-40 border-r border-border/30 dark:border-gray-700/30">Subtotal</TableHead>
             <TableHead className="font-semibold text-foreground py-4 text-right w-40 border-r border-border/30 dark:border-gray-700/30">Profit</TableHead>
-            <TableHead className="font-semibold text-foreground py-4 text-right w-40 border-r border-border/30 dark:border-gray-700/30">Total</TableHead>
+            <TableHead className="font-semibold text-foreground py-4 text-right w-40 border-r border-border/30 dark:border-gray-700/30">Paid Amount</TableHead>
             <TableHead className="font-semibold text-foreground py-4 pr-4 text-right w-32">Actions</TableHead>
           </TableRow>
         </TableHeader>

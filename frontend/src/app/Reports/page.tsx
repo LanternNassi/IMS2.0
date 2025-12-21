@@ -520,7 +520,7 @@ export default function FinancialReportsPage() {
                                             </SelectTrigger>
                                             <SelectContent className="dark:bg-gray-700">
                                                 {financialAccounts
-                                                    .filter((account) => account.type === "CASH" || account.type === "BANK")
+                                                    // .filter((account) => account.type === "CASH" || account.type === "BANK")
                                                     .map((account) => (
                                                         <SelectItem key={account.id} value={account.id}>
                                                             {account.accountName}

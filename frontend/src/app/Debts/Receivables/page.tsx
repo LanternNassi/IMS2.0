@@ -805,7 +805,7 @@ export default function DebtsAnalysis() {
                                                                 {formatDate(debt.saleDate)}
                                                             </TableCell>
                                                             <TableCell className="text-sm font-medium text-right dark:text-white text-gray-900">
-                                                                {formatCurrency(debt.finalAmount)}
+                                                                {formatCurrency(debt.totalAmount-debt.discount)}
                                                             </TableCell>
                                                             <TableCell className="text-sm font-medium text-right text-emerald-500">
                                                                 {formatCurrency(debt.paidAmount)}
@@ -813,7 +813,7 @@ export default function DebtsAnalysis() {
                                                             <TableCell
                                                                 className={`text-sm font-bold text-right ${(debt.finalAmount - debt.paidAmount) > 0 ? "text-red-500" : "text-emerald-500"}`}
                                                             >
-                                                                {formatCurrency(debt.finalAmount - debt.paidAmount)}
+                                                                {formatCurrency(debt.outstandingAmount)}
                                                             </TableCell>
                                                             <TableCell className="text-center">
                                                                 <Badge variant="outline" className={`${status.bg} ${status.text} ${status.border}`}>
@@ -889,9 +889,9 @@ export default function DebtsAnalysis() {
                                                                                         </p>
                                                                                     </div>
                                                                                     <div>
-                                                                                        <p className="text-xs dark:text-gray-400 text-gray-500">Final Amount</p>
+                                                                                        <p className="text-xs dark:text-gray-400 text-gray-500">Paid Amount</p>
                                                                                         <p className="text-sm font-medium dark:text-white text-gray-900">
-                                                                                            {formatCurrency(debt.finalAmount)}
+                                                                                            {formatCurrency(debt.paidAmount)}
                                                                                         </p>
                                                                                     </div>
                                                                                     <div>
@@ -955,7 +955,7 @@ export default function DebtsAnalysis() {
                                                                                 debt.isPaid ? null : (
                                                                                     <RecordPaymentDialog debt={{
                                                                                         ...debt,
-                                                                                        outstandingAmount: (debt.finalAmount - debt.paidAmount),
+                                                                                        // outstandingAmount: (debt.finalAmount - debt.paidAmount),
                                                                                     }} onPaymentRecorded={handlePaymentRecorded} />
                                                                                 )
                                                                             }

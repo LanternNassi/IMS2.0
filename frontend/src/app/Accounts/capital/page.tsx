@@ -166,6 +166,13 @@ const CapitalAccountsPage = () => {
   const [financialAccountLoading, setFinancialAccountLoading] = useState(false)
   const [financialAccountSearchQuery, setFinancialAccountSearchQuery] = useState("")
 
+  // Form states
+  const [formType, setFormType] = useState("INITIAL_CAPITAL")
+  const [formAmount, setFormAmount] = useState("")
+  const [formDate, setFormDate] = useState(new Date().toISOString().split("T")[0])
+  const [formDescription, setFormDescription] = useState("")
+  const [formReference, setFormReference] = useState("")
+
   
   const fetchCapitalAccounts = useCallback(
     async (page: number = 1, pageSize: number = 50) => {
@@ -307,6 +314,12 @@ const CapitalAccountsPage = () => {
       setSelectedFinancialAccount(account.linkedFinancialAccount)
       setFinancialAccountSearchQuery(account.linkedFinancialAccount.accountName)
     }
+    // Set form states
+    setFormType(account.type)
+    setFormAmount(account.amount.toString())
+    setFormDate(new Date(account.transactionDate).toISOString().split("T")[0])
+    setFormDescription(account.description)
+    setFormReference(account.referenceNumber)
     setIsFormOpen(true)
   }
 
@@ -347,6 +360,12 @@ const CapitalAccountsPage = () => {
     setSelectedFinancialAccount(null)
     setFinancialAccountSearchQuery("")
     setFinancialAccountOptions([])
+    // Reset form states
+    setFormType("INITIAL_CAPITAL")
+    setFormAmount("")
+    setFormDate(new Date().toISOString().split("T")[0])
+    setFormDescription("")
+    setFormReference("")
   }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -363,16 +382,14 @@ const CapitalAccountsPage = () => {
       return
     }
 
-    const formData = new FormData(e.currentTarget)
-
     try {
       if (editingAccount) {
         // Update existing account
         const updatePayload = {
-          amount: Number(formData.get("amount")),
-          transactionDate: new Date(formData.get("date") as string).toISOString(),
-          description: formData.get("description") as string,
-          referenceNumber: formData.get("reference") as string,
+          amount: Number(formAmount),
+          transactionDate: new Date(formDate).toISOString(),
+          description: formDescription,
+          referenceNumber: formReference,
         }
 
         await api.put(`/CapitalAccounts/${editingAccount.id}`, updatePayload)
@@ -394,11 +411,11 @@ const CapitalAccountsPage = () => {
 
         const createPayload = {
           ownerId: selectedUser.id,
-          type: formData.get("type") as string,
-          amount: Number(formData.get("amount")),
-          transactionDate: new Date(formData.get("date") as string).toISOString(),
-          description: formData.get("description") as string,
-          referenceNumber: formData.get("reference") as string,
+          type: formType,
+          amount: Number(formAmount),
+          transactionDate: new Date(formDate).toISOString(),
+          description: formDescription,
+          referenceNumber: formReference,
           linkedFinancialAccountId: selectedFinancialAccount?.id || null,
         }
 
@@ -998,7 +1015,7 @@ const CapitalAccountsPage = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="type">Transaction Type</Label>
-              <Select name="type" defaultValue={editingAccount?.type || ""} required>
+              <Select value={formType} onValueChange={setFormType} required>
                 <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600">
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
@@ -1014,10 +1031,10 @@ const CapitalAccountsPage = () => {
               <Label htmlFor="amount">Amount</Label>
               <Input
                 id="amount"
-                name="amount"
                 type="number"
                 placeholder="0"
-                defaultValue={editingAccount?.amount || ""}
+                value={formAmount}
+                onChange={(e) => setFormAmount(e.target.value)}
                 className="dark:bg-gray-700 dark:border-gray-600"
                 required
                 min="0"
@@ -1028,13 +1045,9 @@ const CapitalAccountsPage = () => {
               <Label htmlFor="date">Transaction Date</Label>
               <Input
                 id="date"
-                name="date"
                 type="date"
-                defaultValue={
-                  editingAccount
-                    ? new Date(editingAccount.transactionDate).toISOString().split("T")[0]
-                    : new Date().toISOString().split("T")[0]
-                }
+                value={formDate}
+                onChange={(e) => setFormDate(e.target.value)}
                 className="dark:bg-gray-700 dark:border-gray-600"
                 required
               />
@@ -1043,9 +1056,9 @@ const CapitalAccountsPage = () => {
               <Label htmlFor="description">Description</Label>
               <Input
                 id="description"
-                name="description"
                 placeholder="Enter description..."
-                defaultValue={editingAccount?.description || ""}
+                value={formDescription}
+                onChange={(e) => setFormDescription(e.target.value)}
                 className="dark:bg-gray-700 dark:border-gray-600"
               />
             </div>
@@ -1053,9 +1066,9 @@ const CapitalAccountsPage = () => {
               <Label htmlFor="reference">Reference Number</Label>
               <Input
                 id="reference"
-                name="reference"
                 placeholder="Enter reference..."
-                defaultValue={editingAccount?.referenceNumber || ""}
+                value={formReference}
+                onChange={(e) => setFormReference(e.target.value)}
                 className="dark:bg-gray-700 dark:border-gray-600"
               />
             </div>

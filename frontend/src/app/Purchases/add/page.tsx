@@ -26,19 +26,7 @@ const purchaseFormSchema = z.object({
   notes: z.string().optional(),
 })
 
-type PurchaseFormProps = {
-  purchase?: Purchase
-  suppliers: Array<{ id: string; name: string }>
-}
-
 // Mock data
-const mockSuppliers = [
-  { id: "1", name: "Supplier A" },
-  { id: "2", name: "Supplier B" },
-  { id: "3", name: "Supplier C" },
-  { id: "4", name: "Premium Pharma Distributors" },
-  { id: "5", name: "Global Medical Supplies" },
-]
 
 export default function AddPurchase() {
   const [items, setItems] = useState<PurchaseItem[]>([])
@@ -68,6 +56,9 @@ export default function AddPurchase() {
     isDefault: boolean;
   }>>([])
   const [linkedFinancialAccountId, setLinkedFinancialAccountId] = useState<string | null>(null)
+
+  // Temporary: Fetch first user ID for processedBy
+  const [currentUserId, setCurrentUserId] = useState<string>("")
 
   // Refs for keyboard navigation
   const supplierSearchRef = useRef<HTMLInputElement>(null)
@@ -105,6 +96,22 @@ export default function AddPurchase() {
       }
     }
     fetchFinancialAccounts()
+  }, [])
+
+  // Temporary: Fetch first user ID
+  useEffect(() => {
+    const fetchFirstUser = async () => {
+      try {
+        const response = await api.get('/users')
+        const users = response.data
+        if (users && users.length > 0) {
+          setCurrentUserId(users[0].id)
+        }
+      } catch (error) {
+        console.error('Error fetching users:', error)
+      }
+    }
+    fetchFirstUser()
   }, [])
 
   useEffect(() => {
@@ -319,7 +326,7 @@ export default function AddPurchase() {
     const purchaseData: Purchase = {
       id: crypto.randomUUID(),
       supplierId: data.supplierId,
-      processedBy: "8DA86BE9-D0F5-43E2-48EC-08DE3CB84E68", // To be filled by backend
+      processedBy: currentUserId, // Temporary: Use first user's ID
       supplierName: selectedSupplierDetails.companyName || "",
       items,
       totalAmount,

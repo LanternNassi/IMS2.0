@@ -276,6 +276,7 @@ namespace ImsServer.Controllers
                     IsRefunded = false,
                     IsTaken = dto.IsTaken,
                     PaymentMethod = dto.PaymentMethod,
+                    LinkedFinancialAccountId = dto.LinkedFinancialAccountId,
                     IsCompleted = dto.IsCompleted,
                     WasPartialPayment = dto.PaidAmount < dto.TotalAmount // Mark if it was a debt initially
                 };

@@ -145,7 +145,7 @@ namespace ImsServer.Controllers
                 .ToDictionaryAsync(x => x.AccountId, x => x.Amount);
 
             var fixedAssetsByAccount = await _db.FixedAssets
-                .Where(a => a.PurchaseDate >= start && a.PurchaseDate < end)
+                .Where(a => a.AddedAt >= start && a.AddedAt < end)
                 .Where(a => a.LinkedFinancialAccountId.HasValue)
                 .GroupBy(a => a.LinkedFinancialAccountId!.Value)
                 .Select(g => new { AccountId = g.Key, Amount = g.Sum(x => (decimal?)x.PurchasePrice) ?? 0m })
@@ -206,7 +206,7 @@ namespace ImsServer.Controllers
                 .SumAsync(e => (decimal?)e.Amount) ?? 0m;
 
             var unlinkedFixedAssets = await _db.FixedAssets
-                .Where(a => a.PurchaseDate >= start && a.PurchaseDate < end)
+                .Where(a => a.AddedAt >= start && a.AddedAt < end)
                 .Where(a => !a.LinkedFinancialAccountId.HasValue)
                 .SumAsync(a => (decimal?)a.PurchasePrice) ?? 0m;
 
@@ -382,7 +382,7 @@ namespace ImsServer.Controllers
                     .SumAsync(e => (decimal?)e.Amount) ?? 0m;
 
                 var fixedAssetPurchasesNet = await _db.FixedAssets
-                    .Where(a => a.PurchaseDate >= fromUtc && a.PurchaseDate < toUtc)
+                    .Where(a => a.AddedAt >= fromUtc && a.AddedAt < toUtc)
                     .Where(a => a.LinkedFinancialAccountId.HasValue && cashIds.Contains(a.LinkedFinancialAccountId.Value))
                     .SumAsync(a => (decimal?)a.PurchasePrice) ?? 0m;
 
@@ -808,7 +808,7 @@ namespace ImsServer.Controllers
                     .SumAsync(e => (decimal?)e.Amount) ?? 0m;
 
                 var fixedAssetPurchasesNet = await _db.FixedAssets
-                    .Where(a => a.PurchaseDate >= fromUtc && a.PurchaseDate < toUtc)
+                    .Where(a => a.AddedAt >= fromUtc && a.AddedAt < toUtc)
                     .Where(a => a.LinkedFinancialAccountId.HasValue && includedAccountIds.Contains(a.LinkedFinancialAccountId.Value))
                     .SumAsync(a => (decimal?)a.PurchasePrice) ?? 0m;
 
@@ -883,12 +883,12 @@ namespace ImsServer.Controllers
 
             // Outflows: fixed asset purchases linked to included accounts.
             var fixedAssetPurchases = await _db.FixedAssets
-                .Where(a => a.PurchaseDate >= flowStart && a.PurchaseDate < flowEnd)
+                .Where(a => a.AddedAt >= flowStart && a.AddedAt < flowEnd)
                 .Where(a => a.LinkedFinancialAccountId.HasValue && includedAccountIds.Contains(a.LinkedFinancialAccountId.Value))
                 .SumAsync(a => (decimal?)a.PurchasePrice) ?? 0m;
 
             var unlinkedFixedAssetPurchases = await _db.FixedAssets
-                .Where(a => a.PurchaseDate >= flowStart && a.PurchaseDate < flowEnd)
+                .Where(a => a.AddedAt >= flowStart && a.AddedAt < flowEnd)
                 .Where(a => !a.LinkedFinancialAccountId.HasValue)
                 .SumAsync(a => (decimal?)a.PurchasePrice) ?? 0m;
 

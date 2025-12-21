@@ -1,9 +1,9 @@
 {
     "name": "ims-desktop",
     "version": "1.0.0",
-    "description": "IMS Desktop Application - Inventory Management System with Electron, Next.js, .NET API and SQL Server.",
+    "description": "IMS Desktop Application - Inventory Management System",
     "main": "electron/main.js",
-    "author": "Your Name",
+    "author": "Ntambi Nassim",
     "license": "MIT",
     "scripts": {
         "start": "electron .",

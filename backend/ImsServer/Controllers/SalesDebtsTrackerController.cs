@@ -254,6 +254,7 @@ namespace ImsServer.Controllers
 
                 // Update sale paid amount
                 sale.PaidAmount += dto.PaidAmount;
+                sale.FinalAmount += dto.PaidAmount;
                 sale.OutstandingAmount = sale.TotalAmount - sale.PaidAmount;
 
                 // Update the linked account balance if applicable

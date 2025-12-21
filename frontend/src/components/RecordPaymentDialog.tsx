@@ -16,6 +16,8 @@ type DebtRecord = {
   outstandingAmount: number
   finalAmount: number
   paidAmount: number
+  totalAmount: number
+  discount: number
   customer: {
     name: string
   }
@@ -177,7 +179,7 @@ export function RecordPaymentDialog({ debt, onPaymentRecorded, trigger }: Record
           <div className="p-4 rounded-lg dark:bg-gray-700/30 bg-gray-50 space-y-2">
             <div className="flex justify-between text-sm">
               <span className="dark:text-gray-400 text-gray-600">Total Debt:</span>
-              <span className="font-semibold dark:text-white text-gray-900">{formatCurrency(debt.finalAmount)}</span>
+              <span className="font-semibold dark:text-white text-gray-900">{formatCurrency(debt.totalAmount - debt.discount)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="dark:text-gray-400 text-gray-600">Already Paid:</span>

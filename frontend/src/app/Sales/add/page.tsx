@@ -28,19 +28,6 @@ const saleFormSchema = z.object({
     notes: z.string().optional(),
 })
 
-type SaleFormProps = {
-    sale?: Sale
-    suppliers?: Array<{ id: string; name: string }>
-}
-
-// Mock data
-const mockSuppliers = [
-    { id: "1", name: "Supplier A" },
-    { id: "2", name: "Supplier B" },
-    { id: "3", name: "Supplier C" },
-    { id: "4", name: "Premium Pharma Distributors" },
-    { id: "5", name: "Global Medical Supplies" },
-]
 
 export default function AddSale() {
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -60,6 +47,9 @@ export default function AddSale() {
         quantity: string;
         basePrice: string;
     }>({ quantity: "", basePrice: "" })
+
+    // Temporary: Fetch first user ID for processedBy
+    const [currentUserId, setCurrentUserId] = useState<string>("")
 
     const [selectedCustomerDetails, setSelectedCustomerDetails] = useState<customer | null>(null)
     const [selectedStorage, setSelectedStorage] = useState<string>("") // Storage location name
@@ -93,12 +83,26 @@ export default function AddSale() {
             amount -= discount
         }
 
-        if (paidAmount) {
-            setReturnAmount(paidAmount - amount)
-        }
+        setReturnAmount(paidAmount - amount)
 
         setTotalAmount(amount)
     }, [items, discount, paidAmount])
+
+    // Temporary: Fetch first user ID
+    useEffect(() => {
+        const fetchFirstUser = async () => {
+            try {
+                const response = await api.get('/users')
+                const users = response.data
+                if (users && users.length > 0) {
+                    setCurrentUserId(users[0].id)
+                }
+            } catch (error) {
+                console.error('Error fetching users:', error)
+            }
+        }
+        fetchFirstUser()
+    }, [])
 
     // Fetch financial accounts
     useEffect(() => {
@@ -393,19 +397,21 @@ export default function AddSale() {
             customerName: selectedCustomerDetails?.name || undefined,
             items,
             totalAmount,
-            paidAmount: returnAmount < 0 ? paidAmount : (totalAmount - discount),
+            paidAmount: returnAmount <= 0 ? paidAmount : (totalAmount - discount),
             changeAmount: returnAmount,
             discount: discount,
             isPaid: paidAmount >= (totalAmount - discount),
             isTaken: isTaken,
             paymentMethod: paymentMethod,
-            processedById: "8F077C6B-EF9E-4802-6166-08DE28E2F419",
+            processedById: currentUserId, // Temporary: Use first user's ID
             linkedFinancialAccountId: linkedFinancialAccountId || undefined,
             finalAmount: paidAmount,
             createdAt: new Date(),
             isCompleted: paidAmount >= (totalAmount - discount),
             notes: data.notes,
         }
+
+        // console.log(saleData)
 
         try {
             const response = await api.post("/Sales", saleData)
@@ -836,6 +842,7 @@ export default function AddSale() {
                                             sx={{ width: '150px', '& input': { textAlign: 'right' } }}
                                             onChange={(value) => {
                                                 setPaidAmount(Number(value.target.value))
+                                                console.log(value.target.value)
                                             }}
                                         />
                                     </div>

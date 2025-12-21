@@ -170,7 +170,7 @@ export default function FinancialAccountsPage() {
   useEffect(() => {
     fetchFinancialAccounts()
     CheckIfBusinessDayisOpen()
-  })
+  },[])
 
   const fetchFinancialAccounts = async (page: number = 1, pageSize: number = 50) => {
     setIsLoading(true)
