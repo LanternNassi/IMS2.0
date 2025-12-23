@@ -1,4 +1,5 @@
 using ImsServer.Models.CustomerX;
+using ImsServer.Models.FinancialAccountX;
 using ImsServer.Models.SaleX;
 using ImsServer.Models.UserX;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -8,7 +9,7 @@ namespace ImsServer.Models.SaleX
     public class Sale : GeneralFields
     {
         public Guid Id { get; set; }
-        public Guid CustomerId { get; set; }
+        public Guid? CustomerId { get; set; }
         public Guid? ProcessedById { get; set; } // Optional field for the user who processed the sale
         public DateTime SaleDate { get; set; }
         public decimal TotalAmount { get; set; }
@@ -25,8 +26,13 @@ namespace ImsServer.Models.SaleX
         public bool IsCompleted { get; set; }
         public bool WasPartialPayment { get; set; } = false; // Indicates if sale had partial payment (debt) at creation
 
+        public Guid? LinkedFinancialAccountId { get; set; }
+
+        [ForeignKey("LinkedFinancialAccountId")]
+        public FinancialAccount? LinkedFinancialAccount { get; set; }
+
         [ForeignKey("CustomerId")]
-        public virtual Customer Customer { get; set; }
+        public virtual Customer? Customer { get; set; }
 
         [ForeignKey("ProcessedById")]
         public virtual User ProcessedBy { get; set; }
@@ -37,7 +43,7 @@ namespace ImsServer.Models.SaleX
     public class SaleDto : GeneralFields
     {
         public Guid Id { get; set; }
-        public Guid CustomerId { get; set; }
+        public Guid? CustomerId { get; set; }
         public Guid? ProcessedById { get; set; }
         public DateTime SaleDate { get; set; }
         public decimal TotalAmount { get; set; }
@@ -52,8 +58,9 @@ namespace ImsServer.Models.SaleX
         public bool IsTaken { get; set; }
         public bool WasPartialPayment { get; set; }
         public PaymentMethod PaymentMethod { get; set; } 
+        public Guid? LinkedFinancialAccountId { get; set; }
         public bool IsCompleted { get; set; }
-        public SimpleCustomerDto Customer { get; set; }
+        public SimpleCustomerDto? Customer { get; set; }
         public UserDto ProcessedBy { get; set; }
 
         public List<SimpleSalesItemDto> SaleItems { get; set; } = new List<SimpleSalesItemDto>();
@@ -69,7 +76,7 @@ namespace ImsServer.Models.SaleX
     public class CreateSaleDto
     {
         public Guid Id { get; set; }
-        public Guid CustomerId { get; set; }
+        public Guid? CustomerId { get; set; }
         public Guid? ProcessedById { get; set; }
         public DateTime SaleDate { get; set; }
         public decimal TotalAmount { get; set; }
@@ -82,6 +89,7 @@ namespace ImsServer.Models.SaleX
         public bool IsTaken { get; set; }
         public bool WasPartialPayment { get; set; }
         public PaymentMethod PaymentMethod { get; set; }
+        public Guid? LinkedFinancialAccountId { get; set; }
         public bool IsCompleted { get; set; }
         public string? Notes { get; set; }
         public List<CreateSaleItemDto> Items { get; set; } = new List<CreateSaleItemDto>();

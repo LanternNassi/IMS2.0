@@ -29,49 +29,65 @@ export default function Edit({
         toggleDrawer(false);
       }}
     >
-      <div
-        className="bg-primary dark:bg-primary-dark"
-        style={{
-          width: "30vw",
-          height: "14vh",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-around",
-          alignItems: "center",
-        }}
-      >
-        <Typography
-          style={{ fontSize: "17px", fontWeight: "bold" }}
-          variant="h6"
-        >
-          {Heading}
-        </Typography>
-        <Divider style={{ width: "28vw" }} />
-      </div>
       <Box
-        
-        onSubmit={(event) => {
-          onSubmit(event);
-        }}
-        component="form"
-        noValidate
-        autoComplete="off"
-        className="bg-primary dark:bg-primary-dark text-black dark:text-white"
-        style={{
-          width: "30vw",
-          minHeight: "40vh",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "space-around",
-          flexGrow: 1,
-          maxHeight: "300vh",
-          overflowY: "scroll",
-          gap: "16px",
-          paddingBottom: "16px",
+        sx={{
+          width: { xs: '70vw', sm: '350px', md: '400px', lg: '450px' },
+          height: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
         }}
       >
-        {Fields()}
+        {/* Header - Fixed height */}
+        <Box
+          className="bg-primary dark:bg-primary-dark"
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: "16px 0",
+            flexShrink: 0,
+          }}
+        >
+          <Typography
+            sx={{ 
+              fontSize: { xs: '16px', sm: '17px' }, 
+              fontWeight: "bold",
+              marginBottom: '12px'
+            }}
+            variant="h6"
+          >
+            {Heading}
+          </Typography>
+          <Divider sx={{ width: '90%' }} />
+        </Box>
+
+        {/* Form - Scrollable content */}
+        <Box
+          component="form"
+          onSubmit={(event) => {
+            onSubmit(event);
+          }}
+          noValidate
+          autoComplete="off"
+          className="bg-primary dark:bg-primary-dark text-black dark:text-white"
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            flexGrow: 1,
+            overflowY: "auto",
+            overflowX: "hidden",
+            padding: "16px",
+            paddingTop: "24px",
+            gap: "8px",
+            // Ensure proper scrolling on all platforms
+            WebkitOverflowScrolling: 'touch',
+          }}
+        >
+          {Fields()}
+        </Box>
       </Box>
     </Drawer>
   );

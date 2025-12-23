@@ -18,6 +18,7 @@ import {
   Chip,
   Typography,
   Stack,
+  Pagination
 } from "@mui/material"
 import { Add, Edit, Delete, Search, FilterList, Visibility, Close } from "@mui/icons-material"
 import { ProductForm } from "@/components/product-form"
@@ -28,7 +29,7 @@ import { useProductStore } from "../../store/useProductStore"
 
 
 export default function ProductManagement() {
-  const { products, fetchProducts, loading, error, addProduct, updateProduct } = useProductStore()
+  const { products, fetchProducts, pagination, addProduct, updateProduct } = useProductStore()
   const [searchTerm, setSearchTerm] = useState("")
   const [isAddProductOpen, setIsAddProductOpen] = useState(false)
   const [isEditProductOpen, setIsEditProductOpen] = useState(false)
@@ -46,6 +47,18 @@ export default function ProductManagement() {
       product.barCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.description?.toLowerCase().includes(searchTerm.toLowerCase()),
   )
+
+  const handleProductSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(event.target.value)
+    if (event.target.value === "") {
+      fetchProducts()
+      return
+    }
+    if (event.target.value.length < 3) {
+      return
+    }
+    fetchProducts(1, event.target.value)
+  }
 
   const handleAddProduct = (product: Product) => {
     const newProduct = {
@@ -137,7 +150,7 @@ export default function ProductManagement() {
                 variant="outlined"
                 placeholder="Search by product name, barcode, or description..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={handleProductSearchChange}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -271,12 +284,12 @@ export default function ProductManagement() {
                       </TableCell>
                       <TableCell>
                         <Typography variant="body1" fontWeight="medium" color="success.main">
-                          ${product.baseRetailPrice.toFixed(2)}
+                          Shs {product.baseRetailPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </Typography>
                       </TableCell>
                       <TableCell>
                         <Typography variant="body1" fontWeight="medium" color="info.main">
-                          ${product.baseWholeSalePrice.toFixed(2)}
+                          Shs {product.baseWholeSalePrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </Typography>
                       </TableCell>
                       <TableCell>
@@ -330,6 +343,18 @@ export default function ProductManagement() {
               </TableBody>
             </Table>
           </TableContainer>
+
+          <Pagination
+            count={pagination?.pages || 1}
+            hideNextButton={pagination ? !pagination.next : true}
+            hidePrevButton={pagination ? !pagination.previous : true}
+            onChange={async (event, page) => {
+              await fetchProducts(page)
+            }}
+            
+            color="primary"
+            sx={{ p: 2, display: 'flex', justifyContent: 'center' }}
+          />
         </Box>
 
         {/* Add Product Drawer */}

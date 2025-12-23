@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Plus, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -53,15 +53,48 @@ export function AddExpenditureDialog({
     newCategoryName: "",
     newCategoryDescription: "",
     date: new Date().toISOString().split("T")[0],
+    linkedFinancialAccountId: "",
   })
   const [isCreatingCategory, setIsCreatingCategory] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [financialAccounts, setFinancialAccounts] = useState<Array<{
+    id: string;
+    accountName: string;
+    bankName: string;
+    type: string;
+  }>>([]);
+
+  // Fetch financial accounts on component mount
+  useEffect(() => {
+    const fetchFinancialAccounts = async () => {
+      try {
+        const response = await api.get('/FinancialAccounts?includeMetadata=false&page=1&pageSize=100');
+        setFinancialAccounts(response.data.financialAccounts || []);
+      } catch (error) {
+        console.error('Error fetching financial accounts:', error);
+      }
+    };
+    fetchFinancialAccounts();
+  }, [])
 
   const filteredCategories = categories.filter((c) => c.type === selectedType)
 
+  const CheckIfBusinessDayisOpen = async (): Promise<boolean> => {
+    const response = await api.get('/CashReconciliations/is-today-open')
+    return response.data.isOpen as boolean
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    const isOpen = await CheckIfBusinessDayisOpen()
+
+    if (!isOpen) {
+      setError("Cannot add expenditure. Business day is not open.")
+      return
+    }
+
     setIsLoading(true)
     setError(null)
 
@@ -95,6 +128,7 @@ export function AddExpenditureDialog({
         description: formData.description,
         amount: parseFloat(formData.amount),
         expenditureCategoryId: categoryId,
+        linkedFinancialAccountId: formData.linkedFinancialAccountId || null,
       }
 
       const expenditureResponse = await api.post("/Expenditures", expenditurePayload)
@@ -113,9 +147,9 @@ export function AddExpenditureDialog({
       // Reset form and close dialog
       resetForm()
       setIsDialogOpen(false)
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error creating expenditure:", err)
-      setError(err.response?.data?.message || "Failed to create expenditure. Please try again.")
+      setError("Failed to create expenditure. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -130,6 +164,7 @@ export function AddExpenditureDialog({
       newCategoryName: "",
       newCategoryDescription: "",
       date: new Date().toISOString().split("T")[0],
+      linkedFinancialAccountId: "",
     })
     setIsCreatingCategory(false)
     setError(null)
@@ -246,6 +281,28 @@ export function AddExpenditureDialog({
                 </SelectContent>
               </Select>
             )}
+          </div>
+
+          {/* Financial Account */}
+          <div className="space-y-2">
+            <Label htmlFor="financialAccount">Financial Account (Optional)</Label>
+            <Select
+              value={formData.linkedFinancialAccountId || undefined}
+              onValueChange={(value) => setFormData({ ...formData, linkedFinancialAccountId: value })}
+            >
+              <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600" id="financialAccount">
+                <SelectValue placeholder="Select financial account (optional)" />
+              </SelectTrigger>
+              <SelectContent className="dark:bg-gray-700 dark:text-white">
+                {financialAccounts
+                  .filter(account => account.type !== 'CREDIT')
+                  .map((account) => (
+                    <SelectItem key={account.id} value={account.id} className="dark:text-white">
+                      {account.accountName} - {account.bankName} ({account.type})
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">

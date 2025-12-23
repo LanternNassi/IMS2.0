@@ -170,8 +170,21 @@ namespace ImsServer.Controllers
                 Name = dto.Name,
                 Description = dto.Description ?? string.Empty,
                 Amount = dto.Amount,
-                ExpenditureCategoryId = dto.ExpenditureCategoryId
+                ExpenditureCategoryId = dto.ExpenditureCategoryId,
+                LinkedFinancialAccountId = dto.LinkedFinancialAccountId
             };
+
+            if (dto.LinkedFinancialAccountId.HasValue)
+            {
+
+                // Update the linked financial account's balance
+                var financialAccount = await _db.FinancialAccounts.FindAsync(dto.LinkedFinancialAccountId.Value);
+                if (financialAccount == null)
+                {
+                    return BadRequest("Linked financial account not found.");
+                }
+                financialAccount.Balance -= dto.Amount;
+            }
 
             _db.Expenditures.Add(expenditure);
             await _db.SaveChangesAsync();

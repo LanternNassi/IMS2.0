@@ -28,6 +28,7 @@ export function ProductDetails({ productId, onEdit }: ProductDetailsProps) {
     })
   },[])
 
+  
   if (isLoading){
     return (
       <Box
@@ -161,7 +162,7 @@ export function ProductDetails({ productId, onEdit }: ProductDetailsProps) {
                     Base Cost Price
                   </Typography>
                   <Typography variant="h6" fontWeight="bold" color="primary">
-                    ${product.baseCostPrice.toFixed(2)}
+                    Shs {product.baseCostPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </Typography>
                 </Box>
               </Grid>
@@ -171,7 +172,7 @@ export function ProductDetails({ productId, onEdit }: ProductDetailsProps) {
                     Base Retail Price
                   </Typography>
                   <Typography variant="h6" fontWeight="bold" color="success.main">
-                    ${product.baseRetailPrice.toFixed(2)}
+                    Shs {product.baseRetailPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </Typography>
                 </Box>
               </Grid>
@@ -181,7 +182,7 @@ export function ProductDetails({ productId, onEdit }: ProductDetailsProps) {
                     Base Wholesale Price
                   </Typography>
                   <Typography variant="h6" fontWeight="bold" color="info.main">
-                    ${product.baseWholeSalePrice.toFixed(2)}
+                    Shs {product.baseWholeSalePrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </Typography>
                 </Box>
               </Grid>
@@ -297,7 +298,7 @@ export function ProductDetails({ productId, onEdit }: ProductDetailsProps) {
                           Cost Price
                         </Typography>
                         <Typography fontWeight="bold" color="primary">
-                          ${variation.costPrice.toFixed(2)}
+                          Shs {variation.costPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </Typography>
                       </Grid>
                       <Grid item xs={6}>
@@ -305,7 +306,7 @@ export function ProductDetails({ productId, onEdit }: ProductDetailsProps) {
                           Retail Price
                         </Typography>
                         <Typography fontWeight="bold" color="success.main">
-                          ${variation.retailPrice.toFixed(2)}
+                          Shs {variation.retailPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </Typography>
                       </Grid>
                       <Grid item xs={6}>
@@ -313,7 +314,7 @@ export function ProductDetails({ productId, onEdit }: ProductDetailsProps) {
                           Wholesale Price
                         </Typography>
                         <Typography fontWeight="bold" color="info.main">
-                          ${variation.wholeSalePrice.toFixed(2)}
+                          Shs {variation.wholeSalePrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </Typography>
                       </Grid>
                       <Grid item xs={6}>
@@ -412,87 +413,111 @@ export function ProductDetails({ productId, onEdit }: ProductDetailsProps) {
                     </Box>
                   ) : (
                     <Grid container spacing={2}>
-                      {generic.productStorages.map((storage) => (
-                        <Grid item xs={12} md={6} lg={4} key={storage.id}>
-                          <Box 
-                            sx={{ 
-                              p: 2.5, 
-                              borderRadius: 2,
-                              border: 1,
-                              borderColor: 'divider',
-                              backgroundColor: 'background.paper',
-                              height: '100%',
-                              transition: 'all 0.2s',
-                              '&:hover': {
-                                boxShadow: 2,
-                                borderColor: 'primary.main',
-                              }
-                            }}
-                          >
-                            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                              Store Location
-                            </Typography>
-                            <Typography 
-                              fontWeight="bold" 
-                              gutterBottom
-                              sx={{
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                display: '-webkit-box',
-                                WebkitLineClamp: 2,
-                                WebkitBoxOrient: 'vertical',
-                                minHeight: '2.5em',
-                                mb: 2
+                      {(() => {
+                        type MergedStorage = {
+                          store: typeof generic.productStorages[0]['store'] | null;
+                          quantity: number;
+                          reorderLevel: number;
+                          variations: string[];
+                        };
+                        const mergedStorages = generic.productStorages.reduce((acc: { [key: string]: MergedStorage }, storage) => {
+                          const storeId = storage.store?.id || 'unknown';
+                          if (!acc[storeId]) {
+                            acc[storeId] = {
+                              store: storage.store,
+                              quantity: Number(storage.quantity) || 0,
+                              reorderLevel: Number(storage.reorderLevel) || 0,
+                              variations: [storage.productVariation?.name || 'N/A']
+                            };
+                          } else {
+                            acc[storeId].quantity += Number(storage.quantity) || 0;
+                            acc[storeId].reorderLevel += Number(storage.reorderLevel) || 0;
+                            acc[storeId].variations.push(storage.productVariation?.name || 'N/A');
+                          }
+                          return acc;
+                        }, {});
+                        return Object.values(mergedStorages).map((storage, idx) => (
+                          <Grid item xs={12} md={6} lg={4} key={storage.store?.id || idx}>
+                            <Box 
+                              sx={{ 
+                                p: 2.5, 
+                                borderRadius: 2,
+                                border: 1,
+                                borderColor: 'divider',
+                                backgroundColor: 'background.paper',
+                                height: '100%',
+                                transition: 'all 0.2s',
+                                '&:hover': {
+                                  boxShadow: 2,
+                                  borderColor: 'primary.main',
+                                }
                               }}
                             >
-                              {storage.store?.name || "Unknown Store"}
-                            </Typography>
+                              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                Store Location
+                              </Typography>
+                              <Typography 
+                                fontWeight="bold" 
+                                gutterBottom
+                                sx={{
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  display: '-webkit-box',
+                                  WebkitLineClamp: 2,
+                                  WebkitBoxOrient: 'vertical',
+                                  minHeight: '2.5em',
+                                  mb: 2
+                                }}
+                              >
+                                {storage.store?.name || "Unknown Store"}
+                              </Typography>
 
-                            <Divider sx={{ my: 2 }} />
+                              <Divider sx={{ my: 2 }} />
 
-                            <Stack spacing={1.5}>
-                              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                <Typography variant="body2" color="text.secondary">
-                                  Quantity:
-                                </Typography>
-                                <Typography variant="body2" fontWeight="medium">
-                                  {storage.quantity}
-                                </Typography>
+                              <Stack spacing={1.5}>
+                                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                  <Typography variant="body2" color="text.secondary">
+                                    Quantity:
+                                  </Typography>
+                                  <Typography variant="body2" fontWeight="medium">
+                                    {storage.quantity}
+                                  </Typography>
+                                </Stack>
+
+                                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                  <Typography variant="body2" color="text.secondary">
+                                    Reorder Level:
+                                  </Typography>
+                                  <Typography variant="body2" fontWeight="medium">
+                                    {storage.reorderLevel}
+                                  </Typography>
+                                </Stack>
+
+                                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                  <Typography variant="body2" color="text.secondary" sx={{ flexShrink: 0 }}>
+                                    Variations:
+                                  </Typography>
+                                  <Typography 
+                                    variant="body2" 
+                                    fontWeight="medium"
+                                    sx={{
+                                      textAlign: 'right',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap',
+                                      maxWidth: '60%'
+                                    }}
+                                    title={storage.variations.join(', ')}
+                                  >
+                                    {storage.variations.join(', ')}
+                                  </Typography>
+                                </Stack>
                               </Stack>
 
-                              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                <Typography variant="body2" color="text.secondary">
-                                  Reorder Level:
-                                </Typography>
-                                <Typography variant="body2" fontWeight="medium">
-                                  {storage.reorderLevel}
-                                </Typography>
-                              </Stack>
-
-                              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                <Typography variant="body2" color="text.secondary" sx={{ flexShrink: 0 }}>
-                                  Variation:
-                                </Typography>
-                                <Typography 
-                                  variant="body2" 
-                                  fontWeight="medium"
-                                  sx={{
-                                    textAlign: 'right',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap',
-                                    maxWidth: '60%'
-                                  }}
-                                  title={storage.productVariation?.name || "N/A"}
-                                >
-                                  {storage.productVariation?.name || "N/A"}
-                                </Typography>
-                              </Stack>
-                            </Stack>
-
-                          </Box>
-                        </Grid>
-                      ))}
+                            </Box>
+                          </Grid>
+                        ));
+                      })()}
                     </Grid>
                   )}
                 </Box>

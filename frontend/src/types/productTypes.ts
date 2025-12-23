@@ -67,3 +67,12 @@ export type Store = {
   id: string
   name: string
 }
+
+export type Pagination = {
+  totalCount: number
+  pages: number
+  page: number
+  pageSize: number
+  next: string | null
+  previous: string | null
+}

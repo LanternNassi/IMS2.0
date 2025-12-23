@@ -37,6 +37,59 @@ namespace ImsServer.Migrations
                     b.ToTable("CustomerCustomerTag");
                 });
 
+            modelBuilder.Entity("ImsServer.Models.CapitalAccountX.CapitalAccount", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("AddedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("AddedBy")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("LastUpdatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("LinkedFinancialAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ReferenceNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("TransactionDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LinkedFinancialAccountId");
+
+                    b.HasIndex("OwnerId");
+
+                    b.ToTable("CapitalAccounts");
+                });
+
             modelBuilder.Entity("ImsServer.Models.CategoryX.Category", b =>
                 {
                     b.Property<Guid>("Id")
@@ -182,6 +235,9 @@ namespace ImsServer.Migrations
                     b.Property<int>("LastUpdatedBy")
                         .HasColumnType("int");
 
+                    b.Property<Guid?>("LinkedFinancialAccountId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -192,6 +248,8 @@ namespace ImsServer.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ExpenditureCategoryId");
+
+                    b.HasIndex("LinkedFinancialAccountId");
 
                     b.ToTable("Expenditures");
                 });
@@ -230,6 +288,272 @@ namespace ImsServer.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("ExpenditureCategories");
+                });
+
+            modelBuilder.Entity("ImsServer.Models.FinancialAccountX.DailyCashReconciliation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("AddedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("AddedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("BusinessDateUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ClosedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("ClosingCountedBalance")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("ClosingNotes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<decimal?>("ClosingSystemBalance")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("ClosingVariance")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("FinancialAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("LastUpdatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("OpenedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("OpeningCountedBalance")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("OpeningNotes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<decimal>("OpeningSystemBalance")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("OpeningVariance")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FinancialAccountId", "BusinessDateUtc")
+                        .IsUnique();
+
+                    b.ToTable("DailyCashReconciliations");
+                });
+
+            modelBuilder.Entity("ImsServer.Models.FinancialAccountX.FinancialAccount", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AccountName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("AccountNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("AddedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("AddedBy")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Balance")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("BankName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("LastUpdatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("FinancialAccounts");
+                });
+
+            modelBuilder.Entity("ImsServer.Models.FinancialAccountX.Transaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("AddedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("AddedBy")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Currency")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<decimal?>("ExchangeRate")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("Fees")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("FromFinancialAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("LastUpdatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("MovementDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("ReferenceNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ToFinancialAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FromFinancialAccountId");
+
+                    b.HasIndex("ToFinancialAccountId");
+
+                    b.ToTable("Transactions");
+                });
+
+            modelBuilder.Entity("ImsServer.Models.FixedAssetX.FixedAsset", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("AddedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("AddedBy")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("CurrentValue")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("DepreciationRate")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("DisposalDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("DisposalValue")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("LastUpdatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("LinkedFinancialAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Manufacturer")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("PurchaseDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("PurchasePrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("SerialNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UsefulLifeYears")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LinkedFinancialAccountId");
+
+                    b.ToTable("FixedAssets");
                 });
 
             modelBuilder.Entity("ImsServer.Models.ProductX.Product", b =>
@@ -460,6 +784,58 @@ namespace ImsServer.Migrations
                     b.ToTable("ProductVariations");
                 });
 
+            modelBuilder.Entity("ImsServer.Models.PurchaseDebtX.PurchaseDebtTracker", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("AddedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("AddedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("LastUpdatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("LinkedFinancialAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("PaidAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("PaymentDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("PaymentMethod")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("PurchaseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("ReceivedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LinkedFinancialAccountId");
+
+                    b.HasIndex("PurchaseId");
+
+                    b.ToTable("PurchaseDebtTrackers");
+                });
+
             modelBuilder.Entity("ImsServer.Models.PurchaseX.Purchase", b =>
                 {
                     b.Property<Guid>("Id")
@@ -484,8 +860,14 @@ namespace ImsServer.Migrations
                     b.Property<int>("LastUpdatedBy")
                         .HasColumnType("int");
 
+                    b.Property<Guid?>("LinkedFinancialAccountId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Notes")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("OutstandingAmount")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("PaidAmount")
                         .HasColumnType("decimal(18,2)");
@@ -512,7 +894,12 @@ namespace ImsServer.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<bool>("WasPartialPayment")
+                        .HasColumnType("bit");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("LinkedFinancialAccountId");
 
                     b.HasIndex("ProcessedBy");
 
@@ -589,7 +976,7 @@ namespace ImsServer.Migrations
                     b.Property<decimal>("ChangeAmount")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<Guid>("CustomerId")
+                    b.Property<Guid?>("CustomerId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("DeletedAt")
@@ -615,6 +1002,9 @@ namespace ImsServer.Migrations
 
                     b.Property<int>("LastUpdatedBy")
                         .HasColumnType("int");
+
+                    b.Property<Guid?>("LinkedFinancialAccountId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal?>("OutstandingAmount")
                         .HasColumnType("decimal(18,2)");
@@ -647,6 +1037,8 @@ namespace ImsServer.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CustomerId");
+
+                    b.HasIndex("LinkedFinancialAccountId");
 
                     b.HasIndex("ProcessedById");
 
@@ -730,6 +1122,9 @@ namespace ImsServer.Migrations
                     b.Property<int>("LastUpdatedBy")
                         .HasColumnType("int");
 
+                    b.Property<Guid?>("LinkedFinancialAccountId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<decimal>("PaidAmount")
                         .HasColumnType("decimal(18,2)");
 
@@ -743,6 +1138,8 @@ namespace ImsServer.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("LinkedFinancialAccountId");
 
                     b.HasIndex("SaleId");
 
@@ -874,6 +1271,170 @@ namespace ImsServer.Migrations
                     b.ToTable("SupplierTags");
                 });
 
+            modelBuilder.Entity("ImsServer.Models.SystemConfigX.Contact", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("AddedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("AddedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("LastUpdatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("SystemConfigId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Telephone")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SystemConfigId");
+
+                    b.ToTable("Contacts");
+                });
+
+            modelBuilder.Entity("ImsServer.Models.SystemConfigX.SystemConfig", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("AddedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("AddedBy")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Currency")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FiscalYearEnd")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FiscalYearStart")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IMSKey")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IMSVersion")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("LastUpdatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("LicenseValidTill")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Logo")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OrganisationDescription")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OrgnanisationName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RegisteredBusinessAddress")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RegisteredBusinessContact")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RegisteredBusinessName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RegisteredTINumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SystemConfigs");
+                });
+
+            modelBuilder.Entity("ImsServer.Models.TaxRecordX.TaxRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("AddedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("AddedBy")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("DueDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsPaid")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("LastUpdatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("PaidDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("PenaltyAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("PeriodEnd")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("PeriodStart")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ReferenceNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TaxRecords");
+                });
+
             modelBuilder.Entity("ImsServer.Models.UserX.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -951,6 +1512,23 @@ namespace ImsServer.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ImsServer.Models.CapitalAccountX.CapitalAccount", b =>
+                {
+                    b.HasOne("ImsServer.Models.FinancialAccountX.FinancialAccount", "LinkedFinancialAccount")
+                        .WithMany()
+                        .HasForeignKey("LinkedFinancialAccountId");
+
+                    b.HasOne("ImsServer.Models.UserX.User", "Owner")
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("LinkedFinancialAccount");
+
+                    b.Navigation("Owner");
+                });
+
             modelBuilder.Entity("ImsServer.Models.ExpenditureX.Expenditure", b =>
                 {
                     b.HasOne("ImsServer.Models.ExpenditureX.ExpenditureCategory", "ExpenditureCategory")
@@ -959,7 +1537,52 @@ namespace ImsServer.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("ImsServer.Models.FinancialAccountX.FinancialAccount", "LinkedFinancialAccount")
+                        .WithMany()
+                        .HasForeignKey("LinkedFinancialAccountId");
+
                     b.Navigation("ExpenditureCategory");
+
+                    b.Navigation("LinkedFinancialAccount");
+                });
+
+            modelBuilder.Entity("ImsServer.Models.FinancialAccountX.DailyCashReconciliation", b =>
+                {
+                    b.HasOne("ImsServer.Models.FinancialAccountX.FinancialAccount", "FinancialAccount")
+                        .WithMany()
+                        .HasForeignKey("FinancialAccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FinancialAccount");
+                });
+
+            modelBuilder.Entity("ImsServer.Models.FinancialAccountX.Transaction", b =>
+                {
+                    b.HasOne("ImsServer.Models.FinancialAccountX.FinancialAccount", "FromFinancialAccount")
+                        .WithMany()
+                        .HasForeignKey("FromFinancialAccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ImsServer.Models.FinancialAccountX.FinancialAccount", "ToFinancialAccount")
+                        .WithMany()
+                        .HasForeignKey("ToFinancialAccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FromFinancialAccount");
+
+                    b.Navigation("ToFinancialAccount");
+                });
+
+            modelBuilder.Entity("ImsServer.Models.FixedAssetX.FixedAsset", b =>
+                {
+                    b.HasOne("ImsServer.Models.FinancialAccountX.FinancialAccount", "LinkedFinancialAccount")
+                        .WithMany()
+                        .HasForeignKey("LinkedFinancialAccountId");
+
+                    b.Navigation("LinkedFinancialAccount");
                 });
 
             modelBuilder.Entity("ImsServer.Models.ProductX.ProductGeneric", b =>
@@ -1027,8 +1650,29 @@ namespace ImsServer.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("ImsServer.Models.PurchaseDebtX.PurchaseDebtTracker", b =>
+                {
+                    b.HasOne("ImsServer.Models.FinancialAccountX.FinancialAccount", "LinkedFinancialAccount")
+                        .WithMany()
+                        .HasForeignKey("LinkedFinancialAccountId");
+
+                    b.HasOne("ImsServer.Models.PurchaseX.Purchase", "Purchase")
+                        .WithMany()
+                        .HasForeignKey("PurchaseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("LinkedFinancialAccount");
+
+                    b.Navigation("Purchase");
+                });
+
             modelBuilder.Entity("ImsServer.Models.PurchaseX.Purchase", b =>
                 {
+                    b.HasOne("ImsServer.Models.FinancialAccountX.FinancialAccount", "LinkedFinancialAccount")
+                        .WithMany()
+                        .HasForeignKey("LinkedFinancialAccountId");
+
                     b.HasOne("ImsServer.Models.UserX.User", "ProcessedUser")
                         .WithMany()
                         .HasForeignKey("ProcessedBy")
@@ -1040,6 +1684,8 @@ namespace ImsServer.Migrations
                         .HasForeignKey("SupplierId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("LinkedFinancialAccount");
 
                     b.Navigation("ProcessedUser");
 
@@ -1075,9 +1721,11 @@ namespace ImsServer.Migrations
                 {
                     b.HasOne("ImsServer.Models.CustomerX.Customer", "Customer")
                         .WithMany()
-                        .HasForeignKey("CustomerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("CustomerId");
+
+                    b.HasOne("ImsServer.Models.FinancialAccountX.FinancialAccount", "LinkedFinancialAccount")
+                        .WithMany()
+                        .HasForeignKey("LinkedFinancialAccountId");
 
                     b.HasOne("ImsServer.Models.UserX.User", "ProcessedBy")
                         .WithMany()
@@ -1086,6 +1734,8 @@ namespace ImsServer.Migrations
                         .IsRequired();
 
                     b.Navigation("Customer");
+
+                    b.Navigation("LinkedFinancialAccount");
 
                     b.Navigation("ProcessedBy");
                 });
@@ -1119,13 +1769,30 @@ namespace ImsServer.Migrations
 
             modelBuilder.Entity("ImsServer.Models.SalesDebtsTrackerX.SalesDebtsTracker", b =>
                 {
+                    b.HasOne("ImsServer.Models.FinancialAccountX.FinancialAccount", "LinkedFinancialAccount")
+                        .WithMany()
+                        .HasForeignKey("LinkedFinancialAccountId");
+
                     b.HasOne("ImsServer.Models.SaleX.Sale", "Sale")
                         .WithMany()
                         .HasForeignKey("SaleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("LinkedFinancialAccount");
+
                     b.Navigation("Sale");
+                });
+
+            modelBuilder.Entity("ImsServer.Models.SystemConfigX.Contact", b =>
+                {
+                    b.HasOne("ImsServer.Models.SystemConfigX.SystemConfig", "SystemConfig")
+                        .WithMany("Contacts")
+                        .HasForeignKey("SystemConfigId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SystemConfig");
                 });
 
             modelBuilder.Entity("SupplierSupplierTag", b =>
@@ -1178,6 +1845,11 @@ namespace ImsServer.Migrations
             modelBuilder.Entity("ImsServer.Models.StoreX.Store", b =>
                 {
                     b.Navigation("ProductStorages");
+                });
+
+            modelBuilder.Entity("ImsServer.Models.SystemConfigX.SystemConfig", b =>
+                {
+                    b.Navigation("Contacts");
                 });
 #pragma warning restore 612, 618
         }

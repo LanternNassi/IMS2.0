@@ -190,7 +190,7 @@ export default function DebtsAnalysis() {
                 params.append('maxOutstanding', maxOutstanding)
             }
 
-            const response = await api.get(`/Sales/Debtors?${params}`)
+            const response = await api.get(`/Sales/Receivables?${params}`)
             setDebts(response.data.debtors || [])
             setMetadata(response.data.metadata || null)
             setPagination(response.data.pagination || {
@@ -321,7 +321,7 @@ export default function DebtsAnalysis() {
         <div className="min-h-screen dark:bg-gray-900 bg-gray-50 p-6 space-y-6">
             {/* Header */}
             <div>
-                <h1 className="text-4xl font-bold dark:text-white text-gray-900 mb-2">Debts Analysis</h1>
+                <h1 className="text-4xl font-bold dark:text-white text-gray-900 mb-2">Receivables Analysis</h1>
                 <p className="dark:text-gray-400 text-gray-600">Monitor and analyze customer debts and payment status</p>
             </div>
 
@@ -805,7 +805,7 @@ export default function DebtsAnalysis() {
                                                                 {formatDate(debt.saleDate)}
                                                             </TableCell>
                                                             <TableCell className="text-sm font-medium text-right dark:text-white text-gray-900">
-                                                                {formatCurrency(debt.finalAmount)}
+                                                                {formatCurrency(debt.totalAmount-debt.discount)}
                                                             </TableCell>
                                                             <TableCell className="text-sm font-medium text-right text-emerald-500">
                                                                 {formatCurrency(debt.paidAmount)}
@@ -813,7 +813,7 @@ export default function DebtsAnalysis() {
                                                             <TableCell
                                                                 className={`text-sm font-bold text-right ${(debt.finalAmount - debt.paidAmount) > 0 ? "text-red-500" : "text-emerald-500"}`}
                                                             >
-                                                                {formatCurrency(debt.finalAmount - debt.paidAmount)}
+                                                                {formatCurrency(debt.outstandingAmount)}
                                                             </TableCell>
                                                             <TableCell className="text-center">
                                                                 <Badge variant="outline" className={`${status.bg} ${status.text} ${status.border}`}>
@@ -889,9 +889,9 @@ export default function DebtsAnalysis() {
                                                                                         </p>
                                                                                     </div>
                                                                                     <div>
-                                                                                        <p className="text-xs dark:text-gray-400 text-gray-500">Final Amount</p>
+                                                                                        <p className="text-xs dark:text-gray-400 text-gray-500">Paid Amount</p>
                                                                                         <p className="text-sm font-medium dark:text-white text-gray-900">
-                                                                                            {formatCurrency(debt.finalAmount)}
+                                                                                            {formatCurrency(debt.paidAmount)}
                                                                                         </p>
                                                                                     </div>
                                                                                     <div>
@@ -955,7 +955,7 @@ export default function DebtsAnalysis() {
                                                                                 debt.isPaid ? null : (
                                                                                     <RecordPaymentDialog debt={{
                                                                                         ...debt,
-                                                                                        outstandingAmount: (debt.finalAmount - debt.paidAmount),
+                                                                                        // outstandingAmount: (debt.finalAmount - debt.paidAmount),
                                                                                     }} onPaymentRecorded={handlePaymentRecorded} />
                                                                                 )
                                                                             }
@@ -970,7 +970,7 @@ export default function DebtsAnalysis() {
                                                                             }
 
                                                                             <ViewSaleDetailsDialog debt={debt} />
-                                                                            <GenerateInvoiceDialog debt={debt} />
+                                                                            <GenerateInvoiceDialog data={debt} />
                                                                         </div>
                                                                     </div>
                                                                 </TableCell>

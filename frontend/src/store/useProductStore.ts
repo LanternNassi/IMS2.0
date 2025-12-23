@@ -1,12 +1,13 @@
 import { create } from 'zustand'
-import { Product } from '../types/productTypes'
+import { Product, Pagination } from '../types/productTypes'
 import api from '../Utils/Request'
 
 interface ProductState {
   products: Product[]
+  pagination: Pagination | null
   loading: boolean
   error: string | null
-  fetchProducts: () => Promise<void>
+  fetchProducts: (page?: number, keyword?: string) => Promise<void>
   addProduct: (product: Product, onSuccess: () => void, onError: (error: any) => void) => Promise<void>
   fetchProductById: (id: string ) => Promise<Product>
   updateProduct: (product: Product, onSuccess: () => void, onError: (error: any) => void) => Promise<void>
@@ -15,13 +16,14 @@ interface ProductState {
 
 export const useProductStore = create<ProductState>((set, get) => ({
   products: [],
+  pagination: null,
   loading: false,
   error: null,
-  fetchProducts: async () => {
+  fetchProducts: async (page = 1, keyword = "") => {
     set({ loading: true, error: null })
     try {
-      const res = await api.get('/Products')
-      set({ products: res.data.products, loading: false })
+      const res = await api.get(`/Products?page=${page}&keywords=${keyword}`)
+      set({ products: res.data.products, loading: false, pagination: res.data.pagination })
     } catch (error: any) {
       set({ error: error.message, loading: false })
     }

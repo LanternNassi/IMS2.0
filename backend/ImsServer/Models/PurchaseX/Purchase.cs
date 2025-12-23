@@ -1,3 +1,4 @@
+using ImsServer.Models.FinancialAccountX;
 using ImsServer.Models.PurchaseX;
 using ImsServer.Models.SupplierX;
 using ImsServer.Models.UserX;
@@ -15,16 +16,22 @@ namespace ImsServer.Models.PurchaseX
         public Guid ProcessedBy { get; set; }
         public decimal TotalAmount { get; set; }
         public decimal PaidAmount { get; set; }
+        public decimal OutstandingAmount { get; set; }
         public decimal Tax { get; set; }
         public decimal GrandTotal { get; set; }
         public string? Notes { get; set; }
         public bool IsPaid { get; set; }
+        public bool WasPartialPayment { get; set; }
+        public Guid? LinkedFinancialAccountId { get; set; }
 
         [ForeignKey("SupplierId")]
         public virtual Supplier Supplier { get; set; }
 
         [ForeignKey("ProcessedBy")]
         public virtual User ProcessedUser { get; set; }
+
+        [ForeignKey("LinkedFinancialAccountId")]
+        public virtual FinancialAccount? LinkedFinancialAccount { get; set; }
 
         public virtual ICollection<PurchaseItem> PurchaseItems { get; set; } = new List<PurchaseItem>();
 
@@ -41,6 +48,7 @@ namespace ImsServer.Models.PurchaseX
         public decimal GrandTotal { get; set; }
         public string? Notes { get; set; }
         public bool IsPaid { get; set; }
+        public Guid? LinkedFinancialAccountId { get; set; }
         public SupplierDto Supplier { get; set; }
         public UserDto ProcessedUser { get; set; }
         public List<SimplePurchaseItemDto> PurchaseItems { get; set; } = new List<SimplePurchaseItemDto>();
@@ -58,6 +66,7 @@ namespace ImsServer.Models.PurchaseX
         public decimal GrandTotal { get; set; }
         public string? Notes { get; set; }
         public bool IsPaid { get; set; }
+        public Guid? LinkedFinancialAccountId { get; set; }
     }
 
     public class CreatePurchaseDto
@@ -73,6 +82,7 @@ namespace ImsServer.Models.PurchaseX
         public decimal GrandTotal { get; set; }
         public string? Notes { get; set; }
         public bool IsPaid { get; set; }
+        public Guid? LinkedFinancialAccountId { get; set; }
         public List<CreatePurchaseItemDto>? Items { get; set; }
     }
 

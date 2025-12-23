@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import {
   Calendar,
   TrendingUp,
@@ -508,7 +508,7 @@ export default function ProductAnalysis() {
   const [apiData, setApiData] = useState<any>(null)
 
   // Fetch data from API
-  const fetchAnalysisData = async () => {
+  const fetchAnalysisData = useCallback(async () => {
     setIsLoading(true)
     try {
       const params = new URLSearchParams({
@@ -534,12 +534,12 @@ export default function ProductAnalysis() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [startDate, endDate, selectedProduct, selectedVariation, selectedCustomer, customerNameSearch, includeUnpaid])
 
   // Fetch data on mount and when filters change
   useEffect(() => {
     fetchAnalysisData()
-  }, [startDate, endDate, selectedProduct, selectedVariation, selectedCustomer, customerNameSearch, includeUnpaid])
+  }, [startDate, endDate, selectedProduct, selectedVariation, selectedCustomer, customerNameSearch, includeUnpaid, fetchAnalysisData])
 
   // Extract data from API response
   const overallSummary = apiData?.metadata?.overallSummary || {
@@ -1633,9 +1633,9 @@ export default function ProductAnalysis() {
                         </p>
                       </TableCell>
                       <TableCell>
-                        <p className="dark:text-gray-300 text-gray-700">{item.sale.customer.name}</p>
+                        <p className="dark:text-gray-300 text-gray-700">{item.sale.customer ? item.sale.customer.name : "N/A"}</p>
                         <p className="text-xs dark:text-gray-500 text-gray-500 capitalize">
-                          {item.sale.customer.customerType}
+                          {item.sale.customer ? item.sale.customer.customerType : "N/A"}
                         </p>
                       </TableCell>
                       <TableCell className="text-right font-medium dark:text-gray-300 text-gray-700">

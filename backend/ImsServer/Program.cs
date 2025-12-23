@@ -9,13 +9,22 @@ builder.Configuration
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
     .AddEnvironmentVariables();
 
-
 builder.Services.AddDbContext<DBContext>(options =>
       options.UseSqlServer(
           builder.Configuration.GetConnectionString("DBCONNECTION")));
 
+// Add CORS policy in services
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.SetIsOriginAllowed(_ => true) // Allow any origin
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
+});
 
-// Add services to the container.
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -26,7 +35,6 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-
 var mapperConfig = new MapperConfiguration(mc =>
 {
     mc.AddProfile(new MappingProfile());
@@ -35,13 +43,34 @@ var mapperConfig = new MapperConfiguration(mc =>
 IMapper mapper = mapperConfig.CreateMapper();
 builder.Services.AddSingleton(mapper);
 
-
 var app = builder.Build();
 
-app.UseCors(builder => builder
-     .AllowAnyOrigin()
-     .AllowAnyMethod()
-     .AllowAnyHeader());
+// Apply migrations automatically on startup
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<DBContext>();
+        
+        Console.WriteLine("Checking database connection...");
+        
+        // Apply any pending migrations
+        context.Database.Migrate();
+        
+        Console.WriteLine("Database migrations applied successfully.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"An error occurred while migrating the database: {ex.Message}");
+        Console.WriteLine($"Stack trace: {ex.StackTrace}");
+        
+        // Optionally: You can decide whether to exit or continue
+        // Environment.Exit(1); // Uncomment to exit on migration failure
+    }
+}
+
+app.UseDeveloperExceptionPage();
 
 
 // Configure the HTTP request pipeline.
@@ -49,10 +78,12 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-    app.UseHttpsRedirection();
 }
 
-// Don't use HTTPS redirect in production for Electron app
+app.UseHttpsRedirection();
+
+// Apply CORS policy - MUST be after UseHttpsRedirection and before UseAuthorization
+app.UseCors();
 
 app.UseAuthorization();
 

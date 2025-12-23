@@ -195,13 +195,11 @@ const page = () => {
 
   const exportToExcel = async () => {
 
-    // @ts-expect-error : window.electron is resolved at build time
     if (window.electron) {
 
-      const customerExcelSheet : CustomersExcel[] | null  = customers ;
+      const customerExcelSheet: CustomersExcel[] = customers ?? [];
 
-      // @ts-expect-error : window.electron is resolved at build time
-      window.electron.exportExcel(customerExcelSheet , 'Customers');
+      window.electron.exportExcel(customerExcelSheet, 'Customers');
 
       toast({
         title: "System Customer Management",

@@ -33,7 +33,7 @@ namespace ImsServer.Controllers
         public async Task<ActionResult<IEnumerable<ProductDto>>> GetProducts(
             [FromQuery]string? keywords = null,
             [FromQuery]int page = 1,
-            [FromQuery]int pageSize = 10
+            [FromQuery]int pageSize = 20
         )
         {
 

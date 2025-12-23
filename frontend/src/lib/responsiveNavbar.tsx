@@ -1,17 +1,18 @@
 "use client"
 
 import React, { useState } from "react";
+import { useSystemConfigStore } from "@/store/useSystemConfigStore";
 
 export default function ResponsiveNavbar() {
   const [isOpen, setIsOpen] = useState(false);
-
+  const { config } = useSystemConfigStore();
   return (
     <nav className="bg-gray-800 text-white">
       <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="flex items-center">
-            <span className="text-xl font-bold">Admin@enterprises</span>
+            <span className="text-xl font-bold">{config?.organisationName || "Admin@enterprises"}</span>
           </div>
 
           {/* Hamburger Menu (Mobile) */}

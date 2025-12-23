@@ -36,8 +36,8 @@ export type SalesItem = {
 
 export type Sale = {
   id: string
-  customerId: string
-  customerName: string
+  customerId: string | null | undefined
+  customerName: string | null | undefined
   items: SalesItem[]
   totalAmount: number
   paidAmount?: number
@@ -47,6 +47,7 @@ export type Sale = {
   isTaken?: boolean
   paymentMethod?: string
   processedById?: string
+  linkedFinancialAccountId?: string
   isCompleted?: boolean
   discount?: number
   createdAt: Date
@@ -152,6 +153,23 @@ export default function SalesPage() {
       setSnackbar({
         open: true,
         message: error.response?.data?.message || "Failed to delete sale",
+      })
+    }
+  }
+
+  const handleRefund = async (id: string) => {
+    if (!confirm("Are you sure you want to refund this sale? This will return stock to inventory and reverse the transaction.")) return
+
+    try {
+      await api.put(`/Sales/Refund/${id}`)
+      setSnackbar({ open: true, message: "Sale refunded successfully" })
+      fetchSales(pagination.currentPage, pagination.pageSize)
+    } catch (error: any) {
+      console.error("Error refunding sale:", error)
+
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || "Failed to refund sale",
       })
     }
   }
@@ -327,6 +345,7 @@ export default function SalesPage() {
             onView={handleView}
             onEdit={handleEdit}
             onDelete={handleDelete}
+            onRefund={handleRefund}
           />
         )}
       </Box>

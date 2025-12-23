@@ -18,6 +18,7 @@ namespace ImsServer.Models.UserX{
         public string? Gender {get; set;}       
         public string? Telephone {get; set;}
         public string Role { get; set; }
+        public string? Token { get; set; }
     }
 
     public class LoginSchema

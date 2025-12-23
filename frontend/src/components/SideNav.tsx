@@ -1,7 +1,7 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import {
   LayoutDashboard,
   Users,
@@ -25,6 +25,7 @@ import {
   Bell,
   HelpCircle,
   User,
+  ChevronDown
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -38,27 +39,54 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Separator } from "@/components/ui/separator"
+import { Badge } from "@/components/ui/badge"
+import { useAuthStore } from "@/store/useAuthStore"
+import { useNotificationsStore } from "@/store/useNotificationsStore"
 
 const navItems = [
-  { label: "Dashboard", icon: LayoutDashboard, path: "/Dashboard" },
-  { label: "Users", icon: Users, path: "/Users" },
-  { label: "Categories", icon: FolderOpen, path: "/Categories" },
-  { label: "Store Management", icon: Store, path: "/Stores" },
-  { label: "Products", icon: Package, path: "/Products" },
-  { label: "Customers", icon: UserCheck, path: "/Customers" },
-  { label: "Suppliers", icon: Truck, path: "/Suppliers" },
-  { label: "Transactions", icon: ArrowLeftRight, path: "/Transactions" },
-  { label: "Purchases", icon: ShoppingBag, path: "/Purchases" },
-  { label: "Sales", icon: Receipt, path: "/Sales" },
-  { label: "Product Analysis", icon: BarChart3, path: "/Analysis" },
-  { label: "Debts", icon: CreditCard, path: "/Debts" },
-  { label: "Expenditure", icon: Wallet, path: "/Expenditure" },
+  { label: "Dashboard", icon: LayoutDashboard, path: "/Dashboard", roles: ['admin', 'normal'] },
+  { 
+    label: "Accounts", 
+    icon: User, 
+    path: "/Accounts",
+    roles: ['admin'],
+    subItems: [
+      { label: "Capital Account", icon: CreditCard, path: "/Accounts/capital" },
+      { label: "Financial Account", icon: Wallet, path: "/Accounts/financial" },
+      { label: "Transactions", icon: ArrowLeftRight, path: "/Accounts/transactions" },
+    ]
+  },
+  
+  { label: "Users", icon: Users, path: "/Users", roles: ['admin'] },
+  { label: "Categories", icon: FolderOpen, path: "/Categories", roles: ['admin'] },
+  { label: "Store Management", icon: Store, path: "/Stores", roles: ['admin'] },
+  { label: "Products", icon: Package, path: "/Products", roles: ['admin', 'normal'] },
+  { label: "Customers", icon: UserCheck, path: "/Customers", roles: ['admin', 'normal'] },
+  { label: "Suppliers", icon: Truck, path: "/Suppliers", roles: ['admin', 'normal'] },
+  { label: "Business Assets", icon: FolderOpen, path: "/Assets", roles: ['admin'] },
+  {
+    label: "Financial Reports", icon: BarChart3, path: "/Reports", roles: ['admin'],
+  },
+  { label: "Purchases", icon: ShoppingBag, path: "/Purchases", roles: ['admin'] },
+  { label: "Sales", icon: Receipt, path: "/Sales", roles: ['admin', 'normal'] },
+  { label: "Product Analysis", icon: BarChart3, path: "/Analysis", roles: ['admin'] },
+  { 
+    label: "Debts",
+    icon: CreditCard,
+    path: "/Debts",
+    roles: ['admin', 'normal'],
+    subItems: [
+        { label: "Payables", icon: CreditCard, path: "/Debts/Payables" },
+        { label: "Receivables", icon: CreditCard, path: "/Debts/Receivables" },
+    ]
+ },
+  { label: "Expenditure", icon: Wallet, path: "/Expenditure", roles: ['admin', 'normal'] },
 ]
 
 const bottomNavItems = [
-  { label: "Notifications", icon: Bell, path: "/Notifications" },
-  { label: "Settings", icon: Settings, path: "/IMSSettings" },
-  { label: "Support", icon: HelpCircle, path: "/Support" },
+  { label: "Notifications", icon: Bell, path: "/Notifications", roles: ['admin', 'normal'] },
+  { label: "Settings", icon: Settings, path: "/Settings", roles: ['admin'] },
+  { label: "Support", icon: HelpCircle, path: "/Support", roles: ['admin', 'normal'] },
 ]
 
 interface SideNavProps {
@@ -67,64 +95,198 @@ interface SideNavProps {
 
 const SideNav = ({ defaultCollapsed = false }: SideNavProps) => {
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed)
-  const [currentPage, setCurrentPage] = useState(0)
   const [isDarkMode, setIsDarkMode] = useState(true)
+  const [expandedItems, setExpandedItems] = useState<number[]>([])
   const router = useRouter()
+  const pathname = usePathname()
+
+  const { user} = useAuthStore()
+  const { unreadCount, startPolling, stopPolling } = useNotificationsStore()
+
+  const userRole = user?.role || 'normal'
+  const filteredNavItems = navItems.filter(item => item.roles.includes(userRole))
+  const filteredBottomNavItems = bottomNavItems.filter(item => item.roles.includes(userRole))
+
+  // Start polling for notifications when component mounts
+  useEffect(() => {
+    startPolling()
+    return () => {
+      stopPolling()
+    }
+  }, [startPolling, stopPolling])
 
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode)
     document.documentElement.classList.toggle("dark")
   }
 
+  const toggleExpanded = (index: number) => {
+    setExpandedItems(prev => 
+      prev.includes(index) 
+        ? prev.filter(i => i !== index)
+        : [...prev, index]
+    )
+  }
+
   const NavItem = ({
     item,
     index,
     isActive,
+    notificationCount = 0,
   }: {
-    item: (typeof navItems)[0]
+    item: (typeof navItems)[0] | (typeof bottomNavItems)[0]
     index: number
     isActive: boolean
+    notificationCount?: number
   }) => {
     const Icon = item.icon
+    const hasSubItems = 'subItems' in item && item.subItems && item.subItems.length > 0
+    const isExpanded = expandedItems.includes(index)
 
     const content = (
-      <button
-        onClick={() => {
-          router.push(item.path)
-          setCurrentPage(index)
-        }}
-        className={cn(
-          "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
-          "hover:bg-gray-100 dark:hover:bg-gray-800",
-          "focus:outline-none focus:ring-2 focus:ring-primary/50",
-          "group relative",
-          isActive
-            ? "bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary-foreground font-medium"
-            : "text-gray-600 dark:text-gray-400",
-          isCollapsed && "justify-center px-2",
-        )}
-      >
-        <Icon
+      <div>
+        <button
+          onClick={() => {
+            if (hasSubItems) {
+              toggleExpanded(index)
+            } else {
+              router.push(item.path)
+            }
+          }}
           className={cn(
-            "w-5 h-5 flex-shrink-0 transition-colors",
+            "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
+            "hover:bg-gray-100 dark:hover:bg-gray-800",
+            "focus:outline-none focus:ring-2 focus:ring-primary/50",
+            "group relative",
             isActive
-              ? "text-primary dark:text-blue-400"
-              : "text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200",
+              ? "bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary-foreground font-medium"
+              : "text-gray-600 dark:text-gray-400",
+            isCollapsed && "justify-center px-2",
           )}
-        />
-        {!isCollapsed && <span className="text-sm truncate">{item.label}</span>}
-        {isActive && (
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary dark:bg-blue-400 rounded-r-full" />
+        >
+          <Icon
+            className={cn(
+              "w-5 h-5 flex-shrink-0 transition-colors",
+              isActive
+                ? "text-primary dark:text-blue-400"
+                : "text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200",
+            )}
+          />
+          {!isCollapsed && (
+            <>
+              <span className="text-sm truncate flex-1 text-left">{item.label}</span>
+              {item.path === "/Notifications" && notificationCount > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="ml-auto h-5 min-w-5 px-1.5 flex items-center justify-center text-xs"
+                >
+                  {notificationCount > 99 ? "99+" : notificationCount}
+                </Badge>
+              )}
+              {hasSubItems && (
+                <ChevronDown 
+                  className={cn(
+                    "w-4 h-4 transition-transform",
+                    isExpanded && "rotate-180"
+                  )}
+                />
+              )}
+            </>
+          )}
+          {isActive && (
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary dark:bg-blue-400 rounded-r-full" />
+          )}
+        </button>
+
+        {/* Sub Items */}
+        {hasSubItems && !isCollapsed && isExpanded && (
+          <div className="ml-8 mt-1 space-y-1">
+            {'subItems' in item && item.subItems?.map((subItem: any, subIndex: number) => (
+              <button
+                key={subIndex}
+                onClick={() => {
+                  router.push(subItem.path)
+                }}
+                className={cn(
+                  "w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200",
+                  "hover:bg-gray-100 dark:hover:bg-gray-800",
+                  "text-sm text-gray-600 dark:text-gray-400",
+                  "hover:text-gray-900 dark:hover:text-gray-200"
+                )}
+              >
+                {subItem.icon && <subItem.icon className="w-4 h-4 mr-2" />}
+                <span className="truncate">{subItem.label}</span>
+              </button>
+            ))}
+          </div>
         )}
-      </button>
+      </div>
     )
+
+    if (isCollapsed && hasSubItems) {
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className={cn(
+                "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
+                "hover:bg-gray-100 dark:hover:bg-gray-800",
+                "focus:outline-none focus:ring-2 focus:ring-primary/50",
+                "group relative justify-center px-2",
+                isActive
+                  ? "bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary-foreground font-medium"
+                  : "text-gray-600 dark:text-gray-400",
+              )}
+            >
+              <Icon
+                className={cn(
+                  "w-5 h-5 flex-shrink-0 transition-colors",
+                  isActive
+                    ? "text-primary dark:text-blue-400"
+                    : "text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200",
+                )}
+              />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="right" className="dark:bg-gray-900 dark:border-gray-800">
+            <DropdownMenuLabel className="dark:text-white">{item.label}</DropdownMenuLabel>
+            <DropdownMenuSeparator className="dark:bg-gray-800" />
+            {'subItems' in item && item.subItems?.map((subItem: any, subIndex: number) => (
+              <DropdownMenuItem
+                key={subIndex}
+                onClick={() => {
+                  router.push(subItem.path)
+                }}
+                className="cursor-pointer dark:text-gray-300 dark:focus:bg-gray-800"
+              >
+                {subItem.icon && <subItem.icon className="w-4 h-4 mr-2" />}
+                {subItem.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )
+    }
 
     if (isCollapsed) {
       return (
         <Tooltip delayDuration={0}>
-          <TooltipTrigger asChild>{content}</TooltipTrigger>
+          <TooltipTrigger asChild>
+            <div className="relative">
+              {content}
+              {item.path === "/Notifications" && notificationCount > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-1 -right-1 h-5 min-w-5 px-1.5 flex items-center justify-center text-xs"
+                >
+                  {notificationCount > 99 ? "99+" : notificationCount}
+                </Badge>
+              )}
+            </div>
+          </TooltipTrigger>
           <TooltipContent side="right" className="font-medium text-gray-900 dark:bg-gray-800 dark:text-white">
             {item.label}
+            {item.path === "/Notifications" && notificationCount > 0 && ` (${notificationCount})`}
           </TooltipContent>
         </Tooltip>
       )
@@ -160,8 +322,8 @@ const SideNav = ({ defaultCollapsed = false }: SideNavProps) => {
                 </Avatar>
                 {!isCollapsed && (
                   <div className="flex-1 text-left min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">Daniel Smith</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">daniel@gmail.com</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{user?.username || "Guest"}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email || "guest@example.com"}</p>
                   </div>
                 )}
               </button>
@@ -185,7 +347,9 @@ const SideNav = ({ defaultCollapsed = false }: SideNavProps) => {
                 Notifications
               </DropdownMenuItem>
               <DropdownMenuSeparator className="dark:bg-gray-800" />
-              <DropdownMenuItem className="cursor-pointer text-red-600 dark:text-red-400 dark:focus:bg-gray-800">
+              <DropdownMenuItem onClick={()=>{
+                useAuthStore.getState().logout()
+              }} className="cursor-pointer text-red-600 dark:text-red-400 dark:focus:bg-gray-800">
                 <LogOut className="w-4 h-4 mr-2" />
                 Sign Out
               </DropdownMenuItem>
@@ -195,20 +359,21 @@ const SideNav = ({ defaultCollapsed = false }: SideNavProps) => {
 
         {/* Main Navigation */}
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700 scrollbar-track-transparent">
-          {navItems.map((item, index) => (
-            <NavItem key={index} item={item} index={index} isActive={currentPage === index} />
+          {filteredNavItems.map((item, index) => (
+            <NavItem key={index} item={item} index={index} isActive={pathname === item.path || (item.subItems ? item.subItems.some(sub => pathname === sub.path) : false)} />
           ))}
         </nav>
 
         {/* Bottom Section */}
         <div className="border-t border-gray-200 dark:border-gray-800 p-3 space-y-1">
           {/* Bottom Nav Items */}
-          {bottomNavItems.map((item, index) => (
+          {filteredBottomNavItems.map((item, index) => (
             <NavItem
               key={`bottom-${index}`}
               item={item}
               index={navItems.length + index}
-              isActive={currentPage === navItems.length + index}
+              isActive={pathname === item.path}
+              notificationCount={item.path === "/Notifications" ? unreadCount : 0}
             />
           ))}
 

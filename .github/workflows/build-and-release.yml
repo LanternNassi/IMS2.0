@@ -1,0 +1,122 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'  # Trigger on version tags like v1.0.0
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for tags
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '7.0.x'
+
+      - name: Get version from package.json
+        id: package-version
+        run: |
+          $version = (Get-Content package.json | ConvertFrom-Json).version
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+          echo "App version: $version"
+
+      - name: Determine release type
+        id: release-type
+        run: |
+          if ("${{ github.ref }}" -like "refs/tags/*") {
+            echo "type=release" >> $env:GITHUB_OUTPUT
+            echo "Release type: Full release (tagged)"
+          } else {
+            echo "type=draft" >> $env:GITHUB_OUTPUT
+            echo "Release type: Draft (branch push)"
+          }
+
+      - name: Install root dependencies
+        run: |
+          npm install
+          echo "Root dependencies installed"
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: |
+          npm install
+          echo "Frontend dependencies installed"
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: |
+          npm run build
+          echo "Frontend build completed"
+
+      - name: Build backend
+        working-directory: ./backend/ImsServer
+        run: |
+          dotnet publish -c Release -o ../../dist/backend --self-contained true -r win-x64
+          echo "Backend build completed"
+
+      - name: Build and Publish Electron app
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          if ("${{ github.ref }}" -like "refs/tags/*") {
+            Write-Host "Building and publishing to GitHub Releases (tagged version)..."
+            npm run dist:win -- --publish always
+          } else {
+            Write-Host "Building installer (no publish - branch push)..."
+            npm run dist:win
+          }
+          Write-Host "Build completed"
+
+      - name: Upload release artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: installer-${{ steps.package-version.outputs.version }}
+          path: release/*.exe
+          retention-days: 30
+
+      - name: Create release summary
+        if: success()
+        run: |
+          $isTag = "${{ github.ref }}" -like "refs/tags/*"
+          echo "## 🚀 Build and Release Summary" >> $env:GITHUB_STEP_SUMMARY
+          echo "" >> $env:GITHUB_STEP_SUMMARY
+          echo "### Build Status" >> $env:GITHUB_STEP_SUMMARY
+          echo "- ✅ Frontend built successfully" >> $env:GITHUB_STEP_SUMMARY
+          echo "- ✅ Backend built successfully" >> $env:GITHUB_STEP_SUMMARY
+          echo "- ✅ Electron installer created" >> $env:GITHUB_STEP_SUMMARY
+          if ($isTag) {
+            echo "- ✅ Release published to GitHub" >> $env:GITHUB_STEP_SUMMARY
+          } else {
+            echo "- ℹ️ Build completed (not published - branch push)" >> $env:GITHUB_STEP_SUMMARY
+          }
+          echo "" >> $env:GITHUB_STEP_SUMMARY
+          echo "### Release Information" >> $env:GITHUB_STEP_SUMMARY
+          echo "- **Version:** ${{ steps.package-version.outputs.version }}" >> $env:GITHUB_STEP_SUMMARY
+          echo "- **Release Type:** ${{ steps.release-type.outputs.type }}" >> $env:GITHUB_STEP_SUMMARY
+          echo "- **Commit:** ${{ github.sha }}" >> $env:GITHUB_STEP_SUMMARY
+          echo "- **Branch/Tag:** ${{ github.ref_name }}" >> $env:GITHUB_STEP_SUMMARY
+          echo "" >> $env:GITHUB_STEP_SUMMARY
+          echo "### Artifacts" >> $env:GITHUB_STEP_SUMMARY
+          if ($isTag) {
+            echo "The installer has been uploaded as an artifact and published to GitHub Releases." >> $env:GITHUB_STEP_SUMMARY
+          } else {
+            echo "The installer has been uploaded as an artifact. To publish, create and push a version tag (e.g., v1.0.0)." >> $env:GITHUB_STEP_SUMMARY
+          }
+

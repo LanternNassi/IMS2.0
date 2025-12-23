@@ -1,4 +1,5 @@
 using ImsServer.Models.ExpenditureX;
+using ImsServer.Models.FinancialAccountX;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ImsServer.Models.ExpenditureX
@@ -10,6 +11,11 @@ namespace ImsServer.Models.ExpenditureX
         public String Description { get; set; }
         public decimal Amount { get; set; }
         public Guid ExpenditureCategoryId { get; set; }
+
+        public Guid? LinkedFinancialAccountId { get; set; }
+
+        [ForeignKey("LinkedFinancialAccountId")]
+        public virtual FinancialAccount? LinkedFinancialAccount { get; set; }
 
         [ForeignKey("ExpenditureCategoryId")]
         public ExpenditureCategory ExpenditureCategory { get; set; }
@@ -23,6 +29,7 @@ namespace ImsServer.Models.ExpenditureX
         public String Description { get; set; }
         public decimal Amount { get; set; }
         public Guid ExpenditureCategoryId { get; set; }
+        public Guid? LinkedFinancialAccountId { get; set; }
         public ExpenditureCategoryDto? ExpenditureCategory { get; set; }
     }
 
@@ -32,6 +39,7 @@ namespace ImsServer.Models.ExpenditureX
         public string Name { get; set; }
         public string? Description { get; set; }
         public decimal Amount { get; set; }
+        public Guid? LinkedFinancialAccountId { get; set; }
         public Guid ExpenditureCategoryId { get; set; }
     }
 

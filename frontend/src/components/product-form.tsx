@@ -388,7 +388,7 @@ export function ProductForm({
                   onChange={handleChange}
                   fullWidth
                   variant="outlined"
-                  InputProps={{ startAdornment: "$" }}
+                  InputProps={{ startAdornment: "Shs." }}
                 />
               </Grid>
               <Grid item xs={12} md={4}>
@@ -400,7 +400,7 @@ export function ProductForm({
                   onChange={handleChange}
                   fullWidth
                   variant="outlined"
-                  InputProps={{ startAdornment: "$" }}
+                  InputProps={{ startAdornment: "Shs." }}
                 />
               </Grid>
               <Grid item xs={12} md={4}>
@@ -412,7 +412,7 @@ export function ProductForm({
                   onChange={handleChange}
                   fullWidth
                   variant="outlined"
-                  InputProps={{ startAdornment: "$" }}
+                  InputProps={{ startAdornment: "Shs." }}
                 />
               </Grid>
               <Grid item xs={12} md={6}>
@@ -591,7 +591,7 @@ export function ProductForm({
                           onChange={(e) => updateVariation(index, "costPrice", Number(e.target.value))}
                           fullWidth
                           variant="outlined"
-                          InputProps={{ startAdornment: "$" }}
+                          InputProps={{ startAdornment: "Shs." }}
                           disabled={variation.isMain}
                         />
                       </Grid>
@@ -603,7 +603,7 @@ export function ProductForm({
                           onChange={(e) => updateVariation(index, "retailPrice", Number(e.target.value))}
                           fullWidth
                           variant="outlined"
-                          InputProps={{ startAdornment: "$" }}
+                          InputProps={{ startAdornment: "Shs." }}
                           disabled={variation.isMain}
                         />
                       </Grid>
@@ -615,7 +615,7 @@ export function ProductForm({
                           onChange={(e) => updateVariation(index, "wholeSalePrice", Number(e.target.value))}
                           fullWidth
                           variant="outlined"
-                          InputProps={{ startAdornment: "$" }}
+                          InputProps={{ startAdornment: "Shs." }}
                           disabled={variation.isMain}
                         />
                       </Grid>

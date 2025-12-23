@@ -246,14 +246,28 @@ namespace ImsServer.Controllers
                     Description = dto.Description,
                     DebtType = dto.DebtType,
                     SaleId = dto.SaleId,
-                    PaymentMethod = dto.PaymentMethod
+                    PaymentMethod = dto.PaymentMethod,
+                    LinkedFinancialAccountId = dto.LinkedFinancialAccountId
                 };
 
                 _db.SalesDebtsTrackers.Add(payment);
 
                 // Update sale paid amount
                 sale.PaidAmount += dto.PaidAmount;
+                sale.FinalAmount += dto.PaidAmount;
                 sale.OutstandingAmount = sale.TotalAmount - sale.PaidAmount;
+
+                // Update the linked account balance if applicable
+                if (dto.LinkedFinancialAccountId.HasValue)
+                {
+                    var account = await _db.FinancialAccounts
+                        .FirstOrDefaultAsync(fa => fa.Id == dto.LinkedFinancialAccountId.Value);
+
+                    if (account != null)
+                    {
+                        account.Balance += dto.PaidAmount;
+                    }
+                }
 
                 // Mark sale as paid if fully paid
                 if (sale.PaidAmount >= sale.TotalAmount)
@@ -307,7 +321,34 @@ namespace ImsServer.Controllers
                     payment.Sale.OutstandingAmount = payment.Sale.TotalAmount - payment.Sale.PaidAmount;
                     payment.Sale.IsPaid = payment.Sale.PaidAmount >= payment.Sale.TotalAmount;
 
+
+
                     payment.PaidAmount = dto.PaidAmount.Value;
+
+                    // If linked account is changed, adjust balances accordingly
+                    if (dto.LinkedFinancialAccountId.HasValue && dto.LinkedFinancialAccountId != payment.LinkedFinancialAccountId)
+                    {
+                        // Deduct from old account
+                        if (payment.LinkedFinancialAccountId.HasValue)
+                        {
+                            var oldAccount = await _db.FinancialAccounts
+                                .FirstOrDefaultAsync(fa => fa.Id == payment.LinkedFinancialAccountId.Value);
+                            if (oldAccount != null)
+                            {
+                                oldAccount.Balance -= payment.PaidAmount;
+                            }
+                        }
+
+                        // Add to new account
+                        var newAccount = await _db.FinancialAccounts
+                            .FirstOrDefaultAsync(fa => fa.Id == dto.LinkedFinancialAccountId.Value);
+                        if (newAccount != null)
+                        {
+                            newAccount.Balance += payment.PaidAmount;
+                        }
+
+                        payment.LinkedFinancialAccountId = dto.LinkedFinancialAccountId;
+                    }
                 }
 
                 if (dto.Description != null)
@@ -354,6 +395,18 @@ namespace ImsServer.Controllers
                 payment.Sale.PaidAmount -= payment.PaidAmount;
                 payment.Sale.OutstandingAmount = payment.Sale.TotalAmount - payment.Sale.PaidAmount;
                 payment.Sale.IsPaid = payment.Sale.PaidAmount >= payment.Sale.TotalAmount;
+
+                // Adjust linked account balance if applicable
+                if (payment.LinkedFinancialAccountId.HasValue)
+                {
+                    var account = await _db.FinancialAccounts
+                        .FirstOrDefaultAsync(fa => fa.Id == payment.LinkedFinancialAccountId.Value);
+
+                    if (account != null)
+                    {
+                        account.Balance -= payment.PaidAmount;
+                    }
+                }
 
                 _db.SoftDelete(payment);
                 await _db.SaveChangesAsync();
