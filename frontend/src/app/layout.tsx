@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/lib/ThemeProvider";
 import { Toaster } from "@/components/ui/toaster";
 import SideNav from "@/components/SideNav";
 import UpperNav from "@/components/UpperNav";
+import { SystemConfigInitializer } from "@/components/SystemConfigInitializer";
 
 export const metadata: Metadata = {
   title: "Inventory Management System",
@@ -18,6 +19,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <SystemConfigInitializer />
         <ThemeProvider>
           <div className="flex h-screen bg-primary dark:bg-primary-dark text-black dark:text-white">
             <SideNav/>
