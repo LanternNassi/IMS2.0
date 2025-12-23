@@ -9,7 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { PDFDownloadLink, pdf } from "@react-pdf/renderer"
 import { BalanceSheetPdfDocument } from "@/components/reports/pdf"
 import api from "@/Utils/Request"
-
+import { useSystemConfigStore } from "@/store/useSystemConfigStore"
 export type BalanceSheetData = {
   asOfUtc: string
   reportingCurrency: string
@@ -55,17 +55,18 @@ export type BalanceSheetData = {
 
 interface BalanceSheetProps {
   data?: BalanceSheetData
-  companyName?: string
-  companyAddress?: string
+  companyName: string
+  companyAddress: string
   embedded?: boolean
 }
 
 export function BalanceSheet({
   data,
-  companyName = "Inventory Management System",
+  companyName = "Admin@enterprises",
   companyAddress = "Kampala, Uganda",
   embedded = false,
 }: BalanceSheetProps) {
+  const { config } = useSystemConfigStore()
   const [fetchedData, setFetchedData] = useState<BalanceSheetData | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)

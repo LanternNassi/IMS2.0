@@ -175,6 +175,20 @@ namespace ImsServer.Controllers
                 return BadRequest("Financial account not found.");
             }
 
+            // Check and auto-close previous business day if open
+            var previousBusinessDate = businessDate.AddDays(-1);
+            var previousRecord = await _db.DailyCashReconciliations
+                .FirstOrDefaultAsync(x => x.FinancialAccountId == dto.FinancialAccountId && x.BusinessDateUtc == previousBusinessDate);
+
+            if (previousRecord != null && !previousRecord.ClosedAtUtc.HasValue)
+            {
+                previousRecord.ClosedAtUtc = utcNow;
+                previousRecord.ClosingSystemBalance = account.Balance;
+                previousRecord.ClosingVariance = previousRecord.ClosingCountedBalance.HasValue
+                    ? previousRecord.ClosingCountedBalance.Value - account.Balance
+                    : null;
+            }
+
             var existing = await _db.DailyCashReconciliations
                 .FirstOrDefaultAsync(x => x.FinancialAccountId == dto.FinancialAccountId && x.BusinessDateUtc == businessDate);
 

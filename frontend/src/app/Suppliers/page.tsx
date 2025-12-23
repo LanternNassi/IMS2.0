@@ -200,11 +200,9 @@ const page = () => {
   };
 
   const exportToExcel = async () => {
-    // @ts-expect-error : window.electron is resolved at build time
     if (window.electron) {
-      const supplierExcelSheet = suppliers;
+      const supplierExcelSheet = suppliers ?? [];
 
-      // @ts-expect-error : window.electron is resolved at build time
       window.electron.exportExcel(supplierExcelSheet, "Suppliers");
 
       toast({

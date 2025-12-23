@@ -7,6 +7,20 @@ const http = require("http");
 const fs = require("fs");
 const url = require("url");
 
+// Use dynamic import for electron-store (ESM)
+// let store;
+// async function initStore() {
+//   const Store = (await import('electron-store')).default;
+//   store = new Store({
+//     encryptionKey: 'your-encryption-key-here', // Use a secure key in production
+//   });
+// }
+
+const Store = require('electron-store');
+const store = new Store({
+  encryptionKey: 'your-encryption-key-here',
+});
+
 let mainWindow;
 let loginWindow;
 let backendProcess = null;
@@ -114,7 +128,7 @@ function startFrontendServer() {
     });
     
     frontendServer.listen(FRONTEND_PORT, () => {
-      console.log(`Frontend server running on http://localhost:${FRONTEND_PORT}`);
+      console.log(`Frontend server running on http://0.0.0.0:${FRONTEND_PORT}`);
       resolve();
     });
   });
@@ -148,7 +162,7 @@ function startBackend() {
       env: { 
         ...process.env, 
         ASPNETCORE_ENVIRONMENT: "Production",
-        ASPNETCORE_URLS: `http://localhost:${BACKEND_PORT}`
+        ASPNETCORE_URLS: `http://*:${BACKEND_PORT}`
       }
     });
 
@@ -218,9 +232,12 @@ function createMainWindow() {
     icon: path.join(__dirname, "icon.ico"),
   });
 
-  if(isDev){
-    mainWindow.removeMenu();
-  }
+  // if(isDev){
+  //   mainWindow.removeMenu();
+  // }
+
+  // mainWindow.removeMenu();
+
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
@@ -252,7 +269,11 @@ function createMainWindow() {
 
 app.on("ready", async () => {
   try {
+    // Initialize store first
+    // await initStore();
     console.log("App ready, starting servers...");
+    
+    // Start servers first (needed for login API)
     if (!isDev) {
       console.log("Starting frontend server...");
       await startFrontendServer();
@@ -263,7 +284,24 @@ app.on("ready", async () => {
     await startBackend();
     console.log("Checking backend server health...");
     await checkServerHealth(BACKEND_PORT);
-    console.log("All servers ready, creating login window...");
+    
+    // Now check if user is already logged in
+    const savedAuth = store.get('auth');
+    if (savedAuth && savedAuth.token) {
+      console.log("Found saved authentication, attempting auto-login...");
+      // Verify token is still valid
+      const isValid = await verifyToken(savedAuth.token);
+      if (isValid) {
+        console.log("Token valid, skipping login...");
+        createMainWindow();
+        return;
+      } else {
+        console.log("Token expired, showing login...");
+        store.delete('auth');
+      }
+    }
+    
+    console.log("No valid auth found, creating login window...");
     createLoginWindow();
   } catch (error) {
     console.error("Failed to start application:", error);
@@ -274,23 +312,125 @@ app.on("ready", async () => {
     app.quit();
   }
 });
-// IPC handler for login
-ipcMain.handle('login-attempt', async (event, { username, password }) => {
-  const response = await fetch(`http://localhost:${BACKEND_PORT}/api/Auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password })
-  });
-  if (username && password && response.ok) {
 
-    if (loginWindow) {
-      loginWindow.close();
-    }
-    createMainWindow();
-    return { success: true };
-  } else {
-    return { success: false, message: 'Username and password are required.' };
+// Verify token validity
+async function verifyToken(token) {
+  try {
+    const response = await fetch(`http://localhost:${BACKEND_PORT}/api/Auth/verify`, {
+      method: 'GET',
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    return response.ok;
+  } catch (error) {
+    console.error('Token verification failed:', error);
+    return false;
   }
+}
+
+// IPC handler for login
+ipcMain.handle('login-attempt', async (event, { username, password, rememberMe }) => {
+  console.log('Login attempt received:', { username, rememberMe });
+  try {
+    const response = await fetch(`http://localhost:${BACKEND_PORT}/api/Auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      
+      // Extract user data (everything except token)
+      const { token, ...user } = data;
+      
+      // Store auth data securely in electron-store
+      const authData = {
+        token: token,
+        user: user,
+        expiresAt: data.expiresAt || Date.now() + (24 * 60 * 60 * 1000), // 24 hours default
+        rememberMe: rememberMe || false
+      };
+      
+      if (rememberMe) {
+        store.set('auth', authData);
+        console.log('Auth data saved to secure store');
+      }
+      
+      // Close login window and create main window
+      if (loginWindow) {
+        loginWindow.close();
+      }
+      createMainWindow();
+      
+      // Send auth data to renderer process after window is ready
+      mainWindow.webContents.on('did-finish-load', () => {
+        console.log('Sending auth data to renderer:', authData);
+        mainWindow.webContents.send('auth-data', authData);
+      });
+      
+      return { success: true, data: authData };
+    } else {
+      const error = await response.json();
+      return { 
+        success: false, 
+        message: error.message || 'Invalid username or password.' 
+      };
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    return { 
+      success: false, 
+      message: 'Connection error. Please try again.' 
+    };
+  }
+});
+
+// IPC handler to get stored auth data
+ipcMain.handle('get-auth-data', async () => {
+  const authData = store.get('auth');
+  if (authData && authData.token) {
+    // Check if token is expired
+    if (authData.expiresAt && Date.now() > authData.expiresAt) {
+      store.delete('auth');
+      return null;
+    }
+    return authData;
+  }
+  return null;
+});
+
+// IPC handler to save auth data
+ipcMain.handle('save-auth-data', async (event, authData) => {
+  store.set('auth', authData);
+  return { success: true };
+});
+
+// IPC handler to clear auth data (logout)
+ipcMain.handle('logout', async () => {
+  store.delete('auth');
+  
+  // Close main window and show login window
+  if (mainWindow) {
+    mainWindow.close();
+  }
+  createLoginWindow();
+  
+  return { success: true };
+});
+
+// IPC handler to update token (for token refresh)
+ipcMain.handle('update-token', async (event, newToken, expiresAt) => {
+  const authData = store.get('auth');
+  if (authData) {
+    authData.token = newToken;
+    authData.expiresAt = expiresAt;
+    store.set('auth', authData);
+    return { success: true };
+  }
+  return { success: false };
 });
 
 app.on("window-all-closed", () => {

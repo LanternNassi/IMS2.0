@@ -20,6 +20,7 @@ import api from "@/Utils/Request"
 import { useRouter } from "next/navigation"
 
 import { supplier, useSupplierStore } from "@/store/useSupplierStore"
+import { useAuthStore } from "@/store/useAuthStore"
 
 const purchaseFormSchema = z.object({
   supplierId: z.string().min(1, "Supplier is required"),
@@ -59,6 +60,7 @@ export default function AddPurchase() {
 
   // Temporary: Fetch first user ID for processedBy
   const [currentUserId, setCurrentUserId] = useState<string>("")
+  const { user } = useAuthStore()
 
   // Refs for keyboard navigation
   const supplierSearchRef = useRef<HTMLInputElement>(null)
@@ -311,6 +313,11 @@ export default function AddPurchase() {
       return
     }
 
+    if (user?.username == "master"){
+      setSnackbar({ open: true, message: "Cannot process purchase. Logged in as master user." })
+      return
+    }
+
     if (items.length === 0) {
       setSnackbar({ open: true, message: "Please add at least one product to the purchase." })
       return
@@ -326,7 +333,7 @@ export default function AddPurchase() {
     const purchaseData: Purchase = {
       id: crypto.randomUUID(),
       supplierId: data.supplierId,
-      processedBy: currentUserId, // Temporary: Use first user's ID
+      processedBy: user?.id || currentUserId, // Temporary: Use first user's ID
       supplierName: selectedSupplierDetails.companyName || "",
       items,
       totalAmount,

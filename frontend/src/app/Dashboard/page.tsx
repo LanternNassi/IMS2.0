@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, use } from "react"
+import { useState, useEffect } from "react"
 import {
   ArrowDown,
   ArrowUp,  
@@ -35,60 +35,63 @@ import {
   XAxis,
   YAxis,
 } from "@/components/ui/chart"
+import { useDashboardStore } from "@/store/useDashboardStore"
 
+const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"]
 
 export default function AnalyticsDashboard() {
   const [darkMode] = useState(true)
   const [dateRange, setDateRange] = useState("thisMonth")
+  
+  const {
+    summary,
+    sales,
+    products,
+    customers,
+    transactions,
+    suppliers,
+    recentTransactions,
+    inventoryAlerts,
+    loading,
+    error,
+    fetchDashboardData,
+    refreshDashboard,
+  } = useDashboardStore()
 
+  useEffect(() => {
+    fetchDashboardData(dateRange)
+  }, [dateRange, fetchDashboardData])
 
-  // Sample data for charts
-  const salesData = [
-    { name: "Jan", total: 1500 },
-    { name: "Feb", total: 2300 },
-    { name: "Mar", total: 3200 },
-    { name: "Apr", total: 2800 },
-    { name: "May", total: 3600 },
-    { name: "Jun", total: 4100 },
-    { name: "Jul", total: 3800 },
-    { name: "Aug", total: 4300 },
-    { name: "Sep", total: 4800 },
-    { name: "Oct", total: 5200 },
-    { name: "Nov", total: 4900 },
-    { name: "Dec", total: 5800 },
-  ]
+  const handleRefresh = () => {
+    refreshDashboard(dateRange)
+  }
 
-  const productCategoryData = [
-    { name: "Electronics", value: 35 },
-    { name: "Clothing", value: 25 },
-    { name: "Food", value: 20 },
-    { name: "Home", value: 15 },
-    { name: "Other", value: 5 },
-  ]
+  const handleDateRangeChange = (value: string) => {
+    setDateRange(value)
+  }
 
-  const customerData = [
-    { name: "New", value: 65 },
-    { name: "Returning", value: 35 },
-  ]
+  // Format currency
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'UGX',
+    }).format(amount)
+  }
 
-  const transactionData = [
-    { name: "Mon", sales: 20, purchases: 15 },
-    { name: "Tue", sales: 25, purchases: 18 },
-    { name: "Wed", sales: 30, purchases: 20 },
-    { name: "Thu", sales: 28, purchases: 22 },
-    { name: "Fri", sales: 35, purchases: 25 },
-    { name: "Sat", sales: 40, purchases: 30 },
-    { name: "Sun", sales: 32, purchases: 18 },
-  ]
+  // Format date
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+    const diffDays = Math.floor(diffHours / 24)
 
-  const supplierData = [
-    { name: "Supplier A", value: 40 },
-    { name: "Supplier B", value: 30 },
-    { name: "Supplier C", value: 20 },
-    { name: "Others", value: 10 },
-  ]
-
-  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"]
+    if (diffHours < 1) return 'Just now'
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`
+    if (diffDays === 1) return 'Yesterday'
+    if (diffDays < 7) return `${diffDays} days ago`
+    return date.toLocaleDateString()
+  }
 
   return (
     <div className={`min-h-screen dark:bg-gray-900`}>
@@ -105,7 +108,7 @@ export default function AnalyticsDashboard() {
                     <p className="text-muted-foreground">Overview of your inventory system performance</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Select value={dateRange} onValueChange={setDateRange}>
+                    <Select value={dateRange} onValueChange={handleDateRangeChange}>
                       <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Select date range" />
                       </SelectTrigger>
@@ -118,8 +121,14 @@ export default function AnalyticsDashboard() {
                         <SelectItem value="thisYear">This Year</SelectItem>
                       </SelectContent>
                     </Select>
-                    <Button className="dark:bg-gray-800" variant="outline" size="icon">
-                      <RefreshCw className="h-4 w-4" />
+                    <Button 
+                      className="dark:bg-gray-800" 
+                      variant="outline" 
+                      size="icon"
+                      onClick={handleRefresh}
+                      disabled={loading}
+                    >
+                      <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                     </Button>
                     <Button className="dark:bg-gray-800" variant="outline" size="icon">
                       <Download className="h-4 w-4" />
@@ -135,13 +144,25 @@ export default function AnalyticsDashboard() {
                       <DollarSign className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">$45,231.89</div>
+                      <div className="text-2xl font-bold">
+                        {loading ? "Loading..." : summary ? formatCurrency(summary.totalRevenue) : "UGX 0.00"}
+                      </div>
                       <p className="text-xs text-muted-foreground">
-                        <span className="text-green-500 flex items-center">
-                          <ArrowUp className="mr-1 h-3 w-3" />
-                          +20.1%
-                        </span>{" "}
-                        from last month
+                        {summary && summary.revenueChange !== 0 && (
+                          <span className={`${summary.revenueChange > 0 ? 'text-green-500' : 'text-red-500'} flex items-center`}>
+                            {summary.revenueChange > 0 ? (
+                              <ArrowUp className="mr-1 h-3 w-3" />
+                            ) : (
+                              <ArrowDown className="mr-1 h-3 w-3" />
+                            )}
+                            {summary.revenueChange > 0 ? '+' : ''}{summary.revenueChange.toFixed(1)}%
+                          </span>
+                        )}
+                        {summary && summary.revenueChange === 0 && (
+                          <span className="text-muted-foreground">No change</span>
+                        )}
+                        {!summary && !loading && <span className="text-muted-foreground">No data</span>}
+                        {" "}from last period
                       </p>
                     </CardContent>
                   </Card>
@@ -151,13 +172,25 @@ export default function AnalyticsDashboard() {
                       <Package className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">2,345</div>
+                      <div className="text-2xl font-bold">
+                        {loading ? "Loading..." : summary ? summary.totalProducts.toLocaleString() : "0"}
+                      </div>
                       <p className="text-xs text-muted-foreground">
-                        <span className="text-green-500 flex items-center">
-                          <ArrowUp className="mr-1 h-3 w-3" />
-                          +12.5%
-                        </span>{" "}
-                        from last month
+                        {summary && summary.productsChange !== 0 && (
+                          <span className={`${summary.productsChange > 0 ? 'text-green-500' : 'text-red-500'} flex items-center`}>
+                            {summary.productsChange > 0 ? (
+                              <ArrowUp className="mr-1 h-3 w-3" />
+                            ) : (
+                              <ArrowDown className="mr-1 h-3 w-3" />
+                            )}
+                            {summary.productsChange > 0 ? '+' : ''}{summary.productsChange.toFixed(1)}%
+                          </span>
+                        )}
+                        {summary && summary.productsChange === 0 && (
+                          <span className="text-muted-foreground">No change</span>
+                        )}
+                        {!summary && !loading && <span className="text-muted-foreground">No data</span>}
+                        {" "}from last period
                       </p>
                     </CardContent>
                   </Card>
@@ -167,13 +200,25 @@ export default function AnalyticsDashboard() {
                       <Users className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">1,893</div>
+                      <div className="text-2xl font-bold">
+                        {loading ? "Loading..." : summary ? summary.activeCustomers.toLocaleString() : "0"}
+                      </div>
                       <p className="text-xs text-muted-foreground">
-                        <span className="text-green-500 flex items-center">
-                          <ArrowUp className="mr-1 h-3 w-3" />
-                          +8.2%
-                        </span>{" "}
-                        from last month
+                        {summary && summary.customersChange !== 0 && (
+                          <span className={`${summary.customersChange > 0 ? 'text-green-500' : 'text-red-500'} flex items-center`}>
+                            {summary.customersChange > 0 ? (
+                              <ArrowUp className="mr-1 h-3 w-3" />
+                            ) : (
+                              <ArrowDown className="mr-1 h-3 w-3" />
+                            )}
+                            {summary.customersChange > 0 ? '+' : ''}{summary.customersChange.toFixed(1)}%
+                          </span>
+                        )}
+                        {summary && summary.customersChange === 0 && (
+                          <span className="text-muted-foreground">No change</span>
+                        )}
+                        {!summary && !loading && <span className="text-muted-foreground">No data</span>}
+                        {" "}from last period
                       </p>
                     </CardContent>
                   </Card>
@@ -183,13 +228,25 @@ export default function AnalyticsDashboard() {
                       <ShoppingCart className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">42</div>
+                      <div className="text-2xl font-bold">
+                        {loading ? "Loading..." : summary ? summary.pendingOrders.toLocaleString() : "0"}
+                      </div>
                       <p className="text-xs text-muted-foreground">
-                        <span className="text-red-500 flex items-center">
-                          <ArrowDown className="mr-1 h-3 w-3" />
-                          -4.5%
-                        </span>{" "}
-                        from last month
+                        {summary && summary.pendingOrdersChange !== 0 && (
+                          <span className={`${summary.pendingOrdersChange > 0 ? 'text-green-500' : 'text-red-500'} flex items-center`}>
+                            {summary.pendingOrdersChange > 0 ? (
+                              <ArrowUp className="mr-1 h-3 w-3" />
+                            ) : (
+                              <ArrowDown className="mr-1 h-3 w-3" />
+                            )}
+                            {summary.pendingOrdersChange > 0 ? '+' : ''}{summary.pendingOrdersChange.toFixed(1)}%
+                          </span>
+                        )}
+                        {summary && summary.pendingOrdersChange === 0 && (
+                          <span className="text-muted-foreground">No change</span>
+                        )}
+                        {!summary && !loading && <span className="text-muted-foreground">No data</span>}
+                        {" "}from last period
                       </p>
                     </CardContent>
                   </Card>
@@ -216,7 +273,7 @@ export default function AnalyticsDashboard() {
                         <CardContent className="h-[300px]">
                           <ResponsiveContainer width="100%" height="100%">
                             <AreaChart
-                              data={salesData}
+                              data={sales?.monthlySales || []}
                               margin={{
                                 top: 10,
                                 right: 30,
@@ -251,54 +308,30 @@ export default function AnalyticsDashboard() {
                         </CardHeader>
                         <CardContent>
                           <div className="space-y-4">
-                            <div className="flex items-center">
-                              <div className="w-full">
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="text-sm font-medium">Laptop Pro</span>
-                                  <span className="text-sm font-medium">$1,200</span>
-                                </div>
-                                <div className="w-full bg-muted rounded-full h-2">
-                                  <div className="bg-primary h-2 rounded-full" style={{ width: "85%" }}></div>
-                                </div>
-                                <div className="text-xs text-muted-foreground mt-1">85 units sold</div>
-                              </div>
-                            </div>
-                            <div className="flex items-center">
-                              <div className="w-full">
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="text-sm font-medium">Wireless Earbuds</span>
-                                  <span className="text-sm font-medium">$89</span>
-                                </div>
-                                <div className="w-full bg-muted rounded-full h-2">
-                                  <div className="bg-primary h-2 rounded-full" style={{ width: "70%" }}></div>
-                                </div>
-                                <div className="text-xs text-muted-foreground mt-1">70 units sold</div>
-                              </div>
-                            </div>
-                            <div className="flex items-center">
-                              <div className="w-full">
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="text-sm font-medium">Smart Watch</span>
-                                  <span className="text-sm font-medium">$199</span>
-                                </div>
-                                <div className="w-full bg-muted rounded-full h-2">
-                                  <div className="bg-primary h-2 rounded-full" style={{ width: "65%" }}></div>
-                                </div>
-                                <div className="text-xs text-muted-foreground mt-1">65 units sold</div>
-                              </div>
-                            </div>
-                            <div className="flex items-center">
-                              <div className="w-full">
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="text-sm font-medium">Bluetooth Speaker</span>
-                                  <span className="text-sm font-medium">$79</span>
-                                </div>
-                                <div className="w-full bg-muted rounded-full h-2">
-                                  <div className="bg-primary h-2 rounded-full" style={{ width: "50%" }}></div>
-                                </div>
-                                <div className="text-xs text-muted-foreground mt-1">50 units sold</div>
-                              </div>
-                            </div>
+                            {loading ? (
+                              <div className="text-center text-muted-foreground">Loading...</div>
+                            ) : sales?.topProducts && sales.topProducts.length > 0 ? (
+                              sales.topProducts.map((product, index) => {
+                                const maxUnits = Math.max(...sales.topProducts.map(p => p.unitsSold))
+                                const percentage = maxUnits > 0 ? (product.unitsSold / maxUnits) * 100 : 0
+                                return (
+                                  <div key={index} className="flex items-center">
+                                    <div className="w-full">
+                                      <div className="flex items-center justify-between mb-1">
+                                        <span className="text-sm font-medium">{product.name}</span>
+                                          <span className="text-sm font-medium">UGX {product.price.toLocaleString()}</span>
+                                      </div>
+                                      <div className="w-full bg-muted rounded-full h-2">
+                                        <div className="bg-primary h-2 rounded-full" style={{ width: `${percentage}%` }}></div>
+                                      </div>
+                                      <div className="text-xs text-muted-foreground mt-1">{product.unitsSold} units sold</div>
+                                    </div>
+                                  </div>
+                                )
+                              })
+                            ) : (
+                              <div className="text-center text-muted-foreground">No data available</div>
+                            )}
                           </div>
                         </CardContent>
                       </Card>
@@ -316,13 +349,7 @@ export default function AnalyticsDashboard() {
                         <CardContent className="h-[300px]">
                           <ResponsiveContainer width="100%" height="100%">
                             <BarChart
-                              data={[
-                                { name: "Electronics", stock: 450 },
-                                { name: "Clothing", stock: 320 },
-                                { name: "Food", stock: 280 },
-                                { name: "Home", stock: 190 },
-                                { name: "Other", stock: 120 },
-                              ]}
+                              data={products?.inventoryByCategory || []}
                               margin={{
                                 top: 10,
                                 right: 30,
@@ -340,7 +367,7 @@ export default function AnalyticsDashboard() {
                                   color: "hsl(var(--card-foreground))",
                                 }}
                               />
-                              <Bar dataKey="stock" fill="hsl(var(--primary))" />
+                              <Bar dataKey="stock" fill="hsl(var(--primary))" name="Stock" />
                             </BarChart>
                           </ResponsiveContainer>
                         </CardContent>
@@ -354,7 +381,7 @@ export default function AnalyticsDashboard() {
                           <ResponsiveContainer width="100%" height="100%">
                             <>
                             <Pie
-                              data={productCategoryData}
+                              data={products?.categoryDistribution || []}
                               cx="50%"
                               cy="50%"
                               labelLine={false}
@@ -363,7 +390,7 @@ export default function AnalyticsDashboard() {
                               dataKey="value"
                               label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                             >
-                              {productCategoryData.map((entry, index) => (
+                              {(products?.categoryDistribution || []).map((entry: any, index: number) => (
                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                               ))}
                             </Pie>
@@ -394,7 +421,7 @@ export default function AnalyticsDashboard() {
                           <ResponsiveContainer width="100%" height="100%">
                           <>
                           <Pie
-                              data={customerData}
+                              data={customers?.customerTypes || []}
                               cx="50%"
                               cy="50%"
                               labelLine={false}
@@ -403,7 +430,7 @@ export default function AnalyticsDashboard() {
                               dataKey="value"
                               label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                             >
-                              {customerData.map((entry, index) => (
+                              {(customers?.customerTypes || []).map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                               ))}
                             </Pie>
@@ -427,20 +454,7 @@ export default function AnalyticsDashboard() {
                         <CardContent className="h-[300px]">
                           <ResponsiveContainer width="100%" height="100%">
                             <LineChart
-                              data={[
-                                { month: "Jan", customers: 120 },
-                                { month: "Feb", customers: 145 },
-                                { month: "Mar", customers: 162 },
-                                { month: "Apr", customers: 190 },
-                                { month: "May", customers: 210 },
-                                { month: "Jun", customers: 252 },
-                                { month: "Jul", customers: 265 },
-                                { month: "Aug", customers: 280 },
-                                { month: "Sep", customers: 310 },
-                                { month: "Oct", customers: 335 },
-                                { month: "Nov", customers: 360 },
-                                { month: "Dec", customers: 390 },
-                              ]}
+                              data={customers?.monthlyGrowth || []}
                               margin={{
                                 top: 10,
                                 right: 30,
@@ -461,6 +475,7 @@ export default function AnalyticsDashboard() {
                               <Line
                                 type="monotone"
                                 dataKey="customers"
+                                name="Customers"
                                 stroke="hsl(var(--primary))"
                                 strokeWidth={2}
                                 dot={{ r: 4 }}
@@ -484,7 +499,7 @@ export default function AnalyticsDashboard() {
                         <CardContent className="h-[300px]">
                           <ResponsiveContainer width="100%" height="100%">
                             <BarChart
-                              data={transactionData}
+                              data={transactions?.weeklyTransactions || []}
                               margin={{
                                 top: 10,
                                 right: 30,
@@ -518,12 +533,7 @@ export default function AnalyticsDashboard() {
                           <ResponsiveContainer width="100%" height="100%">
                             <>
                             <Pie
-                              data={[
-                                { name: "Credit Card", value: 45 },
-                                { name: "Cash", value: 30 },
-                                { name: "Bank Transfer", value: 15 },
-                                { name: "Mobile Payment", value: 10 },
-                              ]}
+                              data={transactions?.paymentMethods || []}
                               cx="50%"
                               cy="50%"
                               labelLine={false}
@@ -532,7 +542,7 @@ export default function AnalyticsDashboard() {
                               dataKey="value"
                               label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                             >
-                              {productCategoryData.map((entry, index) => (
+                              {(transactions?.paymentMethods || []).map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                               ))}
                             </Pie>
@@ -563,7 +573,7 @@ export default function AnalyticsDashboard() {
                           <ResponsiveContainer width="100%" height="100%">
                             <>
                             <Pie
-                              data={supplierData}
+                              data={suppliers?.topSuppliers || []}
                               cx="50%"
                               cy="50%"
                               labelLine={false}
@@ -572,7 +582,7 @@ export default function AnalyticsDashboard() {
                               dataKey="value"
                               label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                             >
-                              {supplierData.map((entry, index) => (
+                              {(suppliers?.topSuppliers || []).map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                               ))}
                             </Pie>
@@ -596,13 +606,7 @@ export default function AnalyticsDashboard() {
                         <CardContent className="h-[300px]">
                           <ResponsiveContainer width="100%" height="100%">
                             <BarChart
-                              data={[
-                                { name: "Supplier A", deliveryTime: 4.5, quality: 4.8 },
-                                { name: "Supplier B", deliveryTime: 3.8, quality: 4.2 },
-                                { name: "Supplier C", deliveryTime: 4.2, quality: 4.5 },
-                                { name: "Supplier D", deliveryTime: 3.5, quality: 3.9 },
-                                { name: "Supplier E", deliveryTime: 4.7, quality: 4.6 },
-                              ]}
+                              data={suppliers?.supplierPerformance || []}
                               margin={{
                                 top: 10,
                                 right: 30,
@@ -640,56 +644,32 @@ export default function AnalyticsDashboard() {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        <div className="flex items-center">
-                          <div className="mr-4 rounded-full bg-primary/10 p-2">
-                            <ShoppingCart className="h-4 w-4 text-primary" />
-                          </div>
-                          <div className="flex-1 space-y-1">
-                            <p className="text-sm font-medium leading-none">Order #12345</p>
-                            <p className="text-xs text-muted-foreground">$1,234.56</p>
-                          </div>
-                          <div className="text-xs text-muted-foreground">2 hours ago</div>
-                        </div>
-                        <div className="flex items-center">
-                          <div className="mr-4 rounded-full bg-primary/10 p-2">
-                            <ShoppingCart className="h-4 w-4 text-primary" />
-                          </div>
-                          <div className="flex-1 space-y-1">
-                            <p className="text-sm font-medium leading-none">Order #12344</p>
-                            <p className="text-xs text-muted-foreground">$876.50</p>
-                          </div>
-                          <div className="text-xs text-muted-foreground">5 hours ago</div>
-                        </div>
-                        <div className="flex items-center">
-                          <div className="mr-4 rounded-full bg-primary/10 p-2">
-                            <CreditCard className="h-4 w-4 text-primary" />
-                          </div>
-                          <div className="flex-1 space-y-1">
-                            <p className="text-sm font-medium leading-none">Payment Received</p>
-                            <p className="text-xs text-muted-foreground">$2,500.00</p>
-                          </div>
-                          <div className="text-xs text-muted-foreground">Yesterday</div>
-                        </div>
-                        <div className="flex items-center">
-                          <div className="mr-4 rounded-full bg-primary/10 p-2">
-                            <ShoppingCart className="h-4 w-4 text-primary" />
-                          </div>
-                          <div className="flex-1 space-y-1">
-                            <p className="text-sm font-medium leading-none">Order #12343</p>
-                            <p className="text-xs text-muted-foreground">$345.00</p>
-                          </div>
-                          <div className="text-xs text-muted-foreground">Yesterday</div>
-                        </div>
-                        <div className="flex items-center">
-                          <div className="mr-4 rounded-full bg-primary/10 p-2">
-                            <Truck className="h-4 w-4 text-primary" />
-                          </div>
-                          <div className="flex-1 space-y-1">
-                            <p className="text-sm font-medium leading-none">Supplier Delivery</p>
-                            <p className="text-xs text-muted-foreground">50 units received</p>
-                          </div>
-                          <div className="text-xs text-muted-foreground">2 days ago</div>
-                        </div>
+                        {loading ? (
+                          <div className="text-center text-muted-foreground">Loading...</div>
+                        ) : recentTransactions && recentTransactions.length > 0 ? (
+                          recentTransactions.map((transaction, index) => (
+                            <div key={index} className="flex items-center">
+                              <div className="mr-4 rounded-full bg-primary/10 p-2">
+                                {transaction.type === 'sale' ? (
+                                  <ShoppingCart className="h-4 w-4 text-primary" />
+                                ) : transaction.type === 'purchase' ? (
+                                  <Truck className="h-4 w-4 text-primary" />
+                                ) : (
+                                  <CreditCard className="h-4 w-4 text-primary" />
+                                )}
+                              </div>
+                              <div className="flex-1 space-y-1">
+                                <p className="text-sm font-medium leading-none">{transaction.title}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {transaction.type === 'purchase' ? `From: ${transaction.description}` : formatCurrency(transaction.amount)}
+                                </p>
+                              </div>
+                              <div className="text-xs text-muted-foreground">{formatDate(transaction.date)}</div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-center text-muted-foreground">No recent transactions</div>
+                        )}
                       </div>
                     </CardContent>
                     <CardFooter>
@@ -705,62 +685,43 @@ export default function AnalyticsDashboard() {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        <div className="flex items-center">
-                          <div className="mr-4 rounded-full bg-destructive/10 p-2">
-                            <Package className="h-4 w-4 text-destructive" />
-                          </div>
-                          <div className="flex-1 space-y-1">
-                            <p className="text-sm font-medium leading-none">Laptop Pro</p>
-                            <p className="text-xs text-muted-foreground">Low stock (5 units)</p>
-                          </div>
-                          <Badge variant="destructive">Critical</Badge>
-                        </div>
-                        <div className="flex items-center">
-                          <div className="mr-4 rounded-full bg-destructive/10 p-2">
-                            <Package className="h-4 w-4 text-destructive" />
-                          </div>
-                          <div className="flex-1 space-y-1">
-                            <p className="text-sm font-medium leading-none">Wireless Earbuds</p>
-                            <p className="text-xs text-muted-foreground">Low stock (8 units)</p>
-                          </div>
-                          <Badge variant="destructive">Critical</Badge>
-                        </div>
-                        <div className="flex items-center">
-                          <div className="mr-4 rounded-full bg-yellow-500/10 p-2">
-                            <Package className="h-4 w-4 text-yellow-500" />
-                          </div>
-                          <div className="flex-1 space-y-1">
-                            <p className="text-sm font-medium leading-none">Smart Watch</p>
-                            <p className="text-xs text-muted-foreground">Low stock (12 units)</p>
-                          </div>
-                          <Badge variant="outline" className="text-yellow-500 border-yellow-500">
-                            Warning
-                          </Badge>
-                        </div>
-                        <div className="flex items-center">
-                          <div className="mr-4 rounded-full bg-yellow-500/10 p-2">
-                            <Calendar className="h-4 w-4 text-yellow-500" />
-                          </div>
-                          <div className="flex-1 space-y-1">
-                            <p className="text-sm font-medium leading-none">Bluetooth Speaker</p>
-                            <p className="text-xs text-muted-foreground">Expiring in 30 days</p>
-                          </div>
-                          <Badge variant="outline" className="text-yellow-500 border-yellow-500">
-                            Warning
-                          </Badge>
-                        </div>
-                        <div className="flex items-center">
-                          <div className="mr-4 rounded-full bg-green-500/10 p-2">
-                            <Package className="h-4 w-4 text-green-500" />
-                          </div>
-                          <div className="flex-1 space-y-1">
-                            <p className="text-sm font-medium leading-none">USB-C Cable</p>
-                            <p className="text-xs text-muted-foreground">Overstocked (200+ units)</p>
-                          </div>
-                          <Badge variant="outline" className="text-green-500 border-green-500">
-                            Info
-                          </Badge>
-                        </div>
+                        {loading ? (
+                          <div className="text-center text-muted-foreground">Loading...</div>
+                        ) : inventoryAlerts && inventoryAlerts.length > 0 ? (
+                          inventoryAlerts.map((alert, index) => {
+                            const getIcon = () => {
+                              if (alert.type === 'expiring') return <Calendar className="h-4 w-4" />
+                              return <Package className="h-4 w-4" />
+                            }
+                            const getColor = () => {
+                              if (alert.severity === 'critical') return 'destructive'
+                              if (alert.severity === 'warning') return 'yellow-500'
+                              return 'green-500'
+                            }
+                            const color = getColor()
+                            return (
+                              <div key={index} className="flex items-center">
+                                <div className={`mr-4 rounded-full bg-${color}/10 p-2`}>
+                                  <div className={`text-${color}`}>
+                                    {getIcon()}
+                                  </div>
+                                </div>
+                                <div className="flex-1 space-y-1">
+                                  <p className="text-sm font-medium leading-none">{alert.productName}</p>
+                                  <p className="text-xs text-muted-foreground">{alert.message}</p>
+                                </div>
+                                <Badge 
+                                  variant={alert.severity === 'critical' ? 'destructive' : 'outline'}
+                                  className={alert.severity !== 'critical' ? `text-${color} border-${color}` : ''}
+                                >
+                                  {alert.severity === 'critical' ? 'Critical' : alert.severity === 'warning' ? 'Warning' : 'Info'}
+                                </Badge>
+                              </div>
+                            )
+                          })
+                        ) : (
+                          <div className="text-center text-muted-foreground">No alerts</div>
+                        )}
                       </div>
                     </CardContent>
                     <CardFooter>

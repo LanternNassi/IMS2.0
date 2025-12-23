@@ -6,6 +6,7 @@ using ImsServer.Models.CustomerX;
 using ImsServer.Models.SupplierX;
 using ImsServer.Models.ProductX;
 using ImsServer.Models.ExpenditureX;
+using ImsServer.Models.SystemConfigX;
 
 namespace ImsServer.Models{
 
@@ -56,6 +57,13 @@ namespace ImsServer.Models{
 
             CreateMap<Expenditure, ExpenditureDto>().ReverseMap();
             CreateMap<ExpenditureCategory, ExpenditureCategoryDto>().ReverseMap();
+
+            CreateMap<SystemConfig, SystemConfigDto>().ReverseMap();
+            CreateMap<SystemConfig, SimpleSystemConfigDto>().ReverseMap();
+            CreateMap<Contact, ContactDto>().ReverseMap();
+            CreateMap<Contact, SimpleContactDto>().ReverseMap();
+            CreateMap<CreateContactDto, Contact>();
+            CreateMap<UpdateContactDto, Contact>();
             
         }
     }

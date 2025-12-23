@@ -13,6 +13,7 @@ import { useReactToPrint } from 'react-to-print'
 import { InvoicePdfDocument } from '../components/reports/pdf/InvoicePdfDocument'
 import { InvoiceTemplate } from '../components/reports/pdf/InvoicePdf'
 import type { InvoiceData } from '../components/reports/pdf/InvoicePdf'
+import { useSystemConfigStore } from "@/store/useSystemConfigStore"
 
 type Customer = {
   id: string
@@ -43,6 +44,7 @@ interface GenerateInvoiceDialogProps {
 }
 
 export function GenerateInvoiceDialog({ data, trigger }: GenerateInvoiceDialogProps) {
+  const { config } = useSystemConfigStore()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [includeOutstanding, setIncludeOutstanding] = useState(true)
   const [includePaymentDetails, setIncludePaymentDetails] = useState(true)
@@ -66,6 +68,11 @@ export function GenerateInvoiceDialog({ data, trigger }: GenerateInvoiceDialogPr
         const pdfDoc = (
           <InvoicePdfDocument
             data={invoiceData!}
+            companyName={config?.organisationName || "Admin@enterprises"}
+            companyAddress={config?.registeredBusinessAddress || "Kampala, Uganda"}
+            companyPhone={config?.registeredBusinessContact || "+256 700 000 000"}
+            companyEmail={config?.contacts[0]?.email || "info@company.com"}
+            companyTaxId={`TIN: ${config?.registeredTINumber || "1234567890"}`}
             includeOutstanding={includeOutstanding}
             includePaymentDetails={includePaymentDetails}
             notes={notes}
@@ -255,6 +262,11 @@ export function GenerateInvoiceDialog({ data, trigger }: GenerateInvoiceDialogPr
               <div ref={printRef}>
                 <InvoiceTemplate
                   data={invoiceData!}
+                  companyName={config?.organisationName || "Admin@enterprises"}
+                  companyAddress={config?.registeredBusinessAddress || "Kampala, Uganda"}
+                  companyPhone={config?.registeredBusinessContact || "+256 700 000 000"}
+                  companyEmail={config?.contacts[0]?.email || "info@company.com"}
+                  companyTaxId={`TIN: ${config?.registeredTINumber || "1234567890"}`}
                   showSignatures={true}
                   includeOutstanding={includeOutstanding}
                   includePaymentDetails={includePaymentDetails}

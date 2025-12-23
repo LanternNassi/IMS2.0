@@ -19,6 +19,7 @@ import { PDFDownloadLink, pdf } from "@react-pdf/renderer"
 import { BalanceSheetPdfDocument, CashFlowPdfDocument, ProfitLossPdfDocument } from "@/components/reports/pdf"
 import api from "@/Utils/Request"
 import { useToast } from "@/hooks/use-toast"
+import { useSystemConfigStore } from "@/store/useSystemConfigStore"
 
 type ReportType = "balance-sheet" | "profit-loss" | "cashflow" | "trial-balance" | "ledger" | "invoice"
 
@@ -89,6 +90,7 @@ const reportTypes: Report[] = [
 ]
 
 export default function FinancialReportsPage() {
+    const { config } = useSystemConfigStore();
     const { toast } = useToast()
     const [selectedReport, setSelectedReport] = useState<ReportType | null>(null)
     const [isGenerating, setIsGenerating] = useState(false)
@@ -105,8 +107,8 @@ export default function FinancialReportsPage() {
         startDate: new Date().toISOString().split("T")[0],
         endDate: new Date().toISOString().split("T")[0],
         periodType: "monthly",
-        companyName: "Inventory Management System",
-        companyAddress: "Kampala, Uganda",
+        companyName: config?.organisationName || "Admin@enterprises",
+        companyAddress: config?.registeredBusinessAddress || "Kampala, Uganda",
         cashAccountId: "",
         useDateRange: false,
         presetPeriod: "today" as "today" | "last-month" | "last-year" | "ytd",
@@ -414,7 +416,7 @@ export default function FinancialReportsPage() {
                         <DollarSign className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">UGX</div>
+                        <div className="text-2xl font-bold">{config?.currency || "UGX"}</div>
                         <p className="text-xs text-muted-foreground">Ugandan Shillings</p>
                     </CardContent>
                 </Card>

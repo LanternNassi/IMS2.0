@@ -116,7 +116,7 @@ namespace ImsServer.Controllers
             // Linked per-account aggregates
             var salesRealTimeByAccount = await _db.Sales
                 .Where(s => s.SaleDate >= start && s.SaleDate < end)
-                .Where(s => s.WasPartialPayment != true)
+                .Where(s => s.WasPartialPayment != true && s.IsRefunded != true)
                 .Where(s => s.LinkedFinancialAccountId.HasValue)
                 .GroupBy(s => s.LinkedFinancialAccountId!.Value)
                 .Select(g => new { AccountId = g.Key, Amount = g.Sum(x => (decimal?)x.PaidAmount) ?? 0m })
@@ -124,7 +124,7 @@ namespace ImsServer.Controllers
 
             var salesCollectionsByAccount = await _db.SalesDebtsTrackers
                 .Where(p => p.DebtType == DebtType.Receivable)
-                .Where(p => p.AddedAt >= start && p.AddedAt < end)
+                .Where(p => p.AddedAt >= start && p.AddedAt < end && p.Sale.IsRefunded != true)
                 .Where(p => p.LinkedFinancialAccountId.HasValue)
                 .GroupBy(p => p.LinkedFinancialAccountId!.Value)
                 .Select(g => new { AccountId = g.Key, Amount = g.Sum(x => (decimal?)x.PaidAmount) ?? 0m })
@@ -185,13 +185,13 @@ namespace ImsServer.Controllers
             // Unlinked totals (not attributable to a financial account)
             var unlinkedSalesRealTimeCollections = await _db.Sales
                 .Where(s => s.SaleDate >= start && s.SaleDate < end)
-                .Where(s => s.WasPartialPayment != true)
+                .Where(s => s.WasPartialPayment != true && s.IsRefunded != true)
                 .Where(s => !s.LinkedFinancialAccountId.HasValue)
                 .SumAsync(s => (decimal?)s.PaidAmount) ?? 0m;
 
             var unlinkedSalesCollections = await _db.SalesDebtsTrackers
                 .Where(p => p.DebtType == DebtType.Receivable)
-                .Where(p => p.AddedAt >= start && p.AddedAt < end)
+                .Where(p => p.AddedAt >= start && p.AddedAt < end && p.Sale.IsRefunded != true)
                 .Where(p => !p.LinkedFinancialAccountId.HasValue)
                 .SumAsync(p => (decimal?)p.PaidAmount) ?? 0m;
 
@@ -347,13 +347,13 @@ namespace ImsServer.Controllers
                 // Inflows into CASH
                 var salesRealTimeNet = await _db.Sales
                     .Where(s => s.SaleDate >= fromUtc && s.SaleDate < toUtc)
-                    .Where(s => s.WasPartialPayment != true)
+                    .Where(s => s.WasPartialPayment != true && s.IsRefunded != true)
                     .Where(s => s.LinkedFinancialAccountId.HasValue && cashIds.Contains(s.LinkedFinancialAccountId.Value))
                     .SumAsync(s => (decimal?)s.PaidAmount) ?? 0m;
 
                 var salesCollectionsNet = await _db.SalesDebtsTrackers
                     .Where(p => p.DebtType == DebtType.Receivable)
-                    .Where(p => p.AddedAt >= fromUtc && p.AddedAt < toUtc)
+                    .Where(p => p.AddedAt >= fromUtc && p.AddedAt < toUtc && p.Sale.IsRefunded != true)
                     .Where(p => p.LinkedFinancialAccountId.HasValue && cashIds.Contains(p.LinkedFinancialAccountId.Value))
                     .SumAsync(p => (decimal?)p.PaidAmount) ?? 0m;
 
@@ -768,13 +768,13 @@ namespace ImsServer.Controllers
                 // Inflows
                 var salesRealTimeCollections = await _db.Sales
                     .Where(s => s.SaleDate >= fromUtc && s.SaleDate < toUtc)
-                    .Where(s => s.WasPartialPayment != true)
+                    .Where(s => s.WasPartialPayment != true && s.IsRefunded != true)
                     .Where(s => s.LinkedFinancialAccountId.HasValue && includedAccountIds.Contains(s.LinkedFinancialAccountId.Value))
                     .SumAsync(s => (decimal?)s.PaidAmount) ?? 0m;
 
                 var salesCollectionsNet = await _db.SalesDebtsTrackers
                     .Where(p => p.DebtType == DebtType.Receivable)
-                    .Where(p => p.AddedAt >= fromUtc && p.AddedAt < toUtc)
+                    .Where(p => p.AddedAt >= fromUtc && p.AddedAt < toUtc && p.Sale.IsRefunded != true)
                     .Where(p => p.LinkedFinancialAccountId.HasValue && includedAccountIds.Contains(p.LinkedFinancialAccountId.Value))
                     .SumAsync(p => (decimal?)p.PaidAmount) ?? 0m;
 
@@ -831,25 +831,25 @@ namespace ImsServer.Controllers
             // Inflows: sales collections recorded in SalesDebtsTracker and linked to included accounts.
             var salesRealTimeCollections = await _db.Sales
                 .Where(s => s.SaleDate >= flowStart && s.SaleDate < flowEnd)
-                .Where(s => s.WasPartialPayment != true)
+                .Where(s => s.WasPartialPayment != true && s.IsRefunded != true)
                 .Where(s => s.LinkedFinancialAccountId.HasValue && includedAccountIds.Contains(s.LinkedFinancialAccountId.Value))
                 .SumAsync(s => (decimal?)s.PaidAmount) ?? 0m;
 
             var unlinkedSalesRealTimeCollections = await _db.Sales
                 .Where(s => s.SaleDate >= flowStart && s.SaleDate < flowEnd)
-                .Where(s => s.WasPartialPayment != true)
+                .Where(s => s.WasPartialPayment != true && s.IsRefunded != true)
                 .Where(s => !s.LinkedFinancialAccountId.HasValue)
                 .SumAsync(s => (decimal?)s.PaidAmount) ?? 0m;
 
             var salesCollections = await _db.SalesDebtsTrackers
                 .Where(p => p.DebtType == DebtType.Receivable)
-                .Where(p => p.AddedAt >= flowStart && p.AddedAt < flowEnd)
+                .Where(p => p.AddedAt >= flowStart && p.AddedAt < flowEnd && p.Sale.IsRefunded != true)
                 .Where(p => p.LinkedFinancialAccountId.HasValue && includedAccountIds.Contains(p.LinkedFinancialAccountId.Value))
                 .SumAsync(p => (decimal?)p.PaidAmount) ?? 0m;
 
             var unlinkedSalesCollections = await _db.SalesDebtsTrackers
                 .Where(p => p.DebtType == DebtType.Receivable)
-                .Where(p => p.AddedAt >= flowStart && p.AddedAt < flowEnd)
+                .Where(p => p.AddedAt >= flowStart && p.AddedAt < flowEnd && p.Sale.IsRefunded != true)
                 .Where(p => !p.LinkedFinancialAccountId.HasValue)
                 .SumAsync(p => (decimal?)p.PaidAmount) ?? 0m;
 

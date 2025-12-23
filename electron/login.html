@@ -423,9 +423,10 @@
 
       const username = form.username.value.trim();
       const password = form.password.value;
+      const rememberMe = form.rememberMe.checked;
 
       try {
-        const result = await ipcRenderer.invoke('login-attempt', { username, password });
+        const result = await ipcRenderer.invoke('login-attempt', { username, password, rememberMe });
         
         if (result.success) {
           // Success: main process will handle window transition

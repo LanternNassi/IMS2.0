@@ -13,6 +13,7 @@ using ImsServer.Models.PurchaseDebtX;
 using ImsServer.Models.FixedAssetX;
 using ImsServer.Models.CapitalAccountX;
 using ImsServer.Models.TaxRecordX;
+using ImsServer.Models.SystemConfigX;
     
 
 using Microsoft.EntityFrameworkCore;
@@ -58,6 +59,8 @@ namespace ImsServer.Models
         public DbSet<FixedAsset> FixedAssets { get; set; }
         public DbSet<CapitalAccount> CapitalAccounts { get; set; }
         public DbSet<TaxRecord> TaxRecords { get; set; }
+        public DbSet<SystemConfig> SystemConfigs { get; set; }
+        public DbSet<Contact> Contacts { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -91,6 +94,8 @@ namespace ImsServer.Models
             modelBuilder.Entity<FixedAsset>().HasQueryFilter(c => !c.DeletedAt.HasValue);
             modelBuilder.Entity<CapitalAccount>().HasQueryFilter(c => !c.DeletedAt.HasValue);
             modelBuilder.Entity<TaxRecord>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+            modelBuilder.Entity<SystemConfig>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+            modelBuilder.Entity<Contact>().HasQueryFilter(c => !c.DeletedAt.HasValue);
 
             modelBuilder.Entity<DailyCashReconciliation>()
                 .HasIndex(x => new { x.FinancialAccountId, x.BusinessDateUtc })
@@ -135,6 +140,11 @@ namespace ImsServer.Models
                 .HasForeignKey(si => si.SaleId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<Contact>()
+                .HasOne(c => c.SystemConfig)
+                .WithMany(sc => sc.Contacts)
+                .HasForeignKey(c => c.SystemConfigId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             base.OnModelCreating(modelBuilder);
 
@@ -185,6 +195,8 @@ namespace ImsServer.Models
                     || e.Entity is FixedAsset
                     || e.Entity is CapitalAccount
                     || e.Entity is TaxRecord
+                    || e.Entity is SystemConfig
+                    || e.Entity is Contact
 
                     )
                 .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);

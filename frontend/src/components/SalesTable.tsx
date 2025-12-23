@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState } from "react"
 import { format } from "date-fns"
-import { ChevronDown, ChevronUp, Eye, Pencil, Trash2, Receipt, Package, CheckCircle, XCircle } from "lucide-react"
+import { ChevronDown, ChevronUp, Eye, Pencil, Trash2, Receipt, Package, CheckCircle, XCircle, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -66,6 +66,7 @@ export interface SalesTableProps {
   onView?: (sale: Sale) => void
   onEdit?: (sale: Sale) => void
   onDelete?: (id: string) => void
+  onRefund?: (id: string) => void
 }
 
 const formatCurrencyFull = (amount: number) => {
@@ -89,7 +90,8 @@ const SaleRow: React.FC<{
   onView?: (sale: Sale) => void
   onEdit?: (sale: Sale) => void
   onDelete?: (id: string) => void
-}> = ({ sale, onView, onEdit, onDelete }) => {
+  onRefund?: (id: string) => void
+}> = ({ sale, onView, onEdit, onDelete, onRefund }) => {
   const [isExpanded, setIsExpanded] = useState(false)
   const items = sale.saleItems || []
 
@@ -125,7 +127,7 @@ const SaleRow: React.FC<{
         {/* Sale Info */}
         <TableCell className="py-3 w-48 border-r border-border/30 dark:border-gray-700/30">
           <div className="flex flex-col gap-1">
-            <span className="font-mono font-semibold text-foreground">{`SA-${sale.id?.slice(0, 5)}`}</span>
+            <span className="font-mono font-semibold text-foreground">{`SA-${sale.id?.slice(0, 8)}`}</span>
             <span className="text-xs text-muted-foreground">
               {format(new Date(sale.saleDate), "MMM dd, yyyy • HH:mm")}
             </span>
@@ -230,7 +232,7 @@ const SaleRow: React.FC<{
                       <Eye className="h-3.5 w-3.5" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>View Details</TooltipContent>
+                  <TooltipContent className="text-black">View Details</TooltipContent>
                 </Tooltip>
               )}
               {onEdit && (
@@ -248,7 +250,25 @@ const SaleRow: React.FC<{
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Edit</TooltipContent>
+                  <TooltipContent className="text-black">Edit</TooltipContent>
+                </Tooltip>
+              )}
+              {onRefund && !sale.isRefunded && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 rounded-lg hover:bg-purple-100 hover:text-purple-600 dark:hover:bg-purple-900/30 dark:hover:text-purple-400"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onRefund(sale.id)
+                      }}
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="text-black">Refund Sale</TooltipContent>
                 </Tooltip>
               )}
               {onDelete && (
@@ -266,7 +286,7 @@ const SaleRow: React.FC<{
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Delete</TooltipContent>
+                  <TooltipContent className="text-black">Delete</TooltipContent>
                 </Tooltip>
               )}
             </div>
@@ -378,7 +398,7 @@ const SaleRow: React.FC<{
   )
 }
 
-export const SalesTable: React.FC<SalesTableProps> = ({ sales, onView, onEdit, onDelete }) => {
+export const SalesTable: React.FC<SalesTableProps> = ({ sales, onView, onEdit, onDelete, onRefund }) => {
   return (
     <div className="rounded-xl border border-border dark:border-gray-700 overflow-hidden bg-card dark:bg-gray-900">
       <Table>
@@ -415,7 +435,7 @@ export const SalesTable: React.FC<SalesTableProps> = ({ sales, onView, onEdit, o
             </TableRow>
           ) : (
             sales.map((sale) => (
-              <SaleRow key={sale.id} sale={sale} onView={onView} onEdit={onEdit} onDelete={onDelete} />
+              <SaleRow key={sale.id} sale={sale} onView={onView} onEdit={onEdit} onDelete={onDelete} onRefund={onRefund} />
             ))
           )}
         </TableBody>

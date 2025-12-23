@@ -10,6 +10,7 @@ using ImsServer.Models;
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using System.Text;
+using ImsServer.Utils;
 
 
 namespace ImsServer.Controllers
@@ -91,7 +92,7 @@ namespace ImsServer.Controllers
               return Problem("Entity set 'DBContext.Users'  is null.");
           }
 
-            // user.PasswordHash = PasswordHasherUtility.HashPassword(user.PasswordHash);
+            user.PasswordHash = PasswordHasherUtility.HashPassword(user.PasswordHash);
             _dbcontext.Users.Add(user);
             await _dbcontext.SaveChangesAsync();
 

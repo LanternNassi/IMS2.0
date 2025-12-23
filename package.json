@@ -23,7 +23,9 @@
         "exceljs": "^4.4.0",
         "next": "13.4.0",
         "react": "^18.2.0",
-        "react-dom": "^18.2.0"
+        "react-dom": "^18.2.0",
+        "wait-on": "^8.0.1",
+        "electron-store": "^8.2.0"
     },
     "devDependencies": {
         "concurrently": "^8.2.0",
@@ -41,6 +43,7 @@
         "files": [
             "electron/**/*",
             "dist/frontend/**/*",
+            "electron/node_modules/**/*",
             "!dist/backend/**/*",
             "package.json"
         ],

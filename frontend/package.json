@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "dev:backend": "cd .. && cd backend/ImsServer && dotnet watch run",
-    "electron-dev": "wait-on tcp:3000 tcp:5184 && cd .. && cd electron && electron .",
+    "electron-dev": "wait-on tcp:3000 tcp:5184 && cd .. && electron .",
     "start": "next start",
     "build": "next build",
     "export": "echo Export handled by build with output: export config",
@@ -40,6 +40,7 @@
     "concurrently": "^9.1.0",
     "date-fns": "^4.1.0",
     "electron": "^33.2.1",
+    "electron-store": "^11.0.2",
     "exceljs": "^4.4.0",
     "lucide-react": "^0.469.0",
     "next": "15.1.3",

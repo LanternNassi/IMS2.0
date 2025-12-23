@@ -467,6 +467,18 @@ namespace ImsServer.Controllers
                     }
                 }
 
+                // Withdraw amounts from linked financial account if applicable
+                if (sale.LinkedFinancialAccountId.HasValue)
+                {
+                    var account = await _db.FinancialAccounts
+                        .FirstOrDefaultAsync(fa => fa.Id == sale.LinkedFinancialAccountId.Value);
+
+                    if (account != null)
+                    {
+                        account.Balance -= sale.PaidAmount;
+                    }
+                }
+
                 sale.IsRefunded = true;
                 sale.OutstandingAmount = 0;
                 sale.PaidAmount = 0;

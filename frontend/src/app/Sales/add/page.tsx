@@ -21,6 +21,8 @@ import { customer, useCustomerStore } from "@/store/useCustomerStore"
 import api from "@/Utils/Request"
 import { useRouter } from "next/navigation"
 import { useReactToPrint } from 'react-to-print'
+import { useAuthStore } from "@/store/useAuthStore"
+import { useSystemConfigStore } from "@/store/useSystemConfigStore"
 
 
 const saleFormSchema = z.object({
@@ -34,7 +36,8 @@ export default function AddSale() {
     const { getCustomerById } = useCustomerStore()
     const [snackbar, setSnackbar] = useState<{ open: boolean; message: string }>({ open: false, message: "" })
     const router = useRouter()
-
+    const {user} = useAuthStore()
+    const { config } = useSystemConfigStore()
     const [items, setItems] = useState<SalesItem[]>([])
     const [selectedProductId, setSelectedProductId] = useState("")
     const [selectedProduct, setSelectedProduct] = useState<ProductVariation | null>(null)
@@ -377,6 +380,11 @@ export default function AddSale() {
             return
         }
 
+        if (user?.username == "master"){
+            setSnackbar({ open: true, message: "Cannot process sale. Logged in as master user." })
+            return
+        }
+
         if (items.length === 0) {
             setSnackbar({ open: true, message: "Please add at least one item to the sale." })
             return
@@ -403,7 +411,7 @@ export default function AddSale() {
             isPaid: paidAmount >= (totalAmount - discount),
             isTaken: isTaken,
             paymentMethod: paymentMethod,
-            processedById: currentUserId, // Temporary: Use first user's ID
+            processedById: user?.id || currentUserId, // Temporary: Use first user's ID
             linkedFinancialAccountId: linkedFinancialAccountId || undefined,
             finalAmount: paidAmount,
             createdAt: new Date(),
@@ -1002,8 +1010,10 @@ export default function AddSale() {
                                             paidAmount={fetchedSaleData?.paidAmount || paidAmount}
                                             returnAmount={fetchedSaleData?.changeAmount || returnAmount}
                                             date={fetchedSaleData?.createdAt ? new Date(fetchedSaleData.createdAt).toLocaleDateString() : new Date().toLocaleDateString()}
-                                            companyName="Inventory Management System"
-                                            companyAddress="Kampala, Uganda"
+                                            companyName={config?.organisationName || "Admin@enterprises"}
+                                            companyAddress={config?.registeredBusinessAddress || "Kampala, Uganda"}
+                                            companyDescription={config?.organisationDescription || "Dealer in all kinds of goods and services"}
+                                            companyPhones={config?.contacts?.map(contact => contact.telephone) || ["+256 700 000 000", "+256 700 000 001"]}
                                         />
                                     </div>
 
