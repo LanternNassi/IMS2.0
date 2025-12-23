@@ -249,7 +249,7 @@ function createMainWindow() {
   //   mainWindow.removeMenu();
   // }
 
-  // mainWindow.removeMenu();
+  mainWindow.removeMenu();
 
 
   mainWindow.once('ready-to-show', () => {
