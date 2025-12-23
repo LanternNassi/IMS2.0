@@ -71,7 +71,7 @@ export function GenerateInvoiceDialog({ data, trigger }: GenerateInvoiceDialogPr
             companyName={config?.organisationName || "Admin@enterprises"}
             companyAddress={config?.registeredBusinessAddress || "Kampala, Uganda"}
             companyPhone={config?.registeredBusinessContact || "+256 700 000 000"}
-            companyEmail={config?.contacts[0]?.email || "info@company.com"}
+            companyEmail={config?.contacts?.[0]?.email || "info@company.com"}
             companyTaxId={`TIN: ${config?.registeredTINumber || "1234567890"}`}
             includeOutstanding={includeOutstanding}
             includePaymentDetails={includePaymentDetails}
@@ -265,7 +265,7 @@ export function GenerateInvoiceDialog({ data, trigger }: GenerateInvoiceDialogPr
                   companyName={config?.organisationName || "Admin@enterprises"}
                   companyAddress={config?.registeredBusinessAddress || "Kampala, Uganda"}
                   companyPhone={config?.registeredBusinessContact || "+256 700 000 000"}
-                  companyEmail={config?.contacts[0]?.email || "info@company.com"}
+                  companyEmail={config?.contacts?.[0]?.email || "info@company.com"}
                   companyTaxId={`TIN: ${config?.registeredTINumber || "1234567890"}`}
                   showSignatures={true}
                   includeOutstanding={includeOutstanding}
