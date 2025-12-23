@@ -24,6 +24,18 @@ contextBridge.exposeInMainWorld("electron", {
     onExportDone: (callback) => ipcRenderer.on("export-done", (_, message) => callback(message)),
     onExportError: (callback) => ipcRenderer.on("export-error", (_, error) => callback(error)),
 
+    // Auto-update methods
+    checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+    downloadUpdate: () => ipcRenderer.invoke('download-update'),
+    installUpdate: () => ipcRenderer.invoke('install-update'),
+    getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+    onUpdateStatus: (callback) => {
+        ipcRenderer.on('update-status', (_, data) => callback(data));
+    },
+    removeUpdateStatusListener: () => {
+        ipcRenderer.removeAllListeners('update-status');
+    },
+
     // Remove listeners
     removeAuthDataListener: () => {
         ipcRenderer.removeAllListeners('auth-data');

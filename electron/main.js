@@ -1,4 +1,5 @@
 const { app, BrowserWindow, ipcMain, dialog } = require("electron");
+const { autoUpdater } = require("electron-updater");
 const ExcelJS = require("exceljs");
 const path = require("path");
 const { spawn } = require("child_process");
@@ -27,6 +28,18 @@ let backendProcess = null;
 let frontendServer = null;
 const FRONTEND_PORT = 8080;
 const BACKEND_PORT = 5184;
+
+// Configure auto-updater
+autoUpdater.autoDownload = false; // Don't auto-download, let user decide
+autoUpdater.autoInstallOnAppQuit = true; // Auto-install on app quit after download
+
+// Only check for updates in production
+if (!isDev) {
+  // Set update check interval (check every 4 hours)
+  setInterval(() => {
+    autoUpdater.checkForUpdates();
+  }, 4 * 60 * 60 * 1000);
+}
 
 // MIME types for serving static files
 const mimeTypes = {
@@ -273,6 +286,14 @@ app.on("ready", async () => {
     // await initStore();
     console.log("App ready, starting servers...");
     
+    // Check for updates in production (after a short delay to not block startup)
+    if (!isDev) {
+      setTimeout(() => {
+        console.log("Checking for updates...");
+        autoUpdater.checkForUpdates();
+      }, 5000); // Wait 5 seconds after app start
+    }
+    
     // Start servers first (needed for login API)
     if (!isDev) {
       console.log("Starting frontend server...");
@@ -467,6 +488,167 @@ app.on("before-quit", () => {
   if (frontendServer) {
     frontendServer.close();
   }
+});
+
+// Auto-updater event handlers
+autoUpdater.on("checking-for-update", () => {
+  console.log("Checking for update...");
+  if (mainWindow) {
+    mainWindow.webContents.send("update-status", {
+      status: "checking",
+      message: "Checking for updates..."
+    });
+  }
+});
+
+autoUpdater.on("update-available", (info) => {
+  console.log("Update available:", info.version);
+  if (mainWindow) {
+    mainWindow.webContents.send("update-status", {
+      status: "available",
+      message: `Update available: v${info.version}`,
+      version: info.version,
+      releaseNotes: info.releaseNotes || "A new version is available."
+    });
+  }
+  
+  // Show notification dialog
+  dialog.showMessageBox(mainWindow || loginWindow, {
+    type: "info",
+    title: "Update Available",
+    message: `A new version (v${info.version}) is available.`,
+    detail: "Would you like to download it now?",
+    buttons: ["Download", "Later"],
+    defaultId: 0,
+    cancelId: 1
+  }).then((result) => {
+    if (result.response === 0) {
+      autoUpdater.downloadUpdate();
+    }
+  });
+});
+
+autoUpdater.on("update-not-available", (info) => {
+  console.log("Update not available. Current version is latest.");
+  if (mainWindow) {
+    mainWindow.webContents.send("update-status", {
+      status: "not-available",
+      message: "You are using the latest version."
+    });
+  }
+});
+
+autoUpdater.on("error", (err) => {
+  console.error("Error in auto-updater:", err);
+  if (mainWindow) {
+    mainWindow.webContents.send("update-status", {
+      status: "error",
+      message: `Update error: ${err.message}`
+    });
+  }
+});
+
+autoUpdater.on("download-progress", (progressObj) => {
+  let log_message = `Download speed: ${progressObj.bytesPerSecond} - Downloaded ${progressObj.percent}% (${progressObj.transferred}/${progressObj.total})`;
+  console.log(log_message);
+  
+  if (mainWindow) {
+    mainWindow.webContents.send("update-status", {
+      status: "downloading",
+      message: `Downloading update... ${Math.round(progressObj.percent)}%`,
+      percent: progressObj.percent,
+      bytesPerSecond: progressObj.bytesPerSecond,
+      transferred: progressObj.transferred,
+      total: progressObj.total
+    });
+  }
+});
+
+autoUpdater.on("update-downloaded", (info) => {
+  console.log("Update downloaded:", info.version);
+  
+  if (mainWindow) {
+    mainWindow.webContents.send("update-status", {
+      status: "downloaded",
+      message: "Update downloaded. Restart to install.",
+      version: info.version
+    });
+  }
+  
+  // Show dialog to restart
+  dialog.showMessageBox(mainWindow || loginWindow, {
+    type: "info",
+    title: "Update Ready",
+    message: "Update downloaded successfully!",
+    detail: "The application will restart to install the update.",
+    buttons: ["Restart Now", "Later"],
+    defaultId: 0,
+    cancelId: 1
+  }).then((result) => {
+    if (result.response === 0) {
+      autoUpdater.quitAndInstall(false, true); // isSilent, isForceRunAfter
+    }
+  });
+});
+
+// IPC handlers for update management
+ipcMain.handle("check-for-updates", async () => {
+  try {
+    if (isDev) {
+      return { success: false, message: "Updates are disabled in development mode." };
+    }
+    const result = await autoUpdater.checkForUpdates();
+    return { 
+      success: true, 
+      message: "Checking for updates...",
+      currentVersion: app.getVersion()
+    };
+  } catch (error) {
+    console.error("Error checking for updates:", error);
+    return { 
+      success: false, 
+      message: `Error checking for updates: ${error.message}` 
+    };
+  }
+});
+
+ipcMain.handle("download-update", async () => {
+  try {
+    if (isDev) {
+      return { success: false, message: "Updates are disabled in development mode." };
+    }
+    autoUpdater.downloadUpdate();
+    return { success: true, message: "Download started..." };
+  } catch (error) {
+    console.error("Error downloading update:", error);
+    return { 
+      success: false, 
+      message: `Error downloading update: ${error.message}` 
+    };
+  }
+});
+
+ipcMain.handle("install-update", async () => {
+  try {
+    if (isDev) {
+      return { success: false, message: "Updates are disabled in development mode." };
+    }
+    autoUpdater.quitAndInstall(false, true);
+    return { success: true, message: "Installing update..." };
+  } catch (error) {
+    console.error("Error installing update:", error);
+    return { 
+      success: false, 
+      message: `Error installing update: ${error.message}` 
+    };
+  }
+});
+
+ipcMain.handle("get-app-version", async () => {
+  return {
+    version: app.getVersion(),
+    name: app.getName()
+  };
 });
 
 // Excel export handler
