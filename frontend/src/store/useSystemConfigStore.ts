@@ -220,21 +220,21 @@ export const useSystemConfigStore = create<SystemConfigState>((set, get) => ({
   },
 }))
 
-// Lazy initialization - only fetch when first accessed
-let isInitialized = false
-export const initializeSystemConfig = () => {
-  if (!isInitialized && typeof window !== 'undefined') {
-    isInitialized = true
-    // Use requestIdleCallback or setTimeout to avoid blocking render
-    if (typeof requestIdleCallback !== 'undefined') {
-      requestIdleCallback(() => {
-        useSystemConfigStore.getState().fetchSystemConfig()
-      }, { timeout: 1000 })
-    } else {
-      setTimeout(() => {
-        useSystemConfigStore.getState().fetchSystemConfig()
-      }, 500)
-    }
-  }
-}
+// // Lazy initialization - only fetch when first accessed
+// let isInitialized = false
+// export const initializeSystemConfig = () => {
+//   if (!isInitialized && typeof window !== 'undefined') {
+//     isInitialized = true
+//     // Use requestIdleCallback or setTimeout to avoid blocking render
+//     if (typeof requestIdleCallback !== 'undefined') {
+//       requestIdleCallback(() => {
+//         useSystemConfigStore.getState().fetchSystemConfig()
+//       }, { timeout: 1000 })
+//     } else {
+//       setTimeout(() => {
+//         useSystemConfigStore.getState().fetchSystemConfig()
+//       }, 500)
+//     }
+//   }
+// }
 
