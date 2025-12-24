@@ -70,26 +70,59 @@ jobs:
           dotnet publish -c Release -o ../../dist/backend --self-contained true -r win-x64
           echo "Backend build completed"
 
-      - name: Build and Publish Electron app
+      - name: Build Server Version
+        id: build-server
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
+          Write-Host "Building Server version..."
           if ("${{ github.ref }}" -like "refs/tags/*") {
-            Write-Host "Building and publishing to GitHub Releases (tagged version)..."
-            npm run dist:win -- --publish always
+            Write-Host "Publishing server version to GitHub Releases..."
+            # electron-builder will create/update the release with server installer
+            npm run dist:server -- --publish always
           } else {
-            Write-Host "Building installer (no publish - branch push)..."
-            npm run dist:win
+            Write-Host "Building server installer (no publish - branch push)..."
+            npm run dist:server
           }
-          Write-Host "Build completed"
+          Write-Host "Server build completed"
+          echo "server_built=true" >> $env:GITHUB_OUTPUT
+        continue-on-error: true
 
-      - name: Upload release artifacts
-        if: success()
+      - name: Build Client Version
+        id: build-client
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          Write-Host "Building Client version..."
+          if ("${{ github.ref }}" -like "refs/tags/*") {
+            Write-Host "Publishing client version to GitHub Releases..."
+            # electron-builder will add client installer to existing release
+            npm run dist:client -- --publish always
+          } else {
+            Write-Host "Building client installer (no publish - branch push)..."
+            npm run dist:client
+          }
+          Write-Host "Client build completed"
+          echo "client_built=true" >> $env:GITHUB_OUTPUT
+        continue-on-error: true
+
+      - name: Upload Server Release Artifact
+        if: steps.build-server.outputs.server_built == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: installer-${{ steps.package-version.outputs.version }}
-          path: release/*.exe
+          name: server-installer-${{ steps.package-version.outputs.version }}
+          path: release/IMS Desktop Setup*.exe
           retention-days: 30
+          if-no-files-found: warn
+
+      - name: Upload Client Release Artifact
+        if: steps.build-client.outputs.client_built == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-installer-${{ steps.package-version.outputs.version }}
+          path: release/IMS Desktop Client Setup*.exe
+          retention-days: 30
+          if-no-files-found: warn
 
       - name: Create release summary
         if: success()
@@ -100,9 +133,20 @@ jobs:
           echo "### Build Status" >> $env:GITHUB_STEP_SUMMARY
           echo "- ✅ Frontend built successfully" >> $env:GITHUB_STEP_SUMMARY
           echo "- ✅ Backend built successfully" >> $env:GITHUB_STEP_SUMMARY
-          echo "- ✅ Electron installer created" >> $env:GITHUB_STEP_SUMMARY
+          $serverBuilt = "${{ steps.build-server.outputs.server_built }}"
+          $clientBuilt = "${{ steps.build-client.outputs.client_built }}"
+          if ($serverBuilt -eq "true") {
+            echo "- ✅ Server installer created" >> $env:GITHUB_STEP_SUMMARY
+          } else {
+            echo "- ❌ Server installer build failed" >> $env:GITHUB_STEP_SUMMARY
+          }
+          if ($clientBuilt -eq "true") {
+            echo "- ✅ Client installer created" >> $env:GITHUB_STEP_SUMMARY
+          } else {
+            echo "- ❌ Client installer build failed" >> $env:GITHUB_STEP_SUMMARY
+          }
           if ($isTag) {
-            echo "- ✅ Release published to GitHub" >> $env:GITHUB_STEP_SUMMARY
+            echo "- ✅ Both versions published to GitHub Releases" >> $env:GITHUB_STEP_SUMMARY
           } else {
             echo "- ℹ️ Build completed (not published - branch push)" >> $env:GITHUB_STEP_SUMMARY
           }
@@ -113,10 +157,25 @@ jobs:
           echo "- **Commit:** ${{ github.sha }}" >> $env:GITHUB_STEP_SUMMARY
           echo "- **Branch/Tag:** ${{ github.ref_name }}" >> $env:GITHUB_STEP_SUMMARY
           echo "" >> $env:GITHUB_STEP_SUMMARY
+          echo "### Builds" >> $env:GITHUB_STEP_SUMMARY
+          echo "#### Server Version" >> $env:GITHUB_STEP_SUMMARY
+          echo "- **Name:** IMS Desktop Setup" >> $env:GITHUB_STEP_SUMMARY
+          echo "- **Mode:** Server (includes backend + frontend)" >> $env:GITHUB_STEP_SUMMARY
+          echo "- **Use Case:** Standalone installation" >> $env:GITHUB_STEP_SUMMARY
+          echo "" >> $env:GITHUB_STEP_SUMMARY
+          echo "#### Client Version" >> $env:GITHUB_STEP_SUMMARY
+          echo "- **Name:** IMS Desktop Client Setup" >> $env:GITHUB_STEP_SUMMARY
+          echo "- **Mode:** Client (frontend only, connects to remote server)" >> $env:GITHUB_STEP_SUMMARY
+          echo "- **Use Case:** Multiple clients connecting to central server" >> $env:GITHUB_STEP_SUMMARY
+          echo "" >> $env:GITHUB_STEP_SUMMARY
           echo "### Artifacts" >> $env:GITHUB_STEP_SUMMARY
           if ($isTag) {
-            echo "The installer has been uploaded as an artifact and published to GitHub Releases." >> $env:GITHUB_STEP_SUMMARY
+            echo "Both installers have been uploaded as artifacts and published to GitHub Releases." >> $env:GITHUB_STEP_SUMMARY
+            echo "" >> $env:GITHUB_STEP_SUMMARY
+            echo "**Download Links:**" >> $env:GITHUB_STEP_SUMMARY
+            echo "- Server: [IMS Desktop Setup v${{ steps.package-version.outputs.version }}](https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }})" >> $env:GITHUB_STEP_SUMMARY
+            echo "- Client: [IMS Desktop Client Setup v${{ steps.package-version.outputs.version }}](https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }})" >> $env:GITHUB_STEP_SUMMARY
           } else {
-            echo "The installer has been uploaded as an artifact. To publish, create and push a version tag (e.g., v1.0.0)." >> $env:GITHUB_STEP_SUMMARY
+            echo "Both installers have been uploaded as artifacts. To publish, create and push a version tag (e.g., v1.0.0)." >> $env:GITHUB_STEP_SUMMARY
           }
 

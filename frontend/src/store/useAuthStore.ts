@@ -92,8 +92,14 @@ const createAuthStore = () => {
                     console.log('Auth data from electron-store:', authData);
 
                     if (authData && authData.token) {
+                        // Get server config to determine backend URL
+                        const serverConfig = await window.electron.getServerConfig();
+                        const backendUrl = serverConfig 
+                          ? `http://${serverConfig.serverIP}:${serverConfig.backendPort}`
+                          : 'http://localhost:5184';
+                        
                         // Verify token is still valid
-                        const response = await fetch('http://localhost:5184/api/Auth/verify', {
+                        const response = await fetch(`${backendUrl}/api/Auth/verify`, {
                             method: 'GET',
                             headers: {
                                 'Authorization': `Bearer ${authData.token}`,

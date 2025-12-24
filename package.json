@@ -1,6 +1,6 @@
 {
     "name": "ims-desktop",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "description": "IMS Desktop Application - Inventory Management System",
     "main": "electron/main.js",
     "author": "Ntambi Nassim",
@@ -15,6 +15,8 @@
         "pack": "npm run build:all && electron-builder --dir",
         "dist": "npm run build:all && electron-builder",
         "dist:win": "npm run build:all && electron-builder --win",
+        "dist:server": "cross-env APP_MODE=server npm run build:all && cross-env APP_MODE=server electron-builder --win",
+        "dist:client": "cross-env APP_MODE=client npm run build:frontend && cross-env APP_MODE=client electron-builder --win --config electron-builder-client.config.js",
         "postinstall": "electron-builder install-app-deps"
     },
     "dependencies": {
@@ -30,11 +32,12 @@
     },
     "devDependencies": {
         "concurrently": "^8.2.0",
+        "cross-env": "^7.0.3",
         "electron": "^27.2.0",
         "electron-builder": "^24.6.0"
     },
     "build": {
-        "appId": "com.ims.desktop",
+        "appId": "com.ims.desktop.server",
         "productName": "IMS Desktop",
         "copyright": "Copyright © 2025",
         "directories": {
@@ -83,7 +86,8 @@
             "provider": "github",
             "owner": "LanternNassi",
             "repo": "IMS2.0",
-            "releaseType": "release"
+            "releaseType": "release",
+            "channel": "server"
         }
     }
 }

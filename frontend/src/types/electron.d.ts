@@ -38,6 +38,34 @@ export interface ElectronAPI {
   exportExcel: (jsonData: any[], fileName: string) => void;
   onExportDone: (callback: (message: string) => void) => void;
   onExportError: (callback: (error: string) => void) => void;
+  
+  // Auto-update methods
+  checkForUpdates: () => Promise<{ 
+    success: boolean; 
+    message?: string; 
+    currentVersion?: string 
+  }>;
+  downloadUpdate: () => Promise<{ success: boolean; message?: string }>;
+  installUpdate: () => Promise<{ success: boolean; message?: string }>;
+  getAppVersion: () => Promise<{ version: string; name: string }>;
+  onUpdateStatus: (callback: (status: {
+    status: string;
+    message: string;
+    version?: string;
+    percent?: number;
+    bytesPerSecond?: number;
+    transferred?: number;
+    total?: number;
+  }) => void) => void;
+  removeUpdateStatusListener: () => void;
+  
+  // Server configuration (for client mode)
+  getServerConfig: () => Promise<{
+    serverIP: string;
+    frontendPort: number;
+    backendPort: number;
+    mode: 'server' | 'client';
+  } | null>;
 }
 
 export interface API {

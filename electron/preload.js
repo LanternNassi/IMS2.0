@@ -36,6 +36,9 @@ contextBridge.exposeInMainWorld("electron", {
         ipcRenderer.removeAllListeners('update-status');
     },
 
+    // Server configuration (for client mode)
+    getServerConfig: () => ipcRenderer.invoke('get-server-config'),
+
     // Remove listeners
     removeAuthDataListener: () => {
         ipcRenderer.removeAllListeners('auth-data');

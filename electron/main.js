@@ -7,6 +7,7 @@ const isDev = require("electron-is-dev");
 const http = require("http");
 const fs = require("fs");
 const url = require("url");
+const os = require("os");
 
 // Use dynamic import for electron-store (ESM)
 // let store;
@@ -22,16 +23,201 @@ const store = new Store({
   encryptionKey: 'your-encryption-key-here',
 });
 
+// Logging utility for writing errors to file
+let logFileStream = null;
+let LOG_DIR = null;
+let LOG_FILE = null;
+
+// Get log file path (can only be called after app is ready)
+function getLogFilePath() {
+  if (!LOG_DIR) {
+    try {
+      if (app.isReady()) {
+        LOG_DIR = path.join(app.getPath('appData'), 'IMS Desktop', 'logs');
+      } else {
+        // Fallback before app is ready - use temp directory
+        LOG_DIR = path.join(os.tmpdir(), 'IMS Desktop', 'logs');
+      }
+      const today = new Date().toISOString().split('T')[0];
+      LOG_FILE = path.join(LOG_DIR, `error-${today}.log`);
+    } catch (error) {
+      // Final fallback
+      LOG_DIR = path.join(os.tmpdir(), 'IMS Desktop', 'logs');
+      const today = new Date().toISOString().split('T')[0];
+      LOG_FILE = path.join(LOG_DIR, `error-${today}.log`);
+    }
+  }
+  return LOG_FILE;
+}
+
+// Ensure log directory exists
+function ensureLogDirectory() {
+  try {
+    const logPath = getLogFilePath();
+    const dir = path.dirname(logPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+  } catch (error) {
+    console.error('Failed to create log directory:', error);
+  }
+}
+
+// Initialize log file stream
+function initLogFile() {
+  try {
+    ensureLogDirectory();
+    const logPath = getLogFilePath();
+    logFileStream = fs.createWriteStream(logPath, { flags: 'a' });
+    
+    // Write startup marker
+    const mode = typeof APP_MODE !== 'undefined' ? APP_MODE.toUpperCase() : 'UNKNOWN';
+    const startupMsg = `\n${'='.repeat(80)}\n[${new Date().toISOString()}] Application Started (Mode: ${mode})\n${'='.repeat(80)}\n`;
+    logFileStream.write(startupMsg);
+    
+    console.log(`Log file: ${logPath}`);
+  } catch (error) {
+    console.error('Failed to initialize log file:', error);
+  }
+}
+
+// Write error to log file
+function writeToLog(level, message, error = null) {
+  const timestamp = new Date().toISOString();
+  let logEntry = `[${timestamp}] [${level}] ${message}\n`;
+  
+  if (error) {
+    if (error instanceof Error) {
+      logEntry += `  Error: ${error.message}\n`;
+      if (error.stack) {
+        logEntry += `  Stack: ${error.stack}\n`;
+      }
+    } else {
+      logEntry += `  Error: ${JSON.stringify(error)}\n`;
+    }
+  }
+  
+  // Write to file (initialize if needed)
+  if (!logFileStream && app.isReady()) {
+    initLogFile();
+  }
+  
+  if (logFileStream) {
+    try {
+      logFileStream.write(logEntry);
+      logFileStream.write('\n');
+    } catch (err) {
+      console.error('Failed to write to log file:', err);
+    }
+  }
+  
+  // Also log to console
+  if (level === 'ERROR') {
+    console.error(`[${level}] ${message}`, error || '');
+  } else if (level === 'WARN') {
+    console.warn(`[${level}] ${message}`, error || '');
+  } else {
+    console.log(`[${level}] ${message}`);
+  }
+}
+
+// Log uncaught exceptions
+process.on('uncaughtException', (error) => {
+  writeToLog('ERROR', 'Uncaught Exception', error);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  writeToLog('ERROR', 'Unhandled Rejection', reason);
+});
+
 let mainWindow;
 let loginWindow;
+let connectionWindow = null;
 let backendProcess = null;
 let frontendServer = null;
 const FRONTEND_PORT = 8080;
 const BACKEND_PORT = 5184;
 
+// Detect app mode: 'server' (default) or 'client'
+// Can be set via environment variable APP_MODE or detected from config file
+const APP_MODE = process.env.APP_MODE || (() => {
+  // Check if server_config.ini exists (indicates client mode)
+  const configPath = path.join(app.getPath('appData'), 'IMS Desktop', 'server_config.ini');
+  return fs.existsSync(configPath) ? 'client' : 'server';
+})();
+const IS_CLIENT_MODE = APP_MODE === 'client';
+
+// Server configuration (for client mode)
+let SERVER_IP = 'localhost';
+let CLIENT_BACKEND_PORT = BACKEND_PORT;
+
+// Get network IP address (fallback for client mode)
+function getNetworkIP() {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return 'localhost';
+}
+
+// Read server configuration from file (for client mode)
+function getServerConfig() {
+  try {
+    const configPath = path.join(app.getPath('appData'), 'IMS Desktop', 'server_config.ini');
+    if (fs.existsSync(configPath)) {
+      const configContent = fs.readFileSync(configPath, 'utf8');
+      const lines = configContent.split('\n');
+      let serverIP = 'localhost';
+      let backendPort = BACKEND_PORT;
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('IP=')) {
+          serverIP = trimmed.substring(3).trim();
+        } else if (trimmed.startsWith('BackendPort=')) {
+          backendPort = parseInt(trimmed.substring(12).trim()) || BACKEND_PORT;
+        }
+        // FrontendPort is ignored - client always uses local frontend server
+      }
+
+      return { serverIP, backendPort };
+    }
+  } catch (error) {
+    console.error('Error reading server config:', error);
+  }
+
+  // Fallback to network IP if no config
+  return { serverIP: getNetworkIP(), backendPort: BACKEND_PORT };
+}
+
+// Initialize server config for client mode
+if (IS_CLIENT_MODE) {
+  const config = getServerConfig();
+  SERVER_IP = config.serverIP;
+  CLIENT_BACKEND_PORT = config.backendPort;
+  console.log(`[CLIENT MODE] Using remote backend: ${SERVER_IP}:${CLIENT_BACKEND_PORT}`);
+  console.log(`[CLIENT MODE] Frontend will be served locally on port ${FRONTEND_PORT}`);
+} else {
+  console.log(`[SERVER MODE] Starting local servers`);
+}
+
 // Configure auto-updater
 autoUpdater.autoDownload = false; // Don't auto-download, let user decide
 autoUpdater.autoInstallOnAppQuit = true; // Auto-install on app quit after download
+
+// Set update channel based on app mode
+// This ensures server gets server updates and client gets client updates
+if (IS_CLIENT_MODE) {
+  autoUpdater.channel = 'client';
+  console.log('[AUTO-UPDATE] Client mode: Will check for client updates');
+} else {
+  autoUpdater.channel = 'server';
+  console.log('[AUTO-UPDATE] Server mode: Will check for server updates');
+}
 
 // Only check for updates in production
 if (!isDev) {
@@ -55,24 +241,201 @@ const mimeTypes = {
   '.txt': 'text/plain'
 };
 
+// Create connection status dialog
+function createConnectionDialog(serverHost, port) {
+  if (connectionWindow) {
+    return; // Already showing
+  }
+  
+  connectionWindow = new BrowserWindow({
+    width: 250,
+    height: 400,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    frame: true,
+    modal: true,
+    show: false,
+    alwaysOnTop: true,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
+    icon: path.join(__dirname, "icon.ico"),
+  });
+  
+  connectionWindow.removeMenu && connectionWindow.removeMenu();
+  
+  // Create HTML content for the connection dialog
+  const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Connecting to Server</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f5f5f5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    .container {
+      text-align: center;
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+      margin: 0 0 15px 0;
+      color: #333;
+      font-size: 18px;
+    }
+    .message {
+      color: #666;
+      margin: 10px 0;
+      font-size: 14px;
+    }
+    .server-info {
+      color: #888;
+      font-size: 12px;
+      margin-top: 15px;
+    }
+    .spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #3498db;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin: 15px auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Connecting to Server</h2>
+    <div class="spinner"></div>
+    <div class="message" id="statusMessage">Establishing connection...</div>
+    <div class="server-info" id="serverInfo">Server: ${serverHost}:${port}</div>
+  </div>
+  <script>
+    // Update status message
+    window.updateStatus = function(message) {
+      const statusEl = document.getElementById('statusMessage');
+      if (statusEl) {
+        statusEl.textContent = message;
+      }
+    };
+  </script>
+</body>
+</html>`;
+  
+  connectionWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
+  connectionWindow.once('ready-to-show', () => {
+    if (connectionWindow) {
+      connectionWindow.show();
+    }
+  });
+  
+  connectionWindow.on("closed", () => {
+    connectionWindow = null;
+  });
+}
+
+// Update connection dialog message
+function updateConnectionDialog(message) {
+  if (connectionWindow && !connectionWindow.isDestroyed()) {
+    connectionWindow.webContents.executeJavaScript(`
+      if (window.updateStatus) {
+        window.updateStatus(${JSON.stringify(message)});
+      }
+    `).catch(() => {
+      // Ignore errors if window is closing
+    });
+  }
+}
+
+// Close connection dialog
+function closeConnectionDialog() {
+  if (connectionWindow && !connectionWindow.isDestroyed()) {
+    connectionWindow.close();
+  }
+  connectionWindow = null;
+}
+
 // Health check function to verify server is ready
-function checkServerHealth(port, maxRetries = 30, interval = 500) {
+function checkServerHealth(port, maxRetries = 30, interval = 500, host = null) {
   return new Promise((resolve, reject) => {
     let retries = 0;
+    const serverHost = host || (IS_CLIENT_MODE ? SERVER_IP : 'localhost');
+    let dialogShown = false;
     
     const check = () => {
-      const req = http.get(`http://localhost:${port}`, (res) => {
-        console.log(`Server on port ${port} is ready (status: ${res.statusCode})`);
+      const url = `http://${serverHost}:${port}`;
+      const req = http.get(url, (res) => {
+        console.log(`Server on ${serverHost}:${port} is ready (status: ${res.statusCode})`);
+        closeConnectionDialog();
         resolve(true);
       });
       
       req.on('error', (err) => {
         retries++;
+        
+        // Show dialog on first failure (retry 1)
+        if (retries === 1 && IS_CLIENT_MODE && !dialogShown) {
+          dialogShown = true;
+          createConnectionDialog(serverHost, port);
+          writeToLog('INFO', `Connection attempt failed, showing connection dialog for ${serverHost}:${port}`);
+        }
+        
         if (retries >= maxRetries) {
-          console.error(`Server on port ${port} failed to start after ${maxRetries} retries`);
-          reject(new Error(`Server on port ${port} not responding`));
+          const errorMsg = `Server on ${serverHost}:${port} failed to respond after ${maxRetries} retries`;
+          console.error(errorMsg);
+          writeToLog('ERROR', errorMsg, err);
+          closeConnectionDialog();
+          reject(new Error(errorMsg));
         } else {
-          console.log(`Waiting for server on port ${port}... (attempt ${retries}/${maxRetries})`);
+          const statusMsg = `Attempting to connect... (${retries}/${maxRetries})`;
+          console.log(`Waiting for server on ${serverHost}:${port}... (attempt ${retries}/${maxRetries})`);
+          if (dialogShown) {
+            updateConnectionDialog(statusMsg);
+          }
+          setTimeout(check, interval);
+        }
+      });
+      
+      req.setTimeout(5000, () => {
+        req.destroy();
+        retries++;
+        
+        // Show dialog on first failure
+        if (retries === 1 && IS_CLIENT_MODE && !dialogShown) {
+          dialogShown = true;
+          createConnectionDialog(serverHost, port);
+          writeToLog('INFO', `Connection timeout, showing connection dialog for ${serverHost}:${port}`);
+        }
+        
+        if (retries >= maxRetries) {
+          const errorMsg = `Server on ${serverHost}:${port} connection timeout`;
+          writeToLog('ERROR', errorMsg);
+          closeConnectionDialog();
+          reject(new Error(errorMsg));
+        } else {
+          const statusMsg = `Connection timeout, retrying... (${retries}/${maxRetries})`;
+          if (dialogShown) {
+            updateConnectionDialog(statusMsg);
+          }
           setTimeout(check, interval);
         }
       });
@@ -95,7 +458,9 @@ function startFrontendServer() {
     const frontendPath = path.join(__dirname, "..", "dist", "frontend");
     
     if (!fs.existsSync(frontendPath)) {
-      console.error("Frontend dist folder not found at:", frontendPath);
+      const errorMsg = `Frontend dist folder not found at: ${frontendPath}`;
+      console.error(errorMsg);
+      writeToLog('ERROR', errorMsg);
       reject(new Error("Frontend files not found"));
       return;
     }
@@ -137,6 +502,7 @@ function startFrontendServer() {
     
     frontendServer.on('error', (err) => {
       console.error('Frontend server error:', err);
+      writeToLog('ERROR', 'Frontend server error', err);
       reject(err);
     });
     
@@ -158,10 +524,13 @@ function startBackend() {
     console.log("Backend exists:", fs.existsSync(backendPath));
 
     if (!fs.existsSync(backendPath)) {
-      console.error("Backend executable not found at:", backendPath);
+      const errorMsg = `Backend executable not found at: ${backendPath}`;
+      console.error(errorMsg);
+      writeToLog('ERROR', errorMsg);
+      const logPath = getLogFilePath();
       dialog.showErrorBox(
         "Backend Error", 
-        `Could not find backend executable at:\n${backendPath}\n\nPlease rebuild the application.`
+        `Could not find backend executable at:\n${backendPath}\n\nPlease rebuild the application.\n\nCheck log file: ${logPath}`
       );
       reject(new Error("Backend executable not found"));
       return;
@@ -175,7 +544,7 @@ function startBackend() {
       env: { 
         ...process.env, 
         ASPNETCORE_ENVIRONMENT: "Production",
-        ASPNETCORE_URLS: `http://*:${BACKEND_PORT}`
+        ASPNETCORE_URLS: `http://0.0.0.0:${BACKEND_PORT}`
       }
     });
 
@@ -188,7 +557,9 @@ function startBackend() {
     });
 
     backendProcess.stderr.on("data", (data) => {
-      console.error(`Backend Error: ${data}`);
+      const errorMsg = data.toString();
+      console.error(`Backend Error: ${errorMsg}`);
+      writeToLog('ERROR', 'Backend Process Error', new Error(errorMsg));
     });
 
     backendProcess.on("close", (code) => {
@@ -197,6 +568,7 @@ function startBackend() {
     
     backendProcess.on("error", (err) => {
       console.error(`Failed to start backend: ${err}`);
+      writeToLog('ERROR', 'Failed to start backend process', err);
       reject(err);
     });
     
@@ -257,17 +629,33 @@ function createMainWindow() {
   });
 
   mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
-    console.error('Failed to load:', errorCode, errorDescription);
+    const errorMsg = `Failed to load page: ${errorCode} - ${errorDescription}`;
+    console.error(errorMsg);
+    writeToLog('ERROR', errorMsg);
     setTimeout(() => {
       console.log('Retrying page load...');
       if (mainWindow && !mainWindow.isDestroyed()) {
-        const loadUrl = isDev ? "http://localhost:3000" : `http://localhost:${FRONTEND_PORT}`;
+        let loadUrl;
+        if (isDev) {
+          loadUrl = "http://localhost:3000";
+        } else {
+          // Both server and client modes use local frontend server
+          loadUrl = `http://localhost:${FRONTEND_PORT}`;
+        }
         mainWindow.loadURL(loadUrl);
       }
     }, 1000);
   });
 
-  const loadUrl = isDev ? "http://localhost:3000" : `http://localhost:${FRONTEND_PORT}`;
+  // Determine URL based on mode
+  let loadUrl;
+  if (isDev) {
+    loadUrl = "http://localhost:3000";
+  } else {
+    // Both server and client modes use local frontend server
+    // Client mode serves bundled frontend locally, connects to remote backend
+    loadUrl = `http://localhost:${FRONTEND_PORT}`;
+  }
   console.log('Loading URL:', loadUrl);
   mainWindow.loadURL(loadUrl);
 
@@ -282,9 +670,11 @@ function createMainWindow() {
 
 app.on("ready", async () => {
   try {
-    // Initialize store first
-    // await initStore();
-    console.log("App ready, starting servers...");
+    // Initialize logging after app is ready
+    initLogFile();
+    writeToLog('INFO', `Application starting in ${APP_MODE.toUpperCase()} mode`);
+    
+    console.log(`App ready, mode: ${APP_MODE.toUpperCase()}...`);
     
     // Check for updates in production (after a short delay to not block startup)
     if (!isDev) {
@@ -294,17 +684,46 @@ app.on("ready", async () => {
       }, 5000); // Wait 5 seconds after app start
     }
     
-    // Start servers first (needed for login API)
-    if (!isDev) {
-      console.log("Starting frontend server...");
-      await startFrontendServer();
-      console.log("Checking frontend server health...");
-      await checkServerHealth(FRONTEND_PORT);
+    if (IS_CLIENT_MODE) {
+      // Client mode: Start local frontend server, connect to remote backend
+      console.log(`[CLIENT MODE] Starting local frontend, connecting to remote backend at ${SERVER_IP}...`);
+      try {
+        // Start local frontend server (serves bundled frontend files)
+        if (!isDev) {
+          console.log("Starting local frontend server...");
+          await startFrontendServer();
+          console.log("Checking local frontend server health...");
+          await checkServerHealth(FRONTEND_PORT, 30, 500, 'localhost');
+          console.log("Local frontend server is ready");
+        }
+        
+        // Check remote backend server health
+        console.log("Checking remote backend server health...");
+        await checkServerHealth(CLIENT_BACKEND_PORT, 30, 500, SERVER_IP);
+        console.log("Remote backend server is ready");
+        
+        // Close dialog if connection succeeds
+        closeConnectionDialog();
+        writeToLog('INFO', `Successfully connected to remote backend at ${SERVER_IP}`);
+      } catch (error) {
+        // Dialog will be closed by checkServerHealth on failure
+        writeToLog('ERROR', `Failed to connect to remote backend at ${SERVER_IP}`, error);
+        throw error;
+      }
+    } else {
+      // Server mode: Start local servers
+      console.log("[SERVER MODE] Starting local servers...");
+      if (!isDev) {
+        console.log("Starting frontend server...");
+        await startFrontendServer();
+        console.log("Checking frontend server health...");
+        await checkServerHealth(FRONTEND_PORT);
+      }
+      console.log("Starting backend server...");
+      await startBackend();
+      console.log("Checking backend server health...");
+      await checkServerHealth(BACKEND_PORT);
     }
-    console.log("Starting backend server...");
-    await startBackend();
-    console.log("Checking backend server health...");
-    await checkServerHealth(BACKEND_PORT);
     
     // Now check if user is already logged in
     const savedAuth = store.get('auth');
@@ -326,9 +745,11 @@ app.on("ready", async () => {
     createLoginWindow();
   } catch (error) {
     console.error("Failed to start application:", error);
+    writeToLog('ERROR', 'Application startup failed', error);
+    const logPath = getLogFilePath();
     dialog.showErrorBox(
       "Startup Error",
-      `Failed to start the application:\n${error.message}\n\nPlease check the logs and try again.`
+      `Failed to start the application:\n${error.message}\n\nPlease check the log file for details:\n${logPath}`
     );
     app.quit();
   }
@@ -337,7 +758,10 @@ app.on("ready", async () => {
 // Verify token validity
 async function verifyToken(token) {
   try {
-    const response = await fetch(`http://localhost:${BACKEND_PORT}/api/Auth/verify`, {
+    const backendUrl = IS_CLIENT_MODE 
+      ? `http://${SERVER_IP}:${CLIENT_BACKEND_PORT}/api/Auth/verify`
+      : `http://localhost:${BACKEND_PORT}/api/Auth/verify`;
+    const response = await fetch(backendUrl, {
       method: 'GET',
       headers: { 
         'Authorization': `Bearer ${token}`,
@@ -347,6 +771,7 @@ async function verifyToken(token) {
     return response.ok;
   } catch (error) {
     console.error('Token verification failed:', error);
+    writeToLog('ERROR', 'Token verification failed', error);
     return false;
   }
 }
@@ -355,7 +780,10 @@ async function verifyToken(token) {
 ipcMain.handle('login-attempt', async (event, { username, password, rememberMe }) => {
   console.log('Login attempt received:', { username, rememberMe });
   try {
-    const response = await fetch(`http://localhost:${BACKEND_PORT}/api/Auth/login`, {
+    const backendUrl = IS_CLIENT_MODE 
+      ? `http://${SERVER_IP}:${CLIENT_BACKEND_PORT}/api/Auth/login`
+      : `http://localhost:${BACKEND_PORT}/api/Auth/login`;
+    const response = await fetch(backendUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
@@ -402,6 +830,7 @@ ipcMain.handle('login-attempt', async (event, { username, password, rememberMe }
     }
   } catch (error) {
     console.error('Login error:', error);
+    writeToLog('ERROR', 'Login attempt failed', error);
     return { 
       success: false, 
       message: 'Connection error. Please try again.' 
@@ -455,13 +884,13 @@ ipcMain.handle('update-token', async (event, newToken, expiresAt) => {
 });
 
 app.on("window-all-closed", () => {
-  // Kill backend process
-  if (backendProcess) {
+  // Kill backend process (only in server mode)
+  if (backendProcess && !IS_CLIENT_MODE) {
     console.log("Killing backend process...");
     backendProcess.kill();
   }
   
-  // Close frontend server
+  // Close frontend server (both server and client modes use local frontend)
   if (frontendServer) {
     console.log("Closing frontend server...");
     frontendServer.close();
@@ -479,14 +908,25 @@ app.on("activate", () => {
 });
 
 app.on("before-quit", () => {
-  // Ensure backend is terminated
-  if (backendProcess) {
+  // Ensure backend is terminated (only in server mode)
+  if (backendProcess && !IS_CLIENT_MODE) {
     backendProcess.kill();
   }
   
-  // Ensure frontend server is closed
+  // Ensure frontend server is closed (both server and client modes use local frontend)
   if (frontendServer) {
     frontendServer.close();
+  }
+  
+  // Close connection dialog if open
+  closeConnectionDialog();
+  
+  // Close log file stream
+  if (logFileStream) {
+    const shutdownMsg = `[${new Date().toISOString()}] Application Shutting Down\n${'='.repeat(80)}\n\n`;
+    logFileStream.write(shutdownMsg);
+    logFileStream.end();
+    logFileStream = null;
   }
 });
 
@@ -540,6 +980,7 @@ autoUpdater.on("update-not-available", (info) => {
 
 autoUpdater.on("error", (err) => {
   console.error("Error in auto-updater:", err);
+  writeToLog('ERROR', 'Auto-updater error', err);
   if (mainWindow) {
     mainWindow.webContents.send("update-status", {
       status: "error",
@@ -605,6 +1046,7 @@ ipcMain.handle("check-for-updates", async () => {
     };
   } catch (error) {
     console.error("Error checking for updates:", error);
+    writeToLog('ERROR', 'Error checking for updates', error);
     return { 
       success: false, 
       message: `Error checking for updates: ${error.message}` 
@@ -621,6 +1063,7 @@ ipcMain.handle("download-update", async () => {
     return { success: true, message: "Download started..." };
   } catch (error) {
     console.error("Error downloading update:", error);
+    writeToLog('ERROR', 'Error downloading update', error);
     return { 
       success: false, 
       message: `Error downloading update: ${error.message}` 
@@ -637,6 +1080,7 @@ ipcMain.handle("install-update", async () => {
     return { success: true, message: "Installing update..." };
   } catch (error) {
     console.error("Error installing update:", error);
+    writeToLog('ERROR', 'Error installing update', error);
     return { 
       success: false, 
       message: `Error installing update: ${error.message}` 
@@ -649,6 +1093,25 @@ ipcMain.handle("get-app-version", async () => {
     version: app.getVersion(),
     name: app.getName()
   };
+});
+
+// IPC handler to get server configuration
+ipcMain.handle("get-server-config", async () => {
+  if (IS_CLIENT_MODE) {
+    return {
+      serverIP: SERVER_IP,
+      frontendPort: FRONTEND_PORT, // Client always uses local frontend
+      backendPort: CLIENT_BACKEND_PORT,
+      mode: 'client'
+    };
+  } else {
+    return {
+      serverIP: 'localhost',
+      frontendPort: FRONTEND_PORT,
+      backendPort: BACKEND_PORT,
+      mode: 'server'
+    };
+  }
 });
 
 // Excel export handler
@@ -681,6 +1144,7 @@ ipcMain.on("export-excel", async (event, jsonData, fileName) => {
     event.reply("export-done", "Excel file saved successfully!");
   } catch (error) {
     console.error("Excel export error:", error);
+    writeToLog('ERROR', 'Excel export error', error);
     event.reply("export-error", error.message);
   }
 });
