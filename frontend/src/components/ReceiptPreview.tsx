@@ -1,8 +1,10 @@
 "use client"
 
-import React from 'react'
+import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Printer, FileText, Receipt } from 'lucide-react'
 
 interface SaleItem {
   id: string
@@ -52,27 +54,43 @@ export function ReceiptPreview({
   companyDescription = "Dealer in all kinds of goods and services",
   companyPhones = ["+256 700 000 000", "+256 700 000 001"]
 }: ReceiptPreviewProps) {
+  const [viewMode, setViewMode] = useState<'card' | 'thermal' | 'medium'>('card')
+
+  // Update body class for print styles
+  React.useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.body.className = document.body.className.replace(/view-mode-\w+/g, '')
+      document.body.classList.add(`view-mode-${viewMode}`)
+    }
+    return () => {
+      if (typeof document !== 'undefined') {
+        document.body.classList.remove(`view-mode-${viewMode}`)
+      }
+    }
+  }, [viewMode])
+
   return (
-    <>
-      {/* Print-specific styles for thermal printer */}
+    <div className={`receipt-preview-wrapper view-mode-${viewMode}`}>
+      {/* Dynamic page size rule based on view mode */}
       <style dangerouslySetInnerHTML={{__html: `
+        @page {
+          ${viewMode === 'thermal' ? 'size: 80mm auto; margin: 0; padding: 5mm;' : ''}
+          ${viewMode === 'medium' ? 'size: 148mm 105mm; margin: 0; padding: 8mm;' : ''}
+          ${viewMode === 'card' ? 'size: A5; margin: 0; padding: 10mm;' : ''}
+        }
+        
         @media print {
-          @page {
-            size: 80mm auto;
-            margin: 0;
-            padding: 5mm;
-          }
-          
           body * {
             visibility: hidden;
           }
           
-          .thermal-receipt,
-          .thermal-receipt * {
+          /* Thermal printer format (80mm) */
+          .view-mode-thermal .thermal-receipt,
+          .view-mode-thermal .thermal-receipt * {
             visibility: visible;
           }
           
-          .thermal-receipt {
+          .view-mode-thermal .thermal-receipt {
             position: absolute;
             left: 0;
             top: 0;
@@ -86,11 +104,55 @@ export function ReceiptPreview({
             line-height: 1.2;
           }
           
-          .thermal-receipt .no-print {
-            display: none;
+          /* Medium format (half A5 = 148mm x 105mm) */
+          .view-mode-medium .medium-receipt,
+          .view-mode-medium .medium-receipt * {
+            visibility: visible;
+          }
+          
+          .view-mode-medium .medium-receipt {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 148mm;
+            max-width: 148mm;
+            margin: 0;
+            padding: 8mm;
+            background: white;
+            color: black;
+          }
+          
+          /* Card format */
+          .view-mode-card .card-receipt,
+          .view-mode-card .card-receipt * {
+            visibility: visible;
+          }
+          
+          .view-mode-card .card-receipt {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 210mm;
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 10mm;
+            background: white;
+            color: black;
+          }
+          
+          .no-print,
+          .hidden {
+            display: none !important;
+            visibility: hidden !important;
           }
         }
         
+        /* Screen styles for all formats */
+        .receipt-preview-wrapper {
+          width: 100%;
+        }
+        
+        /* Thermal receipt styles */
         .thermal-receipt {
           font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
           width: 80mm;
@@ -120,6 +182,14 @@ export function ReceiptPreview({
         .thermal-receipt .receipt-info {
           font-size: 8pt;
           margin: 2px 0;
+          word-wrap: break-word;
+          white-space: normal;
+        }
+        
+        .thermal-receipt .receipt-info.description {
+          word-wrap: break-word;
+          white-space: normal;
+          overflow-wrap: break-word;
         }
         
         .thermal-receipt .receipt-section {
@@ -184,10 +254,123 @@ export function ReceiptPreview({
           border-top: 1px dashed #000;
           font-size: 8pt;
         }
+        
+        /* Medium format styles (half A5) */
+        .medium-receipt {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          width: 148mm;
+          max-width: 148mm;
+          margin: 0 auto;
+          padding: 12px;
+          background: white;
+          color: black;
+          font-size: 11pt;
+          line-height: 1.4;
+        }
+        
+        .medium-receipt .receipt-header {
+          text-align: center;
+          border-bottom: 2px solid #000;
+          padding-bottom: 10px;
+          margin-bottom: 10px;
+        }
+        
+        .medium-receipt .receipt-title {
+          font-weight: bold;
+          font-size: 16pt;
+          margin-bottom: 6px;
+          text-transform: uppercase;
+        }
+        
+        .medium-receipt .receipt-info {
+          font-size: 9pt;
+          margin: 3px 0;
+        }
+        
+        .medium-receipt .receipt-section {
+          margin: 10px 0;
+        }
+        
+        .medium-receipt .receipt-line {
+          display: flex;
+          justify-content: space-between;
+          margin: 4px 0;
+          font-size: 10pt;
+        }
+        
+        .medium-receipt .receipt-line-item {
+          display: flex;
+          justify-content: space-between;
+          margin: 3px 0;
+          font-size: 9pt;
+          border-bottom: 1px dotted #ccc;
+          padding-bottom: 3px;
+        }
+        
+        .medium-receipt .item-name {
+          flex: 1;
+          text-align: left;
+          max-width: 50%;
+        }
+        
+        .medium-receipt .item-qty {
+          width: 10%;
+          text-align: center;
+        }
+        
+        .medium-receipt .item-price {
+          width: 20%;
+          text-align: right;
+        }
+        
+        .medium-receipt .item-total {
+          width: 20%;
+          text-align: right;
+          font-weight: bold;
+        }
+        
+        .medium-receipt .receipt-divider {
+          border-top: 2px solid #000;
+          margin: 8px 0;
+        }
+        
+        .medium-receipt .receipt-total {
+          font-weight: bold;
+          font-size: 12pt;
+        }
+        
+        .medium-receipt .receipt-footer {
+          text-align: center;
+          margin-top: 15px;
+          padding-top: 10px;
+          border-top: 2px solid #000;
+          font-size: 9pt;
+        }
       `}} />
 
+      {/* View Mode Toggle */}
+      <div className="mb-4 no-print">
+        <Tabs value={viewMode} className='dark:bg-gray-900' onValueChange={(value) => setViewMode(value as 'card' | 'thermal' | 'medium')}>
+          <TabsList className="w-full justify-start dark:bg-gray-800">
+            <TabsTrigger value="card" className="flex items-center gap-2 dark:data-[state=active]:bg-gray-700 data-[state=active]:bg-gray-200">
+              <FileText className="h-4 w-4" />
+              Card Preview
+            </TabsTrigger>
+            <TabsTrigger value="thermal" className="flex items-center gap-2 dark:data-[state=active]:bg-gray-700 data-[state=active]:bg-gray-200">
+              <Printer className="h-4 w-4" />
+              Thermal (80mm)
+            </TabsTrigger>
+            <TabsTrigger value="medium" className="flex items-center gap-2 dark:data-[state=active]:bg-gray-700 data-[state=active]:bg-gray-200">
+              <Receipt className="h-4 w-4" />
+              Medium (Half A5)
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
       {/* Screen preview - Card component */}
-      <Card className="w-full max-w-md mx-auto bg-white dark:bg-gray-800 text-black dark:text-white no-print">
+      <div className={viewMode !== 'card' ? 'hidden' : ''}>
+        <Card className="w-full max-w-md mx-auto bg-white dark:bg-gray-800 text-black dark:text-white card-receipt">
         <CardHeader className="text-center pb-4">
           <CardTitle className="text-xl font-bold">{companyName}</CardTitle>
           <p className="text-sm text-gray-600 dark:text-gray-400">{companyDescription}</p>
@@ -281,13 +464,14 @@ export function ReceiptPreview({
           </div>
         </CardContent>
       </Card>
+      </div>
 
       {/* Thermal printer optimized receipt */}
-      <div className="thermal-receipt">
+      <div className={`thermal-receipt ${viewMode !== 'thermal' ? 'hidden' : ''}`}>
         <div className="receipt-header">
           <div className="receipt-title">{truncateText(companyName, 32)}</div>
           {companyDescription && (
-            <div className="receipt-info">{truncateText(companyDescription, 32)}</div>
+            <div className="receipt-info description">{companyDescription}</div>
           )}
           {companyAddress && (
             <div className="receipt-info">{truncateText(companyAddress, 32)}</div>
@@ -372,6 +556,9 @@ export function ReceiptPreview({
           </div>
         </div>
 
+        {/* Space for stamps */}
+        <div style={{ height: '30mm', minHeight: '30mm' }}></div>
+
         <div className="receipt-divider"></div>
 
         {/* Footer */}
@@ -380,6 +567,108 @@ export function ReceiptPreview({
           <div>Visit us again</div>
         </div>
       </div>
-    </>
+
+      {/* Medium format receipt (half A5) */}
+      <div className={`medium-receipt ${viewMode !== 'medium' ? 'hidden' : ''}`}>
+        <div className="receipt-header">
+          <div className="receipt-title">{companyName}</div>
+          {companyDescription && (
+            <div className="receipt-info">{companyDescription}</div>
+          )}
+          {companyAddress && (
+            <div className="receipt-info">{companyAddress}</div>
+          )}
+          {companyPhones && companyPhones.length > 0 && (
+            <div className="receipt-info">{companyPhones.join(", ")}</div>
+          )}
+        </div>
+
+        <div className="receipt-section">
+          <div className="receipt-line" style={{ fontWeight: 'bold', textAlign: 'center', marginBottom: '8px' }}>
+            SALES RECEIPT
+          </div>
+          
+          {saleId && (
+            <div className="receipt-line">
+              <span>Receipt:</span>
+              <span>SA-{saleId.slice(0,8)}</span>
+            </div>
+          )}
+          
+          <div className="receipt-line">
+            <span>Date:</span>
+            <span>{date}</span>
+          </div>
+          
+          <div className="receipt-line">
+            <span>Customer:</span>
+            <span>{customerName}</span>
+          </div>
+        </div>
+
+        <div className="receipt-divider"></div>
+
+        {/* Items Header */}
+        <div className="receipt-line" style={{ fontWeight: 'bold', borderBottom: '2px solid #000', paddingBottom: '4px', marginBottom: '6px' }}>
+          <span className="item-name">Item</span>
+          <span className="item-qty">Qty</span>
+          <span className="item-price">Rate</span>
+          <span className="item-total">Total</span>
+        </div>
+
+        {/* Items */}
+        {items.map((item) => (
+          <div key={item.id} className="receipt-line-item">
+            <span className="item-name" title={item.productName}>{item.productName}</span>
+            <span className="item-qty">{item.quantity}</span>
+            <span className="item-price">Shs {formatCurrency(item.basePrice)}</span>
+            <span className="item-total">Shs {formatCurrency(item.totalPrice)}</span>
+          </div>
+        ))}
+
+        <div className="receipt-divider"></div>
+
+        {/* Totals */}
+        <div className="receipt-section">
+          <div className="receipt-line">
+            <span>Sub Total:</span>
+            <span>Shs {formatCurrency(totalAmount)}</span>
+          </div>
+
+          {discount > 0 && (
+            <div className="receipt-line">
+              <span>Discount:</span>
+              <span>-Shs {formatCurrency(discount)}</span>
+            </div>
+          )}
+
+          <div className="receipt-line receipt-total">
+            <span>Grand Total:</span>
+            <span>Shs {formatCurrency(totalAmount - discount)}</span>
+          </div>
+
+          <div className="receipt-line">
+            <span>Paid Amount:</span>
+            <span>Shs {formatCurrency(paidAmount)}</span>
+          </div>
+
+          <div className="receipt-line receipt-total">
+            <span>Return Amount:</span>
+            <span>Shs {formatCurrency(returnAmount)}</span>
+          </div>
+        </div>
+
+        {/* Space for stamps */}
+        <div style={{ height: '40mm', minHeight: '40mm' }}></div>
+
+        <div className="receipt-divider"></div>
+
+        {/* Footer */}
+        <div className="receipt-footer">
+          <div>Thank you for your business!</div>
+          <div>Visit us again</div>
+        </div>
+      </div>
+    </div>
   )
 }

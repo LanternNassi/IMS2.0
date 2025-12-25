@@ -378,7 +378,8 @@ function closeConnectionDialog() {
 function checkServerHealth(port, maxRetries = 30, interval = 500, host = null) {
   return new Promise((resolve, reject) => {
     let retries = 0;
-    const serverHost = host || (IS_CLIENT_MODE ? SERVER_IP : 'localhost');
+    // Use 127.0.0.1 instead of localhost to force IPv4 (avoid IPv6 ::1 issues)
+    const serverHost = host || (IS_CLIENT_MODE ? SERVER_IP : '127.0.0.1');
     let dialogShown = false;
     
     const check = () => {
@@ -640,7 +641,7 @@ function createMainWindow() {
           loadUrl = "http://localhost:3000";
         } else {
           // Both server and client modes use local frontend server
-          loadUrl = `http://localhost:${FRONTEND_PORT}`;
+          loadUrl = `http://127.0.0.1:${FRONTEND_PORT}`;
         }
         mainWindow.loadURL(loadUrl);
       }
@@ -654,7 +655,7 @@ function createMainWindow() {
   } else {
     // Both server and client modes use local frontend server
     // Client mode serves bundled frontend locally, connects to remote backend
-    loadUrl = `http://localhost:${FRONTEND_PORT}`;
+    loadUrl = `http://127.0.0.1:${FRONTEND_PORT}`;
   }
   console.log('Loading URL:', loadUrl);
   mainWindow.loadURL(loadUrl);
@@ -680,7 +681,12 @@ app.on("ready", async () => {
     if (!isDev) {
       setTimeout(() => {
         console.log("Checking for updates...");
-        autoUpdater.checkForUpdates();
+        // Wrap in try-catch to prevent unhandled rejections
+        autoUpdater.checkForUpdates().catch((error) => {
+          console.error("Error checking for updates (non-critical):", error);
+          writeToLog('WARN', 'Update check failed (non-critical)', error);
+          // Don't throw - this is non-critical and shouldn't block app startup
+        });
       }, 5000); // Wait 5 seconds after app start
     }
     
@@ -693,7 +699,7 @@ app.on("ready", async () => {
           console.log("Starting local frontend server...");
           await startFrontendServer();
           console.log("Checking local frontend server health...");
-          await checkServerHealth(FRONTEND_PORT, 30, 500, 'localhost');
+          await checkServerHealth(FRONTEND_PORT, 30, 500, '127.0.0.1');
           console.log("Local frontend server is ready");
         }
         
@@ -717,12 +723,12 @@ app.on("ready", async () => {
         console.log("Starting frontend server...");
         await startFrontendServer();
         console.log("Checking frontend server health...");
-        await checkServerHealth(FRONTEND_PORT);
+        await checkServerHealth(FRONTEND_PORT, 30, 500, '127.0.0.1');
       }
       console.log("Starting backend server...");
       await startBackend();
-      console.log("Checking backend server health...");
-      await checkServerHealth(BACKEND_PORT);
+        console.log("Checking backend server health...");
+        await checkServerHealth(BACKEND_PORT, 30, 500, '127.0.0.1');
     }
     
     // Now check if user is already logged in
@@ -760,7 +766,7 @@ async function verifyToken(token) {
   try {
     const backendUrl = IS_CLIENT_MODE 
       ? `http://${SERVER_IP}:${CLIENT_BACKEND_PORT}/api/Auth/verify`
-      : `http://localhost:${BACKEND_PORT}/api/Auth/verify`;
+      : `http://127.0.0.1:${BACKEND_PORT}/api/Auth/verify`;
     const response = await fetch(backendUrl, {
       method: 'GET',
       headers: { 
@@ -782,7 +788,7 @@ ipcMain.handle('login-attempt', async (event, { username, password, rememberMe }
   try {
     const backendUrl = IS_CLIENT_MODE 
       ? `http://${SERVER_IP}:${CLIENT_BACKEND_PORT}/api/Auth/login`
-      : `http://localhost:${BACKEND_PORT}/api/Auth/login`;
+      : `http://127.0.0.1:${BACKEND_PORT}/api/Auth/login`;
     const response = await fetch(backendUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -980,8 +986,11 @@ autoUpdater.on("update-not-available", (info) => {
 
 autoUpdater.on("error", (err) => {
   console.error("Error in auto-updater:", err);
-  writeToLog('ERROR', 'Auto-updater error', err);
-  if (mainWindow) {
+  writeToLog('WARN', 'Auto-updater error (non-critical)', err);
+  // Don't show error to user for network issues - updates are optional
+  // Only log it for debugging purposes
+  if (mainWindow && err.code !== 'ERR_NAME_NOT_RESOLVED' && err.code !== 'ENOTFOUND') {
+    // Only show non-network errors to user
     mainWindow.webContents.send("update-status", {
       status: "error",
       message: `Update error: ${err.message}`
@@ -1106,7 +1115,7 @@ ipcMain.handle("get-server-config", async () => {
     };
   } else {
     return {
-      serverIP: 'localhost',
+      serverIP: '127.0.0.1',
       frontendPort: FRONTEND_PORT,
       backendPort: BACKEND_PORT,
       mode: 'server'

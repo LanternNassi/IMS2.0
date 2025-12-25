@@ -390,7 +390,8 @@ export default function SettingsPage() {
                     type="date"
                     value={businessConfig.licenseValidTill ? businessConfig.licenseValidTill.split("T")[0] : ""}
                     onChange={(e) => handleBusinessConfigChange("licenseValidTill", e.target.value)}
-                    className="dark:bg-gray-700 bg-white"
+                    disabled
+                    className="dark:bg-gray-700 bg-white disabled:opacity-60"
                   />
                 </div>
               </div>
@@ -402,7 +403,8 @@ export default function SettingsPage() {
                     id="ims-key"
                     value={businessConfig.imsKey}
                     onChange={(e) => handleBusinessConfigChange("imsKey", e.target.value)}
-                    className="dark:bg-gray-700 bg-white"
+                    disabled
+                    className="dark:bg-gray-700 bg-white disabled:opacity-60"
                   />
                 </div>
                 <div className="space-y-2">
@@ -411,7 +413,8 @@ export default function SettingsPage() {
                     id="ims-version"
                     value={businessConfig.imsVersion}
                     onChange={(e) => handleBusinessConfigChange("imsVersion", e.target.value)}
-                    className="dark:bg-gray-700 bg-white"
+                    disabled
+                    className="dark:bg-gray-700 bg-white disabled:opacity-60"
                   />
                 </div>
               </div>
