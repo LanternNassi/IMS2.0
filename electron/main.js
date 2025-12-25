@@ -9,14 +9,6 @@ const fs = require("fs");
 const url = require("url");
 const os = require("os");
 
-// Use dynamic import for electron-store (ESM)
-// let store;
-// async function initStore() {
-//   const Store = (await import('electron-store')).default;
-//   store = new Store({
-//     encryptionKey: 'your-encryption-key-here', // Use a secure key in production
-//   });
-// }
 
 const Store = require('electron-store');
 const store = new Store({

@@ -32,7 +32,7 @@ namespace ImsServer.Controllers
                            s.IsCompleted &&
                            s.SaleDate >= startDate && 
                            s.SaleDate < endDate)
-                .SumAsync(s => s.FinalAmount);
+                .SumAsync(s => s.PaidAmount);
 
             // Total Products
             var totalProducts = await _db.Products
@@ -68,7 +68,7 @@ namespace ImsServer.Controllers
                            s.IsCompleted &&
                            s.SaleDate >= previousStartDate && 
                            s.SaleDate < previousEndDate)
-                .SumAsync(s => s.FinalAmount);
+                .SumAsync(s => s.PaidAmount);
 
             var previousProducts = await _db.Products
                 .Where(p => !p.DeletedAt.HasValue && p.IsActive)
@@ -136,7 +136,7 @@ namespace ImsServer.Controllers
                 .Select(g => new
                 {
                     name = new DateTime(g.Key.Year, g.Key.Month, 1).ToString("MMM"),
-                    total = Math.Round(g.Sum(s => s.FinalAmount), 2)
+                    total = Math.Round(g.Sum(s => s.PaidAmount), 2)
                 })
                 .OrderBy(x => x.name)
                 .ToList();
@@ -435,7 +435,7 @@ namespace ImsServer.Controllers
                     id = s.Id,
                     type = "sale",
                     title = $"Order #{s.Id.ToString().Substring(0, 8)}",
-                    amount = s.FinalAmount,
+                    amount = s.PaidAmount,
                     date = s.SaleDate,
                     customer = s.Customer != null ? s.Customer.Name : "Walk-in"
                 })

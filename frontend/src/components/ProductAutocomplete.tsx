@@ -59,16 +59,24 @@ export const ProductAutocomplete: React.FC<ProductAutocompleteProps> = ({
   useEffect(() => {
     let active = true
 
+    // Only fetch if input has at least 2 characters
+    if (inputValue.trim().length < 2) {
+      setOptions([])
+      setLoading(false)
+      return
+    }
+
     const fetchProductVariations = async () => {
       setLoading(true)
       try {
-        const response = await api.get('/ProductVariations')
+        // Fetch with keywords parameter and limit to 6 results
+        const response = await api.get(`/ProductVariations?keywords=${encodeURIComponent(inputValue.trim())}`)
         if (active) {
           const activeVariations = (response.data || []).filter(
             (v: ProductVariation) => v.isActive && !v.deletedAt
-          )
+          ).slice(0, 6) // Limit to maximum 6 items
           
-          // Fetch storage locations for each product variation
+          // Fetch storage locations for each product variation (only for the limited set)
           const variationsWithStorages = await Promise.all(
             activeVariations.map(async (variation: ProductVariation) => {
               try {
@@ -120,12 +128,25 @@ export const ProductAutocomplete: React.FC<ProductAutocompleteProps> = ({
       }
     }
 
-    fetchProductVariations()
+    // Debounce the API call
+    const timeoutId = setTimeout(() => {
+      fetchProductVariations()
+    }, 300)
 
     return () => {
       active = false
+      clearTimeout(timeoutId)
     }
-  }, [])
+  }, [inputValue])
+
+  // Initialize input value when value prop changes
+  useEffect(() => {
+    if (value) {
+      setInputValue(value.name || '')
+    } else if (!inputValue) {
+      setInputValue('')
+    }
+  }, [value])
 
   return (
     <Autocomplete
@@ -143,12 +164,15 @@ export const ProductAutocomplete: React.FC<ProductAutocompleteProps> = ({
           setInputValue(newInputValue)
         } else if (reason === 'reset') {
           setInputValue(value?.name || '')
+        } else if (reason === 'clear') {
+          setInputValue('')
         }
       }}
       onChange={(_, newValue) => {
         onChange(newValue)
         setInputValue(newValue?.name || '')
       }}
+      noOptionsText={inputValue.trim().length < 2 ? 'Type at least 2 characters to search' : 'No products found'}
       renderInput={(params) => (
         <TextField
           {...params}
@@ -156,6 +180,7 @@ export const ProductAutocomplete: React.FC<ProductAutocompleteProps> = ({
           required={required}
           variant="outlined"
           inputRef={inputRef}
+          placeholder={inputValue.trim().length < 2 ? 'Type at least 2 characters...' : undefined}
           InputProps={{
             ...params.InputProps,
             endAdornment: (

@@ -7,6 +7,10 @@ import {
   Button,
   Checkbox,
   Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   FormControl,
   FormControlLabel,
   Grid,
@@ -21,8 +25,9 @@ import {
   Stack,
   CircularProgress,
   Chip,
+  Alert,
 } from "@mui/material"
-import { Add, Delete, Save, Info, ErrorOutline, } from "@mui/icons-material"
+import { Add, Delete, Save, Info, ErrorOutline, SwapHoriz } from "@mui/icons-material"
 
 import { Product, ProductVariation, ProductGeneric, ProductStorage, Supplier, Store } from '../types/productTypes'
 
@@ -40,8 +45,23 @@ export function ProductForm({
 
   const { fetchProductById } = useProductStore((state) => state)
   const { getStoreById } = useStoresStore((state) => state)
- 
+
   const [isLoading, setIsLoading] = useState<boolean>(false)
+
+  // Transfer dialog state
+  const [transferDialog, setTransferDialog] = useState<{
+    open: boolean
+    genericIndex: number
+    storageIndex: number
+    sourceStorage: ProductStorage | null
+  }>({
+    open: false,
+    genericIndex: -1,
+    storageIndex: -1,
+    sourceStorage: null,
+  })
+  const [transferQuantity, setTransferQuantity] = useState<number>(0)
+  const [destinationStore, setDestinationStore] = useState<Store | null>(null)
 
   const initialProduct: Product = {
     id: "",
@@ -87,7 +107,7 @@ export function ProductForm({
       setProduct(prev => {
         // Find existing main variation ID to preserve it
         const existingMainId = prev.variations.find(v => v.isMain)?.id
-        
+
         // Create or update main variation based on product form
         const mainVariation: ProductVariation = {
           id: existingMainId || crypto.randomUUID(),
@@ -138,12 +158,12 @@ export function ProductForm({
       isActive: true,
       isMain: false,
     }
-    
+
     // Only add productId when editing an existing product
     if (productId) {
       newVariation.productId = form.id
     }
-    
+
     setProduct({
       ...product,
       variations: [
@@ -206,24 +226,95 @@ export function ProductForm({
   // Storage
   const addStorage = (genericIndex: number) => {
     const newGenerics = [...product!.generics]
+    const existingStorages = newGenerics[genericIndex].productStorages || []
+
+    // Calculate total quantity across all existing storages
+    const totalQuantity = existingStorages.reduce((sum, storage) => sum + (storage.quantity || 0), 0)
+
+    // Calculate quantity to allocate to new storage (proportional distribution)
+    // If there are existing storages, take a portion from each proportionally
+    let quantityForNewStorage = 0
+    const updatedStorages = existingStorages.map((storage) => {
+      if (totalQuantity > 0 && existingStorages.length > 0) {
+        // Take a proportional amount from each existing storage
+        // For example, if we have 2 storages and add a 3rd, each gives 1/3 of their quantity
+        const proportion = 1 / (existingStorages.length + 1)
+        const quantityToDeduct = (storage.quantity || 0) * proportion
+        quantityForNewStorage += quantityToDeduct
+
+        return {
+          ...storage,
+          quantity: Math.max(0, (storage.quantity || 0) - quantityToDeduct)
+        }
+      }
+      return storage
+    })
+
     const newStorage: ProductStorage = {
       id: crypto.randomUUID(),
       productGenericId: newGenerics[genericIndex].id,
       productVariationId: product!.variations.find((v) => v.isMain)?.id || "",
-      quantity: 0,
+      quantity: quantityForNewStorage,
       storageId: "",
       storageName: "",
       reorderLevel: form.reorderLevel,
     }
-    newGenerics[genericIndex].productStorages = [...(newGenerics[genericIndex].productStorages || []), newStorage]
+
+    newGenerics[genericIndex].productStorages = [...updatedStorages, newStorage]
     setProduct({
       ...product!,
       generics: newGenerics,
     })
   }
+
   const removeStorage = (genericIndex: number, storageIndex: number) => {
     const newGenerics = [...product!.generics]
-    newGenerics[genericIndex].productStorages.splice(storageIndex, 1)
+    const storages = [...(newGenerics[genericIndex].productStorages || [])]
+    const storageToRemove = storages[storageIndex]
+    const quantityToRedistribute = storageToRemove?.quantity || 0
+
+    // Remove the storage and create new array
+    const remainingStorages = storages
+      .filter((_, index) => index !== storageIndex)
+      .map(storage => ({ ...storage })) // Create new objects to avoid mutation
+
+    // Redistribute the quantity to remaining storages
+    if (remainingStorages.length > 0 && quantityToRedistribute > 0) {
+      // Distribute proportionally based on existing quantities
+      const totalRemainingQuantity = remainingStorages.reduce((sum, s) => sum + (s.quantity || 0), 0)
+
+      if (totalRemainingQuantity > 0) {
+        // Proportional distribution based on existing quantities
+        const updatedStorages = remainingStorages.map((storage) => {
+          const proportion = (storage.quantity || 0) / totalRemainingQuantity
+          return {
+            ...storage,
+            quantity: (storage.quantity || 0) + (quantityToRedistribute * proportion)
+          }
+        })
+        newGenerics[genericIndex].productStorages = updatedStorages
+      } else {
+        // If all remaining storages have 0 quantity, distribute equally
+        const equalShare = quantityToRedistribute / remainingStorages.length
+        const updatedStorages = remainingStorages.map((storage) => ({
+          ...storage,
+          quantity: (storage.quantity || 0) + equalShare
+        }))
+        newGenerics[genericIndex].productStorages = updatedStorages
+      }
+    } else if (remainingStorages.length > 0 && quantityToRedistribute > 0) {
+      // If no existing quantity, add all to the first storage
+      const updatedStorages = remainingStorages.map((storage, index) => ({
+        ...storage,
+        quantity: index === 0
+          ? (storage.quantity || 0) + quantityToRedistribute
+          : (storage.quantity || 0)
+      }))
+      newGenerics[genericIndex].productStorages = updatedStorages
+    } else {
+      newGenerics[genericIndex].productStorages = remainingStorages
+    }
+
     setProduct({
       ...product!,
       generics: newGenerics,
@@ -245,6 +336,89 @@ export function ProductForm({
       ...product!,
       generics: newGenerics,
     })
+  }
+
+  // Transfer products between storages
+  const handleOpenTransferDialog = (genericIndex: number, storageIndex: number) => {
+    const sourceStorage = product!.generics[genericIndex].productStorages[storageIndex]
+    setTransferDialog({
+      open: true,
+      genericIndex,
+      storageIndex,
+      sourceStorage,
+    })
+    setTransferQuantity(0)
+    setDestinationStore(null)
+  }
+
+  const handleCloseTransferDialog = () => {
+    setTransferDialog({
+      open: false,
+      genericIndex: -1,
+      storageIndex: -1,
+      sourceStorage: null,
+    })
+    setTransferQuantity(0)
+    setDestinationStore(null)
+  }
+
+  const handleTransferProducts = () => {
+    if (!destinationStore || transferQuantity <= 0) {
+      return
+    }
+
+    const { genericIndex, storageIndex, sourceStorage } = transferDialog
+    if (!sourceStorage) return
+
+    // Validate transfer quantity doesn't exceed source quantity
+    if (transferQuantity > (sourceStorage.quantity || 0)) {
+      alert(`Cannot transfer more than available quantity (${sourceStorage.quantity || 0})`)
+      return
+    }
+
+    const newGenerics = [...product!.generics]
+    const storages = [...newGenerics[genericIndex].productStorages]
+
+    // Deduct from source storage
+    const updatedSourceStorage = {
+      ...storages[storageIndex],
+      quantity: Math.max(0, (storages[storageIndex].quantity || 0) - transferQuantity),
+    }
+    storages[storageIndex] = updatedSourceStorage
+
+    // Find or create destination storage
+    const destinationStorageIndex = storages.findIndex(
+      (s) => s.storageId === destinationStore.id && s.id !== sourceStorage.id
+    )
+
+    if (destinationStorageIndex >= 0) {
+      // Destination storage exists, add to it
+      storages[destinationStorageIndex] = {
+        ...storages[destinationStorageIndex],
+        quantity: (storages[destinationStorageIndex].quantity || 0) + transferQuantity,
+      }
+    } else {
+      // Create new destination storage
+      const newStorage: ProductStorage = {
+        id: crypto.randomUUID(),
+        productGenericId: newGenerics[genericIndex].id,
+        productVariationId: sourceStorage.productVariationId || product!.variations.find((v) => v.isMain)?.id || "",
+        quantity: transferQuantity,
+        storageId: destinationStore.id,
+        storageName: destinationStore.name,
+        reorderLevel: sourceStorage.reorderLevel || form.reorderLevel,
+        store: destinationStore,
+      }
+      storages.push(newStorage)
+    }
+
+    newGenerics[genericIndex].productStorages = storages
+    setProduct({
+      ...product!,
+      generics: newGenerics,
+    })
+
+    handleCloseTransferDialog()
   }
 
   // Submit
@@ -379,7 +553,7 @@ export function ProductForm({
               Pricing Information
             </Typography>
             <Grid container spacing={3}>
-              <Grid item xs={12} md={4}>
+              <Grid item xs={12}>
                 <TextField
                   label="Base Cost Price"
                   name="baseCostPrice"
@@ -391,7 +565,7 @@ export function ProductForm({
                   InputProps={{ startAdornment: "Shs." }}
                 />
               </Grid>
-              <Grid item xs={12} md={4}>
+              <Grid item xs={12}>
                 <TextField
                   label="Base Retail Price"
                   name="baseRetailPrice"
@@ -403,7 +577,7 @@ export function ProductForm({
                   InputProps={{ startAdornment: "Shs." }}
                 />
               </Grid>
-              <Grid item xs={12} md={4}>
+              <Grid item xs={12}>
                 <TextField
                   label="Base Wholesale Price"
                   name="baseWholeSalePrice"
@@ -508,9 +682,9 @@ export function ProductForm({
               </Typography>
             </Box>
             <Button variant="contained" startIcon={<Add />} onClick={addVariation} sx={{ borderRadius: 2 }}>
-            Add Variation
-          </Button>
-        </Stack>
+              Add Variation
+            </Button>
+          </Stack>
 
           {product.variations.length > 0 && product.variations.some(v => v.isMain) && (
             <Box sx={{ p: 2, mb: 3, bgcolor: 'info.lighter', borderRadius: 1, border: 1, borderColor: 'info.main' }}>
@@ -573,7 +747,7 @@ export function ProductForm({
                           disabled={variation.isMain}
                         />
                       </Grid>
-                      <Grid item xs={12}>
+                      <Grid item xs={6}>
                         <TextField
                           label="Unit of Measure"
                           value={variation.unitofMeasure || ""}
@@ -583,7 +757,7 @@ export function ProductForm({
                           disabled={variation.isMain}
                         />
                       </Grid>
-                      <Grid item xs={6} md={4}>
+                      <Grid item xs={12}>
                         <TextField
                           label="Cost Price"
                           type="number"
@@ -595,7 +769,7 @@ export function ProductForm({
                           disabled={variation.isMain}
                         />
                       </Grid>
-                      <Grid item xs={6} md={4}>
+                      <Grid item xs={12}>
                         <TextField
                           label="Retail Price"
                           type="number"
@@ -607,7 +781,7 @@ export function ProductForm({
                           disabled={variation.isMain}
                         />
                       </Grid>
-                      <Grid item xs={6} md={4}>
+                      <Grid item xs={12}>
                         <TextField
                           label="Wholesale Price"
                           type="number"
@@ -685,9 +859,9 @@ export function ProductForm({
               </Typography>
             </Box>
             <Button variant="contained" startIcon={<Add />} onClick={addGeneric} sx={{ borderRadius: 2 }}>
-            Add Generic
-          </Button>
-        </Stack>
+              Add Generic
+            </Button>
+          </Stack>
 
           {product.generics.length === 0 ? (
             <Box sx={{ p: 4, textAlign: "center", border: 1, borderColor: "divider", borderRadius: 2 }}>
@@ -734,14 +908,14 @@ export function ProductForm({
                         onChange={(newValue) => {
                           const newGenerics = [...product!.generics]
                           if (newValue) {
-                            newGenerics[index] = { 
-                              ...newGenerics[index], 
+                            newGenerics[index] = {
+                              ...newGenerics[index],
                               supplierId: newValue.id,
                               supplier: newValue
                             }
                           } else {
-                            newGenerics[index] = { 
-                              ...newGenerics[index], 
+                            newGenerics[index] = {
+                              ...newGenerics[index],
                               supplierId: "",
                               supplier: undefined
                             }
@@ -832,7 +1006,7 @@ export function ProductForm({
                     <Typography variant="subtitle1" fontWeight="medium">
                       Storage Locations
                     </Typography>
-                    <Button
+                    {/* <Button
                       variant="outlined"
                       size="small"
                       startIcon={<Add />}
@@ -840,7 +1014,7 @@ export function ProductForm({
                       sx={{ borderRadius: 1 }}
                     >
                       Add Storage
-                    </Button>
+                    </Button> */}
                   </Stack>
 
                   {generic.productStorages.length === 0 ? (
@@ -856,11 +1030,10 @@ export function ProductForm({
                     <Grid container spacing={2}>
                       {generic.productStorages.map((storage, storageIndex) => (
                         <Grid item xs={12} key={storage.id}>
-                          <Box sx={{ p: 2, borderRadius: 1 }}>
-                            <Grid container spacing={2} alignItems="center">
+                          <Box sx={{ p: 2, borderRadius: 2 }}>
+                            <Grid container spacing={2} alignItems="flex-end">
 
-
-                              <Grid item xs={12} md={3}>
+                              <Grid item xs={12} md={2.5}>
                                 <StoreAutocomplete
                                   value={storage.store || null}
                                   onChange={(newValue) => {
@@ -888,7 +1061,7 @@ export function ProductForm({
                                 />
                               </Grid>
 
-                              <Grid item xs={12} md={3}>
+                              <Grid item xs={12} md={2}>
                                 <TextField
                                   label="Quantity"
                                   type="number"
@@ -901,7 +1074,7 @@ export function ProductForm({
                                 />
                               </Grid>
 
-                              <Grid item xs={12} md={3}>
+                              <Grid item xs={12} md={2}>
                                 <TextField
                                   label="Reorder Level"
                                   type="number"
@@ -933,17 +1106,36 @@ export function ProductForm({
                                 </FormControl>
                               </Grid>
 
-                              <Grid item xs={12} md={0.5}>
-                                <Stack direction="row" justifyContent="center" alignItems="center" height="100%">
+                              <Grid item xs={12} md={2.5}>
+                                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                                  <Button
+                                    variant="outlined"
+                                    size="small"
+                                    startIcon={<SwapHoriz />}
+                                    onClick={() => handleOpenTransferDialog(genericIndex, storageIndex)}
+                                    sx={{ minWidth: 'auto', px: 1.5, flexShrink: 0 }}
+                                  >
+                                    Transfer
+                                  </Button>
+
                                   <IconButton
                                     onClick={() => removeStorage(genericIndex, storageIndex)}
                                     color="error"
                                     size="small"
+                                    sx={{
+                                      width: 36,
+                                      height: 36,
+                                      flexShrink: 0,
+                                      '& .MuiSvgIcon-root': {
+                                        fontSize: '1.2rem'
+                                      }
+                                    }}
                                   >
                                     <Delete />
                                   </IconButton>
-                                </Stack>
+                                </Box>
                               </Grid>
+
                             </Grid>
                           </Box>
                         </Grid>
@@ -956,6 +1148,88 @@ export function ProductForm({
           )}
         </Box>
       )}
+
+      {/* Transfer Products Dialog */}
+      <Dialog
+        open={transferDialog.open}
+        onClose={handleCloseTransferDialog}
+        maxWidth="sm"
+        fullWidth
+        
+      >
+        <DialogTitle className="dark:bg-gray-900 dark:text-white">
+          <Stack direction="row" spacing={1} alignItems="center">
+            <SwapHoriz color="primary" />
+            <Typography variant="h6">Transfer Products</Typography>
+          </Stack>
+        </DialogTitle>
+        <DialogContent className="dark:bg-gray-900 dark:text-white">
+          <Stack spacing={3} sx={{ mt: 1 }}>
+            {transferDialog.sourceStorage && (
+              <Alert severity="info">
+                <Typography variant="body2" fontWeight="medium">
+                  Source: {transferDialog.sourceStorage.store?.name || "Unknown Store"}
+                </Typography>
+                <Typography variant="body2">
+                  Available Quantity: {transferDialog.sourceStorage.quantity || 0}
+                </Typography>
+              </Alert>
+            )}
+
+            <TextField
+              label="Quantity to Transfer"
+              type="number"
+              value={transferQuantity}
+              onChange={(e) => {
+                const value = Number(e.target.value)
+                const maxQuantity = transferDialog.sourceStorage?.quantity || 0
+                setTransferQuantity(Math.max(0, Math.min(value, maxQuantity)))
+              }}
+              inputProps={{
+                min: 0,
+                max: transferDialog.sourceStorage?.quantity || 0,
+              }}
+              fullWidth
+              helperText={`Maximum: ${transferDialog.sourceStorage?.quantity || 0}`}
+            />
+
+            <StoreAutocomplete
+              value={destinationStore}
+              onChange={(newValue) => {
+                setDestinationStore(newValue)
+                // Prevent selecting the same store as source
+                if (newValue && newValue.id === transferDialog.sourceStorage?.storageId) {
+                  alert("Cannot transfer to the same store. Please select a different destination.")
+                  setDestinationStore(null)
+                }
+              }}
+              label="Destination Store"
+              required
+            />
+
+            {destinationStore && transferQuantity > 0 && (
+              <Alert severity="success">
+                <Typography variant="body2">
+                  Transferring <strong>{transferQuantity}</strong> units from{" "}
+                  <strong>{transferDialog.sourceStorage?.store?.name || "Unknown"}</strong> to{" "}
+                  <strong>{destinationStore.name}</strong>
+                </Typography>
+              </Alert>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions className="dark:bg-gray-900 dark:text-white">
+          <Button onClick={handleCloseTransferDialog}>Cancel</Button>
+          <Button
+            onClick={handleTransferProducts}
+            variant="contained"
+            disabled={!destinationStore || transferQuantity <= 0 || transferQuantity > (transferDialog.sourceStorage?.quantity || 0)}
+            startIcon={<SwapHoriz />}
+          >
+            Transfer
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Submit Button */}
       <Divider sx={{ my: 3 }} />

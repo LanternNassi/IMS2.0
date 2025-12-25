@@ -40,6 +40,13 @@ const formatCurrency = (amount: number): string => {
   return amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+// Helper function to format currency for thermal printer without trailing zeros
+const formatCurrencyThermal = (amount: number): string => {
+  // Format with decimals, then remove trailing zeros and decimal point if needed
+  const formatted = amount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })
+  return formatted.replace(/\.00$/, '')
+}
+
 export function ReceiptPreview({
   saleId,
   customerName = "Walk-in Customer",
@@ -207,34 +214,39 @@ export function ReceiptPreview({
           display: flex;
           justify-content: space-between;
           margin: 2px 0;
-          font-size: 8pt;
+          font-size: 7pt;
           border-bottom: 1px dotted #ccc;
           padding-bottom: 2px;
+          align-items: flex-start;
         }
         
         .thermal-receipt .item-name {
-          flex: 1;
+          flex: 0 0 30%;
           text-align: left;
-          max-width: 45%;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
+          max-width: 30%;
+          word-wrap: break-word;
+          white-space: normal;
+          overflow-wrap: break-word;
+          font-size: 7pt;
         }
         
         .thermal-receipt .item-qty {
           width: 8%;
           text-align: center;
+          font-size: 7pt;
         }
         
         .thermal-receipt .item-price {
-          width: 22%;
+          width: 28%;
           text-align: right;
+          font-size: 7pt;
         }
         
         .thermal-receipt .item-total {
-          width: 25%;
+          width: 34%;
           text-align: right;
           font-weight: bold;
+          font-size: 7pt;
         }
         
         .thermal-receipt .receipt-divider {
@@ -507,7 +519,7 @@ export function ReceiptPreview({
         <div className="receipt-divider"></div>
 
         {/* Items Header */}
-        <div className="receipt-line" style={{ fontWeight: 'bold', borderBottom: '1px solid #000', paddingBottom: '2px', marginBottom: '4px' }}>
+        <div className="receipt-line" style={{ fontWeight: 'bold', borderBottom: '1px solid #000', paddingBottom: '2px', marginBottom: '4px', fontSize: '7pt' }}>
           <span className="item-name">Item</span>
           <span className="item-qty">Qty</span>
           <span className="item-price">Rate</span>
@@ -517,10 +529,10 @@ export function ReceiptPreview({
         {/* Items */}
         {items.map((item) => (
           <div key={item.id} className="receipt-line-item">
-            <span className="item-name" title={item.productName}>{truncateText(item.productName, 18)}</span>
+            <span className="item-name" title={item.productName}>{item.productName}</span>
             <span className="item-qty">{item.quantity}</span>
-            <span className="item-price">{formatCurrency(item.basePrice)}</span>
-            <span className="item-total">{formatCurrency(item.totalPrice)}</span>
+            <span className="item-price">Shs {formatCurrencyThermal(item.basePrice)}</span>
+            <span className="item-total">Shs {formatCurrencyThermal(item.totalPrice)}</span>
           </div>
         ))}
 
@@ -530,29 +542,29 @@ export function ReceiptPreview({
         <div className="receipt-section">
           <div className="receipt-line">
             <span>Sub Total:</span>
-            <span>{formatCurrency(totalAmount)}</span>
+            <span>Shs {formatCurrencyThermal(totalAmount)}</span>
           </div>
 
           {discount > 0 && (
             <div className="receipt-line">
               <span>Discount:</span>
-              <span>-{formatCurrency(discount)}</span>
+              <span>-Shs {formatCurrencyThermal(discount)}</span>
             </div>
           )}
 
           <div className="receipt-line receipt-total">
             <span>Grand Total:</span>
-            <span>{formatCurrency(totalAmount - discount)}</span>
+            <span>Shs {formatCurrencyThermal(totalAmount - discount)}</span>
           </div>
 
           <div className="receipt-line">
             <span>Paid:</span>
-            <span>{formatCurrency(paidAmount)}</span>
+            <span>Shs {formatCurrencyThermal(paidAmount)}</span>
           </div>
 
           <div className="receipt-line receipt-total">
             <span>Change:</span>
-            <span>{formatCurrency(returnAmount)}</span>
+            <span>Shs {formatCurrencyThermal(returnAmount)}</span>
           </div>
         </div>
 
