@@ -27,7 +27,7 @@ import {
   Chip,
   Alert,
 } from "@mui/material"
-import { Add, Delete, Save, Info, ErrorOutline, SwapHoriz } from "@mui/icons-material"
+import { Add, Delete, Save, Info, ErrorOutline, SwapHoriz, Balance } from "@mui/icons-material"
 
 import { Product, ProductVariation, ProductGeneric, ProductStorage, Supplier, Store } from '../types/productTypes'
 
@@ -35,6 +35,8 @@ import { useProductStore } from "../store/useProductStore"
 import { SupplierAutocomplete } from './SupplierAutocomplete'
 import { StoreAutocomplete } from './StoreAutocomplete'
 import { useStoresStore } from "@/store/useStoresStore"
+import { useAuthStore } from "@/store/useAuthStore"
+import api from "@/Utils/Request"
 
 export function ProductForm({
   productId,
@@ -45,6 +47,7 @@ export function ProductForm({
 
   const { fetchProductById } = useProductStore((state) => state)
   const { getStoreById } = useStoresStore((state) => state)
+  const { user } = useAuthStore()
 
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
@@ -62,6 +65,23 @@ export function ProductForm({
   })
   const [transferQuantity, setTransferQuantity] = useState<number>(0)
   const [destinationStore, setDestinationStore] = useState<Store | null>(null)
+
+  // Reconciliation dialog state
+  const [reconciliationDialog, setReconciliationDialog] = useState<{
+    open: boolean
+    genericIndex: number
+    storageIndex: number
+    storage: ProductStorage | null
+  }>({
+    open: false,
+    genericIndex: -1,
+    storageIndex: -1,
+    storage: null,
+  })
+  const [reconciliationQuantity, setReconciliationQuantity] = useState<number>(0)
+  const [reconciliationReason, setReconciliationReason] = useState<string>("CORRECTION")
+  const [reconciliationNotes, setReconciliationNotes] = useState<string>("")
+  const [isReconciling, setIsReconciling] = useState<boolean>(false)
 
   const initialProduct: Product = {
     id: "",
@@ -419,6 +439,81 @@ export function ProductForm({
     })
 
     handleCloseTransferDialog()
+  }
+
+  // Reconciliation handlers
+  const handleOpenReconciliationDialog = (genericIndex: number, storageIndex: number) => {
+    const storage = product!.generics[genericIndex].productStorages[storageIndex]
+    setReconciliationDialog({
+      open: true,
+      genericIndex,
+      storageIndex,
+      storage,
+    })
+    setReconciliationQuantity(storage.quantity || 0)
+    setReconciliationReason("CORRECTION")
+    setReconciliationNotes("")
+  }
+
+  const handleCloseReconciliationDialog = () => {
+    setReconciliationDialog({
+      open: false,
+      genericIndex: -1,
+      storageIndex: -1,
+      storage: null,
+    })
+    setReconciliationQuantity(0)
+    setReconciliationReason("CORRECTION")
+    setReconciliationNotes("")
+  }
+
+  const handleReconcile = async () => {
+    if (!reconciliationDialog.storage || !user?.id) {
+      return
+    }
+
+    const currentQuantity = reconciliationDialog.storage.quantity || 0
+    if (reconciliationQuantity === currentQuantity) {
+      alert("New quantity must be different from current quantity")
+      return
+    }
+
+    if (reconciliationQuantity < 0) {
+      alert("Quantity cannot be negative")
+      return
+    }
+
+    setIsReconciling(true)
+    try {
+      const response = await api.post("/ProductReconciliation/reconcile", {
+        productStorageId: reconciliationDialog.storage.id,
+        newQuantity: reconciliationQuantity,
+        reason: reconciliationReason,
+        notes: reconciliationNotes || null,
+        createdById: user.id,
+      })
+
+      if (response.data) {
+        // Update the storage quantity in the local state
+        const newGenerics = [...product!.generics]
+        newGenerics[reconciliationDialog.genericIndex].productStorages[reconciliationDialog.storageIndex] = {
+          ...newGenerics[reconciliationDialog.genericIndex].productStorages[reconciliationDialog.storageIndex],
+          quantity: reconciliationQuantity,
+        }
+        setProduct({
+          ...product!,
+          generics: newGenerics,
+        })
+
+        alert(`Reconciliation successful! Quantity updated from ${currentQuantity} to ${reconciliationQuantity}.`)
+        handleCloseReconciliationDialog()
+      }
+    } catch (error: any) {
+      console.error("Reconciliation error:", error)
+      alert(error.response?.data?.message || error.message || "Failed to reconcile product. Please try again.")
+    } finally {
+      setIsReconciling(false)
+    }
   }
 
   // Submit
@@ -1111,6 +1206,17 @@ export function ProductForm({
                                   <Button
                                     variant="outlined"
                                     size="small"
+                                    startIcon={<Balance />}
+                                    onClick={() => handleOpenReconciliationDialog(genericIndex, storageIndex)}
+                                    sx={{ minWidth: 'auto', px: 1.5, flexShrink: 0 }}
+                                    color="warning"
+                                  >
+                                    Reconcile
+                                  </Button>
+
+                                  <Button
+                                    variant="outlined"
+                                    size="small"
                                     startIcon={<SwapHoriz />}
                                     onClick={() => handleOpenTransferDialog(genericIndex, storageIndex)}
                                     sx={{ minWidth: 'auto', px: 1.5, flexShrink: 0 }}
@@ -1227,6 +1333,137 @@ export function ProductForm({
             startIcon={<SwapHoriz />}
           >
             Transfer
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Reconciliation Dialog */}
+      <Dialog
+        open={reconciliationDialog.open}
+        onClose={handleCloseReconciliationDialog}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle className="dark:bg-gray-900 dark:text-white">
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Balance color="warning" />
+            <Typography variant="h6">Reconcile Product Quantity</Typography>
+          </Stack>
+        </DialogTitle>
+        <DialogContent className="dark:bg-gray-900 dark:text-white">
+          <Stack spacing={3} sx={{ mt: 1 }}>
+            {reconciliationDialog.storage && (
+              <Alert severity="info">
+                <Typography variant="body2" fontWeight="medium">
+                  Store: {reconciliationDialog.storage.store?.name || reconciliationDialog.storage.storageName || "Unknown Store"}
+                </Typography>
+                <Typography variant="body2">
+                  Current Quantity: <strong>{reconciliationDialog.storage.quantity || 0}</strong>
+                </Typography>
+                <Typography variant="body2">
+                  Product: {reconciliationDialog.storage ? product.variations.find(v => v.id === reconciliationDialog.storage?.productVariationId)?.name || "Unknown" : "Unknown"}
+                </Typography>
+              </Alert>
+            )}
+
+            <TextField
+              label="New Quantity"
+              type="number"
+              value={reconciliationQuantity}
+              onChange={(e) => {
+                const value = Number(e.target.value)
+                setReconciliationQuantity(Math.max(0, value))
+              }}
+              inputProps={{
+                min: 0,
+              }}
+              fullWidth
+              required
+              helperText={
+                reconciliationDialog.storage
+                  ? `Current: ${reconciliationDialog.storage.quantity || 0} | Difference: ${
+                      reconciliationQuantity - (reconciliationDialog.storage.quantity || 0)
+                    }`
+                  : ""
+              }
+            />
+
+            <FormControl fullWidth required>
+              <InputLabel>Reason</InputLabel>
+              <Select
+                value={reconciliationReason}
+                label="Reason"
+                onChange={(e) => setReconciliationReason(e.target.value)}
+              >
+                <MenuItem value="STOCK_LOSS">Stock Loss</MenuItem>
+                <MenuItem value="STOCK_GAIN">Stock Gain</MenuItem>
+                <MenuItem value="DAMAGE">Damage</MenuItem>
+                <MenuItem value="THEFT">Theft</MenuItem>
+                <MenuItem value="FOUND">Found</MenuItem>
+                <MenuItem value="CORRECTION">Correction</MenuItem>
+                <MenuItem value="EXPIRY">Expiry</MenuItem>
+                <MenuItem value="SPOILAGE">Spoilage</MenuItem>
+                <MenuItem value="RETURN">Return</MenuItem>
+                <MenuItem value="ADJUSTMENT">Adjustment</MenuItem>
+                <MenuItem value="OTHER">Other</MenuItem>
+              </Select>
+            </FormControl>
+
+            <TextField
+              label="Notes (Optional)"
+              multiline
+              rows={3}
+              value={reconciliationNotes}
+              onChange={(e) => setReconciliationNotes(e.target.value)}
+              fullWidth
+              placeholder="Add any additional notes about this reconciliation..."
+            />
+
+            {reconciliationDialog.storage && (
+              <Alert
+                severity={
+                  reconciliationQuantity > (reconciliationDialog.storage.quantity || 0)
+                    ? "success"
+                    : reconciliationQuantity < (reconciliationDialog.storage.quantity || 0)
+                    ? "warning"
+                    : "info"
+                }
+              >
+                <Typography variant="body2" fontWeight="medium">
+                  {reconciliationQuantity > (reconciliationDialog.storage.quantity || 0)
+                    ? "Stock Increase"
+                    : reconciliationQuantity < (reconciliationDialog.storage.quantity || 0)
+                    ? "Stock Decrease"
+                    : "No Change"}
+                </Typography>
+                <Typography variant="body2">
+                  {reconciliationQuantity > (reconciliationDialog.storage.quantity || 0)
+                    ? `This will create a capital account investment and purchase record for ${reconciliationQuantity - (reconciliationDialog.storage.quantity || 0)} units.`
+                    : reconciliationQuantity < (reconciliationDialog.storage.quantity || 0)
+                    ? `This will create a sale record and capital account withdrawal for ${(reconciliationDialog.storage.quantity || 0) - reconciliationQuantity} units.`
+                    : "Please enter a different quantity to reconcile."}
+                </Typography>
+              </Alert>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions className="dark:bg-gray-900 dark:text-white">
+          <Button onClick={handleCloseReconciliationDialog} disabled={isReconciling}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleReconcile}
+            variant="contained"
+            color="warning"
+            disabled={
+              isReconciling ||
+              !reconciliationDialog.storage ||
+              reconciliationQuantity === (reconciliationDialog.storage.quantity || 0) ||
+              reconciliationQuantity < 0
+            }
+            startIcon={isReconciling ? <CircularProgress size={16} /> : <Balance />}
+          >
+            {isReconciling ? "Reconciling..." : "Reconcile"}
           </Button>
         </DialogActions>
       </Dialog>

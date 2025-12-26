@@ -38,6 +38,8 @@ namespace ImsServer.Models.SaleX
         public virtual User ProcessedBy { get; set; }
 
         public virtual ICollection<SalesItem> SaleItems { get; set; } = new List<SalesItem>();
+
+        public string? Notes { get; set; }
     }
 
     public class SaleDto : GeneralFields
@@ -64,6 +66,8 @@ namespace ImsServer.Models.SaleX
         public UserDto ProcessedBy { get; set; }
 
         public List<SimpleSalesItemDto> SaleItems { get; set; } = new List<SimpleSalesItemDto>();
+
+        public string? Notes { get; set; }
     }
 
     public class SimpleSaleDto

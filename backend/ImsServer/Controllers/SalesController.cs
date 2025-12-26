@@ -100,6 +100,9 @@ namespace ImsServer.Controllers
                 query = query.Where(s => s.PaymentMethod == paymentMethod.Value);
             }
 
+            // Filter out reconciliation sales by default (sales with [RECONCILIATION] tag in Notes)
+            query = query.Where(s => s.Notes == null || !s.Notes.Contains("[RECONCILIATION]"));
+
             // Get total count before pagination
             var totalCount = await query.CountAsync();
 

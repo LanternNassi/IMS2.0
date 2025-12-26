@@ -4,6 +4,7 @@ using ImsServer.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ImsServer.Migrations
 {
     [DbContext(typeof(DBContext))]
-    partial class DBContextModelSnapshot : ModelSnapshot
+    [Migration("20251226095837_name=Add product reconciliation")]
+    partial class nameAddproductreconciliation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1662,35 +1665,32 @@ namespace ImsServer.Migrations
                     b.HasOne("ImsServer.Models.UserX.User", "CreatedBy")
                         .WithMany()
                         .HasForeignKey("CreatedById")
-                        .OnDelete(DeleteBehavior.NoAction)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("ImsServer.Models.ProductX.ProductStorage", "ProductStorage")
                         .WithMany()
                         .HasForeignKey("ProductStorageId")
-                        .OnDelete(DeleteBehavior.NoAction)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("ImsServer.Models.ProductX.ProductVariation", "ProductVariation")
                         .WithMany()
                         .HasForeignKey("ProductVariationId")
-                        .OnDelete(DeleteBehavior.NoAction)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("ImsServer.Models.CapitalAccountX.CapitalAccount", "ReconciliationCapitalAccount")
                         .WithMany()
-                        .HasForeignKey("ReconciliationCapitalAccountId")
-                        .OnDelete(DeleteBehavior.NoAction);
+                        .HasForeignKey("ReconciliationCapitalAccountId");
 
                     b.HasOne("ImsServer.Models.PurchaseX.Purchase", "ReconciliationPurchase")
                         .WithMany()
-                        .HasForeignKey("ReconciliationPurchaseId")
-                        .OnDelete(DeleteBehavior.NoAction);
+                        .HasForeignKey("ReconciliationPurchaseId");
 
                     b.HasOne("ImsServer.Models.SaleX.Sale", "ReconciliationSale")
                         .WithMany()
-                        .HasForeignKey("ReconciliationSaleId")
-                        .OnDelete(DeleteBehavior.NoAction);
+                        .HasForeignKey("ReconciliationSaleId");
 
                     b.Navigation("CreatedBy");
 

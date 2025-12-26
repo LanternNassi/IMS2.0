@@ -42,6 +42,7 @@ namespace ImsServer.Models
         public DbSet<ProductGeneric> ProductGenerics { get; set; }
         public DbSet<ProductVariation> ProductVariations { get; set; }
         public DbSet<ProductStorage> ProductStorages { get; set; }
+        public DbSet<ProductAuditTrail> ProductAuditTrails { get; set; }
 
         public DbSet<Purchase> Purchases { get; set; }
         public DbSet<PurchaseItem> PurchaseItems { get; set; }
@@ -78,6 +79,8 @@ namespace ImsServer.Models
             modelBuilder.Entity<Product>().HasQueryFilter(c => !c.DeletedAt.HasValue);
             modelBuilder.Entity<ProductGeneric>().HasQueryFilter(c => !c.DeletedAt.HasValue);
             modelBuilder.Entity<ProductVariation>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+            modelBuilder.Entity<ProductStorage>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+            modelBuilder.Entity<ProductAuditTrail>().HasQueryFilter(c => !c.DeletedAt.HasValue);
             modelBuilder.Entity<SalesItem>().HasQueryFilter(c => !c.DeletedAt.HasValue);
             modelBuilder.Entity<Sale>().HasQueryFilter(c => !c.DeletedAt.HasValue);
             modelBuilder.Entity<Purchase>().HasQueryFilter(c => !c.DeletedAt.HasValue);
@@ -120,6 +123,43 @@ namespace ImsServer.Models
                 .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<ProductStorage>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+
+            // Configure ProductAuditTrail foreign keys to prevent cascade cycles
+            modelBuilder.Entity<ProductAuditTrail>()
+                .HasOne(pat => pat.ProductVariation)
+                .WithMany()
+                .HasForeignKey(pat => pat.ProductVariationId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<ProductAuditTrail>()
+                .HasOne(pat => pat.ProductStorage)
+                .WithMany()
+                .HasForeignKey(pat => pat.ProductStorageId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<ProductAuditTrail>()
+                .HasOne(pat => pat.CreatedBy)
+                .WithMany()
+                .HasForeignKey(pat => pat.CreatedById)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<ProductAuditTrail>()
+                .HasOne(pat => pat.ReconciliationSale)
+                .WithMany()
+                .HasForeignKey(pat => pat.ReconciliationSaleId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<ProductAuditTrail>()
+                .HasOne(pat => pat.ReconciliationPurchase)
+                .WithMany()
+                .HasForeignKey(pat => pat.ReconciliationPurchaseId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<ProductAuditTrail>()
+                .HasOne(pat => pat.ReconciliationCapitalAccount)
+                .WithMany()
+                .HasForeignKey(pat => pat.ReconciliationCapitalAccountId)
+                .OnDelete(DeleteBehavior.NoAction);
 
             // Configure SalesItem to prevent cascade delete conflicts
             modelBuilder.Entity<SalesItem>()
@@ -179,6 +219,7 @@ namespace ImsServer.Models
                     || e.Entity is ProductGeneric
                     || e.Entity is ProductVariation
                     || e.Entity is ProductStorage
+                    || e.Entity is ProductAuditTrail
                     || e.Entity is Expenditure
                     || e.Entity is ExpenditureCategory
 
