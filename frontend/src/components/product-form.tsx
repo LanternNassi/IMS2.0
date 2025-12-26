@@ -26,6 +26,7 @@ import {
   CircularProgress,
   Chip,
   Alert,
+  Tooltip,
 } from "@mui/material"
 import { Add, Delete, Save, Info, ErrorOutline, SwapHoriz, Balance } from "@mui/icons-material"
 
@@ -1203,16 +1204,6 @@ export function ProductForm({
 
                               <Grid item xs={12} md={2.5}>
                                 <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                                  <Button
-                                    variant="outlined"
-                                    size="small"
-                                    startIcon={<Balance />}
-                                    onClick={() => handleOpenReconciliationDialog(genericIndex, storageIndex)}
-                                    sx={{ minWidth: 'auto', px: 1.5, flexShrink: 0 }}
-                                    color="warning"
-                                  >
-                                    Reconcile
-                                  </Button>
 
                                   <Button
                                     variant="outlined"
@@ -1224,21 +1215,42 @@ export function ProductForm({
                                     Transfer
                                   </Button>
 
-                                  <IconButton
-                                    onClick={() => removeStorage(genericIndex, storageIndex)}
-                                    color="error"
-                                    size="small"
-                                    sx={{
-                                      width: 36,
-                                      height: 36,
-                                      flexShrink: 0,
-                                      '& .MuiSvgIcon-root': {
-                                        fontSize: '1.2rem'
-                                      }
-                                    }}
-                                  >
-                                    <Delete />
-                                  </IconButton>
+                                  <Tooltip title="Reconcile Quantity">
+                                    <IconButton
+                                      onClick={() => handleOpenReconciliationDialog(genericIndex, storageIndex)}
+                                      color="warning"
+                                      size="small"
+                                      sx={{
+                                        width: 36,
+                                        height: 36,
+                                        flexShrink: 0,
+                                        '& .MuiSvgIcon-root': {
+                                          fontSize: '1.2rem'
+                                        }
+                                      }}
+                                    >
+                                      <Balance />
+                                    </IconButton>
+                                  </Tooltip>
+
+
+                                  {/* <Tooltip title="Delete Storage">
+                                    <IconButton
+                                      onClick={() => removeStorage(genericIndex, storageIndex)}
+                                      color="error"
+                                      size="small"
+                                      sx={{
+                                        width: 36,
+                                        height: 36,
+                                        flexShrink: 0,
+                                        '& .MuiSvgIcon-root': {
+                                          fontSize: '1.2rem'
+                                        }
+                                      }}
+                                    >
+                                      <Delete />
+                                    </IconButton>
+                                  </Tooltip> */}
                                 </Box>
                               </Grid>
 
@@ -1261,7 +1273,7 @@ export function ProductForm({
         onClose={handleCloseTransferDialog}
         maxWidth="sm"
         fullWidth
-        
+
       >
         <DialogTitle className="dark:bg-gray-900 dark:text-white">
           <Stack direction="row" spacing={1} alignItems="center">
@@ -1381,9 +1393,8 @@ export function ProductForm({
               required
               helperText={
                 reconciliationDialog.storage
-                  ? `Current: ${reconciliationDialog.storage.quantity || 0} | Difference: ${
-                      reconciliationQuantity - (reconciliationDialog.storage.quantity || 0)
-                    }`
+                  ? `Current: ${reconciliationDialog.storage.quantity || 0} | Difference: ${reconciliationQuantity - (reconciliationDialog.storage.quantity || 0)
+                  }`
                   : ""
               }
             />
@@ -1425,23 +1436,23 @@ export function ProductForm({
                   reconciliationQuantity > (reconciliationDialog.storage.quantity || 0)
                     ? "success"
                     : reconciliationQuantity < (reconciliationDialog.storage.quantity || 0)
-                    ? "warning"
-                    : "info"
+                      ? "warning"
+                      : "info"
                 }
               >
                 <Typography variant="body2" fontWeight="medium">
                   {reconciliationQuantity > (reconciliationDialog.storage.quantity || 0)
                     ? "Stock Increase"
                     : reconciliationQuantity < (reconciliationDialog.storage.quantity || 0)
-                    ? "Stock Decrease"
-                    : "No Change"}
+                      ? "Stock Decrease"
+                      : "No Change"}
                 </Typography>
                 <Typography variant="body2">
                   {reconciliationQuantity > (reconciliationDialog.storage.quantity || 0)
                     ? `This will create a capital account investment and purchase record for ${reconciliationQuantity - (reconciliationDialog.storage.quantity || 0)} units.`
                     : reconciliationQuantity < (reconciliationDialog.storage.quantity || 0)
-                    ? `This will create a sale record and capital account withdrawal for ${(reconciliationDialog.storage.quantity || 0) - reconciliationQuantity} units.`
-                    : "Please enter a different quantity to reconcile."}
+                      ? `This will create a sale record and capital account withdrawal for ${(reconciliationDialog.storage.quantity || 0) - reconciliationQuantity} units.`
+                      : "Please enter a different quantity to reconcile."}
                 </Typography>
               </Alert>
             )}

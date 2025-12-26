@@ -359,6 +359,7 @@ namespace ImsServer.Controllers
 
                 var capitalContributionsNet = await _db.CapitalAccounts
                     .Where(ca => ca.TransactionDate >= fromUtc && ca.TransactionDate < toUtc)
+                    .Where(ca => !ca.ReferenceNumber.StartsWith("RECON-"))
                     .Where(ca => ca.Type == TransactionType.INITIAL_CAPITAL || ca.Type == TransactionType.ADDITIONAL_INVESTMENT)
                     .Where(ca => ca.LinkedFinancialAccountId.HasValue && cashIds.Contains(ca.LinkedFinancialAccountId.Value))
                     .SumAsync(ca => (decimal?)ca.Amount) ?? 0m;
@@ -388,6 +389,7 @@ namespace ImsServer.Controllers
 
                 var capitalWithdrawalsNet = await _db.CapitalAccounts
                     .Where(ca => ca.TransactionDate >= fromUtc && ca.TransactionDate < toUtc)
+                    .Where(ca => !ca.ReferenceNumber.StartsWith("RECON-"))
                     .Where(ca => ca.Type == TransactionType.WITHDRAWAL || ca.Type == TransactionType.PROFIT_DISTRIBUTION)
                     .Where(ca => ca.LinkedFinancialAccountId.HasValue && cashIds.Contains(ca.LinkedFinancialAccountId.Value))
                     .SumAsync(ca => (decimal?)ca.Amount) ?? 0m;
@@ -793,7 +795,7 @@ namespace ImsServer.Controllers
                 // Outflows
                 var purchasesRealTimePayments = await _db.Purchases
                     .Where(p => p.AddedAt >= fromUtc && p.AddedAt < toUtc)
-                    .Where(p => p.WasPartialPayment != true)
+                    .Where(p => p.WasPartialPayment != true && !p.PurchaseNumber.StartsWith("RECON-"))
                     .Where(p => p.LinkedFinancialAccountId.HasValue && includedAccountIds.Contains(p.LinkedFinancialAccountId.Value))
                     .SumAsync(p => (decimal?)p.TotalAmount) ?? 0m;
 
@@ -814,6 +816,7 @@ namespace ImsServer.Controllers
 
                 var capitalWithdrawalsNet = await _db.CapitalAccounts
                     .Where(ca => ca.TransactionDate >= fromUtc && ca.TransactionDate < toUtc)
+                    .Where(ca => !ca.ReferenceNumber.StartsWith("RECON-"))
                     .Where(ca => ca.Type == TransactionType.WITHDRAWAL || ca.Type == TransactionType.PROFIT_DISTRIBUTION)
                     .Where(ca => ca.LinkedFinancialAccountId.HasValue && includedAccountIds.Contains(ca.LinkedFinancialAccountId.Value))
                     .SumAsync(ca => (decimal?)ca.Amount) ?? 0m;
@@ -856,7 +859,7 @@ namespace ImsServer.Controllers
             // Outflows: purchase payments recorded in PurchaseDebtTracker and linked to included accounts.
             var purchasesRealTimePayments = await _db.Purchases
                 .Where(p => p.AddedAt >= flowStart && p.AddedAt < flowEnd)
-                .Where(p => p.WasPartialPayment != true)
+                .Where(p => p.WasPartialPayment != true && !p.PurchaseNumber.StartsWith("RECON-"))
                 .Where(p => p.LinkedFinancialAccountId.HasValue && includedAccountIds.Contains(p.LinkedFinancialAccountId.Value))
                 .SumAsync(p => (decimal?)p.TotalAmount) ?? 0m;
 
@@ -896,6 +899,7 @@ namespace ImsServer.Controllers
             // Inflows: INITIAL_CAPITAL, ADDITIONAL_INVESTMENT
             var capitalContributions = await _db.CapitalAccounts
                 .Where(ca => ca.TransactionDate >= flowStart && ca.TransactionDate < flowEnd)
+                .Where(ca => ca.ReferenceNumber.StartsWith("RECON-") == false)
                 .Where(ca => ca.Type == TransactionType.INITIAL_CAPITAL || ca.Type == TransactionType.ADDITIONAL_INVESTMENT)
                 .Where(ca => ca.LinkedFinancialAccountId.HasValue && includedAccountIds.Contains(ca.LinkedFinancialAccountId.Value))
                 .SumAsync(ca => (decimal?)ca.Amount) ?? 0m;
@@ -903,18 +907,21 @@ namespace ImsServer.Controllers
             // Outflows: WITHDRAWAL, PROFIT_DISTRIBUTION
             var capitalWithdrawals = await _db.CapitalAccounts
                 .Where(ca => ca.TransactionDate >= flowStart && ca.TransactionDate < flowEnd)
+                .Where(ca => ca.ReferenceNumber.StartsWith("RECON-") == false)
                 .Where(ca => ca.Type == TransactionType.WITHDRAWAL || ca.Type == TransactionType.PROFIT_DISTRIBUTION)
                 .Where(ca => ca.LinkedFinancialAccountId.HasValue && includedAccountIds.Contains(ca.LinkedFinancialAccountId.Value))
                 .SumAsync(ca => (decimal?)ca.Amount) ?? 0m;
 
             var unlinkedCapitalContributions = await _db.CapitalAccounts
                 .Where(ca => ca.TransactionDate >= flowStart && ca.TransactionDate < flowEnd)
+                .Where(ca => ca.ReferenceNumber.StartsWith("RECON-") == false)
                 .Where(ca => ca.Type == TransactionType.INITIAL_CAPITAL || ca.Type == TransactionType.ADDITIONAL_INVESTMENT)
                 .Where(ca => !ca.LinkedFinancialAccountId.HasValue)
                 .SumAsync(ca => (decimal?)ca.Amount) ?? 0m;
 
             var unlinkedCapitalWithdrawals = await _db.CapitalAccounts
                 .Where(ca => ca.TransactionDate >= flowStart && ca.TransactionDate < flowEnd)
+                .Where(ca => ca.ReferenceNumber.StartsWith("RECON-") == false)
                 .Where(ca => ca.Type == TransactionType.WITHDRAWAL || ca.Type == TransactionType.PROFIT_DISTRIBUTION)
                 .Where(ca => !ca.LinkedFinancialAccountId.HasValue)
                 .SumAsync(ca => (decimal?)ca.Amount) ?? 0m;

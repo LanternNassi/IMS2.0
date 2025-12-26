@@ -57,7 +57,7 @@ namespace ImsServer.Migrations
                         column: x => x.ProductVariationId,
                         principalTable: "ProductVariations",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetDefault);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_ProductAuditTrails_Purchases_ReconciliationPurchaseId",
                         column: x => x.ReconciliationPurchaseId,

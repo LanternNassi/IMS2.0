@@ -6,6 +6,7 @@ import { Edit as EditIcon, Info, Inventory, LocalShipping, Store, ErrorOutline, 
 import { format } from "date-fns"
 import {Product} from '../types/productTypes'
 import {useProductStore} from '../store/useProductStore'
+import { useAuthStore } from "../store/useAuthStore"
 
 
 type ProductDetailsProps = {
@@ -18,6 +19,7 @@ export function ProductDetails({ productId, onEdit }: ProductDetailsProps) {
   const { fetchProductById } = useProductStore((state) => state)
   const [product, setProduct] = useState<Product | null>(null)
   const [isLoading, setisLoading] = useState<boolean>(false)
+  const currentUser = useAuthStore.getState().user
 
 
   useEffect(()=>{
@@ -109,9 +111,11 @@ export function ProductDetails({ productId, onEdit }: ProductDetailsProps) {
             />
           </Stack>
         </Box>
-        <Button variant="contained" startIcon={<EditIcon />} onClick={onEdit} sx={{ borderRadius: 2 }}>
-          Edit Product
-        </Button>
+        {currentUser?.role === "ADMIN" && (
+          <Button variant="contained" startIcon={<EditIcon />} onClick={onEdit} sx={{ borderRadius: 2 }}>
+            Edit Product
+          </Button>
+        )}
       </Stack>
 
       {/* Tabs */}

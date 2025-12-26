@@ -854,6 +854,7 @@ const CapitalAccountsPage = () => {
                             <div className="flex items-center justify-end gap-2">
                               <Button
                                 size="sm"
+                                disabled
                                 variant="ghost"
                                 className="h-8 w-8 p-0 hover:bg-blue-500/10 hover:text-blue-500"
                                 onClick={() => handleEdit(account)}
@@ -861,6 +862,7 @@ const CapitalAccountsPage = () => {
                                 <Pencil className="h-4 w-4" />
                               </Button>
                               <Button
+                                disabled
                                 size="sm"
                                 variant="ghost"
                                 className="h-8 w-8 p-0 hover:bg-red-500/10 hover:text-red-500"

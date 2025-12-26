@@ -116,6 +116,11 @@ export default function ProductManagement() {
     }
 
     const handleEditClick = (product: Product) => {
+      const currentUser = useAuthStore.getState().user
+      if (currentUser?.role !== "admin") {
+        setSnackbar({ open: true, message: "You are not authorized to edit this product." })
+        return
+      }
       setSelectedProduct(product)
       setIsEditProductOpen(true)
     }
@@ -616,6 +621,8 @@ export default function ProductManagement() {
                 Manage your product inventory, variations, and storage locations
               </Typography>
             </Box>
+            {useAuthStore.getState().user?.role == "admin" && (
+              <>
             <Stack direction="row" spacing={2}>
               <Button
                 variant="outlined"
@@ -648,6 +655,8 @@ export default function ProductManagement() {
                 Add Product
               </Button>
             </Stack>
+            </>
+            )}
           </Stack>
 
           {/* Search and Filter Section */}
@@ -832,7 +841,7 @@ export default function ProductManagement() {
                           >
                             <Edit fontSize="small" />
                           </IconButton>
-                          <IconButton
+                          {/* <IconButton
                             onClick={() => handleDeleteProduct(product.id)}
                             size="small"
                             sx={{
@@ -841,7 +850,7 @@ export default function ProductManagement() {
                             }}
                           >
                             <Delete fontSize="small" />
-                          </IconButton>
+                          </IconButton> */}
                         </Stack>
                       </TableCell>
                     </TableRow>

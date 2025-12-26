@@ -152,7 +152,7 @@ namespace ImsServer.Controllers
                         capitalAccountId = withdrawal.Id;
 
                         // Deduct from financial account
-                        defaultAccount.Balance -= totalCost;
+                        // defaultAccount.Balance -= totalCost;
                     }
 
                     auditTrail.ReconciliationSaleId = saleId;
@@ -340,6 +340,9 @@ namespace ImsServer.Controllers
         public async Task<IActionResult> GetAuditTrails(
             [FromQuery] Guid? productStorageId = null,
             [FromQuery] Guid? productVariationId = null,
+            [FromQuery] ReconciliationReason? reason = null,
+            [FromQuery] DateTime? fromDate = null,
+            [FromQuery] DateTime? toDate = null,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 50)
         {
@@ -360,7 +363,29 @@ namespace ImsServer.Controllers
                 query = query.Where(pat => pat.ProductVariationId == productVariationId.Value);
             }
 
+            if (reason.HasValue)
+            {
+                query = query.Where(pat => pat.Reason == reason.Value);
+            }
+
+            if (fromDate.HasValue)
+            {
+                query = query.Where(pat => pat.AddedAt >= fromDate.Value);
+            }
+
+            if (toDate.HasValue)
+            {
+                query = query.Where(pat => pat.AddedAt <= toDate.Value);
+            }
+
             var totalCount = await query.CountAsync();
+
+            var metadata = new
+            {
+                reasons = await query.GroupBy(pat => pat.Reason).Select(g => new { Reason = g.Key, Count = g.Count() }).ToListAsync(),
+                products = await query.GroupBy(pat => new { pat.ProductVariationId, pat.ProductVariation.Name }).Select(g => new { ProductVariationId = g.Key.ProductVariationId, ProductVariationName = g.Key.Name, Count = g.Count() }).ToListAsync()
+            };
+
             var auditTrails = await query
                 .OrderByDescending(pat => pat.AddedAt)
                 .Skip((page - 1) * pageSize)
@@ -392,7 +417,8 @@ namespace ImsServer.Controllers
                 totalCount,
                 page,
                 pageSize,
-                totalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+                totalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+                metadata
             });
         }
     }

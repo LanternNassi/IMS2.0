@@ -25,7 +25,9 @@ import {
   Bell,
   HelpCircle,
   User,
-  ChevronDown
+  ChevronDown,
+  BaggageClaim,
+  ChartLine
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -44,10 +46,10 @@ import { useAuthStore } from "@/store/useAuthStore"
 import { useNotificationsStore } from "@/store/useNotificationsStore"
 
 const navItems = [
-  { label: "Dashboard", icon: LayoutDashboard, path: "/Dashboard", roles: ['admin', 'normal'] },
-  { 
-    label: "Accounts", 
-    icon: User, 
+  { label: "Dashboard", icon: LayoutDashboard, path: "/Dashboard", roles: ['admin'] },
+  {
+    label: "Accounts",
+    icon: User,
     path: "/Accounts",
     roles: ['admin'],
     subItems: [
@@ -56,7 +58,7 @@ const navItems = [
       { label: "Transactions", icon: ArrowLeftRight, path: "/Accounts/transactions" },
     ]
   },
-  
+
   { label: "Users", icon: Users, path: "/Users", roles: ['admin'] },
   { label: "Categories", icon: FolderOpen, path: "/Categories", roles: ['admin'] },
   { label: "Store Management", icon: Store, path: "/Stores", roles: ['admin'] },
@@ -67,19 +69,25 @@ const navItems = [
   {
     label: "Financial Reports", icon: BarChart3, path: "/Reports", roles: ['admin'],
   },
+
+  {
+    label: "Product Analysis", icon: ChartLine, path: "/Analysis", roles: ['admin'], subItems: [
+      { label: "Product Analysis", icon: ChartLine, path: "/Analysis" },
+      { label: "Product Reconciliations", icon: BaggageClaim, path: "/ProductAudits" },
+    ]
+  },
   { label: "Purchases", icon: ShoppingBag, path: "/Purchases", roles: ['admin'] },
   { label: "Sales", icon: Receipt, path: "/Sales", roles: ['admin', 'normal'] },
-  { label: "Product Analysis", icon: BarChart3, path: "/Analysis", roles: ['admin'] },
-  { 
+  {
     label: "Debts",
     icon: CreditCard,
     path: "/Debts",
     roles: ['admin', 'normal'],
     subItems: [
-        { label: "Payables", icon: CreditCard, path: "/Debts/Payables" },
-        { label: "Receivables", icon: CreditCard, path: "/Debts/Receivables" },
+      { label: "Payables", icon: CreditCard, path: "/Debts/Payables" },
+      { label: "Receivables", icon: CreditCard, path: "/Debts/Receivables" },
     ]
- },
+  },
   { label: "Expenditure", icon: Wallet, path: "/Expenditure", roles: ['admin', 'normal'] },
 ]
 
@@ -100,7 +108,7 @@ const SideNav = ({ defaultCollapsed = false }: SideNavProps) => {
   const router = useRouter()
   const pathname = usePathname()
 
-  const { user} = useAuthStore()
+  const { user } = useAuthStore()
   const { unreadCount, startPolling, stopPolling } = useNotificationsStore()
 
   const userRole = user?.role || 'normal'
@@ -121,8 +129,8 @@ const SideNav = ({ defaultCollapsed = false }: SideNavProps) => {
   }
 
   const toggleExpanded = (index: number) => {
-    setExpandedItems(prev => 
-      prev.includes(index) 
+    setExpandedItems(prev =>
+      prev.includes(index)
         ? prev.filter(i => i !== index)
         : [...prev, index]
     )
@@ -176,15 +184,15 @@ const SideNav = ({ defaultCollapsed = false }: SideNavProps) => {
             <>
               <span className="text-sm truncate flex-1 text-left">{item.label}</span>
               {item.path === "/Notifications" && notificationCount > 0 && (
-                <Badge 
-                  variant="destructive" 
+                <Badge
+                  variant="destructive"
                   className="ml-auto h-5 min-w-5 px-1.5 flex items-center justify-center text-xs"
                 >
                   {notificationCount > 99 ? "99+" : notificationCount}
                 </Badge>
               )}
               {hasSubItems && (
-                <ChevronDown 
+                <ChevronDown
                   className={cn(
                     "w-4 h-4 transition-transform",
                     isExpanded && "rotate-180"
@@ -275,8 +283,8 @@ const SideNav = ({ defaultCollapsed = false }: SideNavProps) => {
             <div className="relative">
               {content}
               {item.path === "/Notifications" && notificationCount > 0 && (
-                <Badge 
-                  variant="destructive" 
+                <Badge
+                  variant="destructive"
                   className="absolute -top-1 -right-1 h-5 min-w-5 px-1.5 flex items-center justify-center text-xs"
                 >
                   {notificationCount > 99 ? "99+" : notificationCount}
@@ -347,7 +355,7 @@ const SideNav = ({ defaultCollapsed = false }: SideNavProps) => {
                 Notifications
               </DropdownMenuItem>
               <DropdownMenuSeparator className="dark:bg-gray-800" />
-              <DropdownMenuItem onClick={()=>{
+              <DropdownMenuItem onClick={() => {
                 useAuthStore.getState().logout()
               }} className="cursor-pointer text-red-600 dark:text-red-400 dark:focus:bg-gray-800">
                 <LogOut className="w-4 h-4 mr-2" />
