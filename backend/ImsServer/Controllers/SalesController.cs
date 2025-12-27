@@ -5,6 +5,9 @@ using ImsServer.Models.SaleX;
 using ImsServer.Models.ProductX;
 using ImsServer.Models.CustomerX;
 using ImsServer.Models.SalesDebtsTrackerX;
+using ImsServer.Models.SystemConfigX;
+using ImsServer.Models.TaxRecordX;
+using ImsServer.Migrations;
 
 namespace ImsServer.Controllers
 {
@@ -259,6 +262,8 @@ namespace ImsServer.Controllers
                 }
             }
 
+            var systemConfig = await _db.SystemConfigs.FirstOrDefaultAsync();
+
             using var tran = await _db.Database.BeginTransactionAsync();
             try
             {
@@ -287,6 +292,7 @@ namespace ImsServer.Controllers
                 _db.Sales.Add(sale);
 
                 decimal totalProfit = 0;
+                decimal totalVAT = 0;
 
                 // Process items
                 foreach (var it in dto.Items ?? Enumerable.Empty<CreateSaleItemDto>())
@@ -296,11 +302,14 @@ namespace ImsServer.Controllers
 
                     if (it.ProductVariationId != Guid.Empty)
                     {
-                        variation = await _db.ProductVariations.FindAsync(it.ProductVariationId);
+                        variation = await _db.ProductVariations
+                            .Include(v => v.Product)
+                            .FirstOrDefaultAsync(v => v.Id == it.ProductVariationId);
                     }
                     else if (it.ProductId != Guid.Empty)
                     {
                         variation = await _db.ProductVariations
+                            .Include(v => v.Product)
                             .FirstOrDefaultAsync(v => v.ProductId == it.ProductId);
                     }
 
@@ -308,6 +317,12 @@ namespace ImsServer.Controllers
                     {
                         await tran.RollbackAsync();
                         return BadRequest($"Product variation not found for item {it.Id}");
+                    }
+
+                    if (variation.Product == null)
+                    {
+                        await tran.RollbackAsync();
+                        return BadRequest($"Product not found for variation {variation.Id}");
                     }
 
                     // Find the oldest product storage for this variation and store
@@ -339,6 +354,15 @@ namespace ImsServer.Controllers
 
                     totalProfit += itemProfit;
 
+                    // Tax calculation if tax compliance is enabled and product is taxable
+                    if (systemConfig != null && systemConfig.TaxCompliance && systemConfig.IsVATRegistered && variation.Product != null && variation.Product.IsTaxable)
+                    {
+                        var TaxRate = systemConfig.TaxRate <= 0 ? 18 : systemConfig.TaxRate;
+
+                        it.VATAmount = ((it.BasePrice * it.Quantity * (100 + TaxRate) / 100) - (variation.CostPrice * it.Quantity * (100 + TaxRate) / 100));
+                        totalVAT += it.VATAmount.Value;
+                    }
+
                     var saleItem = new SalesItem
                     {
                         Id = it.Id == Guid.Empty ? Guid.NewGuid() : it.Id,
@@ -348,6 +372,7 @@ namespace ImsServer.Controllers
                         Quantity = it.Quantity,
                         UnitPrice = it.BasePrice,
                         TotalPrice = it.TotalPrice,
+                        VATAmount = it.VATAmount ?? 0,
                         ProfitMargin = itemProfit
                     };
 
@@ -394,7 +419,32 @@ namespace ImsServer.Controllers
                     _db.SalesDebtsTrackers.Add(initialPayment);
                 }
 
+                // Save the sale first (without TaxRecordId to avoid circular dependency)
                 await _db.SaveChangesAsync();
+
+                // Create tax record if applicable (after sale is saved)
+                if (systemConfig != null && systemConfig.TaxCompliance && systemConfig.IsVATRegistered && totalVAT > 0)
+                {
+                    var taxRecord = new TaxRecord
+                    {
+                        Id = Guid.NewGuid(),
+                        Type = TaxType.VAT,
+                        SaleId = sale.Id,
+                        Amount = totalVAT,
+                        DueDate = DateTime.UtcNow.AddMonths(1), // Example: due next month
+                        Description = $"VAT for Sale SA-{sale.Id.ToString().Substring(0, 8)}",
+                        PeriodStart = DateTime.UtcNow, // Example period
+                        PeriodEnd = DateTime.UtcNow.AddMonths(1)
+                    };
+
+                    _db.TaxRecords.Add(taxRecord);
+                    await _db.SaveChangesAsync(); // Save tax record
+
+                    // Link tax record to sale (now that both exist)
+                    sale.TaxRecordId = taxRecord.Id;
+                    await _db.SaveChangesAsync(); // Update sale with TaxRecordId
+                }
+
                 await tran.CommitAsync();
 
                 return CreatedAtAction(nameof(GetSale), new { id = sale.Id }, sale);

@@ -4,6 +4,7 @@ using ImsServer.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ImsServer.Migrations
 {
     [DbContext(typeof(DBContext))]
-    partial class DBContextModelSnapshot : ModelSnapshot
+    [Migration("20251226181147_TaxRecords")]
+    partial class TaxRecords
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1164,7 +1167,7 @@ namespace ImsServer.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<decimal?>("VATAmount")
+                    b.Property<decimal>("VATAmount")
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
@@ -1420,9 +1423,6 @@ namespace ImsServer.Migrations
                     b.Property<string>("IMSVersion")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<bool>("IsVATRegistered")
-                        .HasColumnType("bit");
-
                     b.Property<int>("LastUpdatedBy")
                         .HasColumnType("int");
 
@@ -1456,9 +1456,7 @@ namespace ImsServer.Migrations
                         .HasColumnType("bit");
 
                     b.Property<decimal>("TaxRate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,2)")
-                        .HasDefaultValue(18m);
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -1502,9 +1500,6 @@ namespace ImsServer.Migrations
                     b.Property<DateTime?>("PaidDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid?>("PaidUsingFinancialAccountId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<decimal?>("PenaltyAmount")
                         .HasColumnType("decimal(18,2)");
 
@@ -1528,8 +1523,6 @@ namespace ImsServer.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("PaidUsingFinancialAccountId");
 
                     b.HasIndex("SaleId");
 
@@ -1952,15 +1945,9 @@ namespace ImsServer.Migrations
 
             modelBuilder.Entity("ImsServer.Models.TaxRecordX.TaxRecord", b =>
                 {
-                    b.HasOne("ImsServer.Models.FinancialAccountX.FinancialAccount", "PaidUsingFinancialAccount")
-                        .WithMany()
-                        .HasForeignKey("PaidUsingFinancialAccountId");
-
                     b.HasOne("ImsServer.Models.SaleX.Sale", "Sale")
                         .WithMany()
                         .HasForeignKey("SaleId");
-
-                    b.Navigation("PaidUsingFinancialAccount");
 
                     b.Navigation("Sale");
                 });

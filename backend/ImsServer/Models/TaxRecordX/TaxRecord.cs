@@ -1,4 +1,7 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using ImsServer.Models.FinancialAccountX;
+using ImsServer.Models.SaleX;
 
 namespace ImsServer.Models.TaxRecordX
 {
@@ -6,9 +9,10 @@ namespace ImsServer.Models.TaxRecordX
     {
         [Key]
         public Guid Id { get; set; }
-
         [Required]
         public TaxType Type { get; set; }
+
+        public Guid? SaleId { get; set; }
 
         [Required]
         public decimal Amount { get; set; }
@@ -19,6 +23,8 @@ namespace ImsServer.Models.TaxRecordX
         public bool IsPaid { get; set; } = false;
 
         public DateTime? PaidDate { get; set; }
+
+        public Guid? PaidUsingFinancialAccountId { get; set; }
 
         [MaxLength(100)]
         public string? ReferenceNumber { get; set; }
@@ -31,6 +37,13 @@ namespace ImsServer.Models.TaxRecordX
         public DateTime? PeriodStart { get; set; }
 
         public DateTime? PeriodEnd { get; set; }
+
+        [ForeignKey("SaleId")]
+        public Sale? Sale { get; set; }
+
+        [ForeignKey("PaidUsingFinancialAccountId")]
+        public FinancialAccount? PaidUsingFinancialAccount { get; set; }
+
     }
 
     public enum TaxType
@@ -48,10 +61,29 @@ namespace ImsServer.Models.TaxRecordX
     {
         public Guid Id { get; set; }
         public TaxType Type { get; set; }
+        public Guid? SaleId { get; set; }
         public decimal Amount { get; set; }
         public DateTime DueDate { get; set; }
         public string? ReferenceNumber { get; set; }
         public string? Description { get; set; }
+        public DateTime? PeriodStart { get; set; }
+        public DateTime? PeriodEnd { get; set; }
+
+    }
+
+    public class SimpleTaxRecordDto
+    {
+        public Guid Id { get; set; }
+        public TaxType Type { get; set; }
+        public Guid? SaleId { get; set; }
+        public decimal Amount { get; set; }
+        public DateTime DueDate { get; set; }
+        public bool IsPaid { get; set; }
+        public DateTime? PaidDate { get; set; }
+        public Guid? PaidUsingFinancialAccountId { get; set; }
+        public string? ReferenceNumber { get; set; }
+        public string? Description { get; set; }
+        public decimal? PenaltyAmount { get; set; }
         public DateTime? PeriodStart { get; set; }
         public DateTime? PeriodEnd { get; set; }
     }
@@ -60,8 +92,10 @@ namespace ImsServer.Models.TaxRecordX
     {
         public decimal? Amount { get; set; }
         public DateTime? DueDate { get; set; }
+        public Guid? SaleId { get; set; }
         public bool? IsPaid { get; set; }
         public DateTime? PaidDate { get; set; }
+        public Guid? PaidUsingFinancialAccountId { get; set; }
         public string? ReferenceNumber { get; set; }
         public string? Description { get; set; }
         public decimal? PenaltyAmount { get; set; }

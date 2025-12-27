@@ -111,7 +111,7 @@ export function ProductDetails({ productId, onEdit }: ProductDetailsProps) {
             />
           </Stack>
         </Box>
-        {currentUser?.role === "ADMIN" && (
+        {currentUser?.role === "admin" && (
           <Button variant="contained" startIcon={<EditIcon />} onClick={onEdit} sx={{ borderRadius: 2 }}>
             Edit Product
           </Button>

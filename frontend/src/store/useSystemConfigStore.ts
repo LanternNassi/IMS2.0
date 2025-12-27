@@ -23,6 +23,8 @@ export type SystemConfig = {
   imsVersion?: string
   licenseValidTill?: string
   logo?: string
+  taxCompliance?: boolean
+  isVATRegistered?: boolean
   contacts?: Contact[]
 }
 
@@ -50,6 +52,7 @@ const defaultConfig: SystemConfig = {
   imsVersion: "",
   licenseValidTill: "",
   logo: "",
+  taxCompliance: false,
   contacts: [],
 }
 
@@ -102,6 +105,8 @@ export const useSystemConfigStore = create<SystemConfigState>((set, get) => ({
           ? new Date(data.licenseValidTill).toISOString().split("T")[0] 
           : "",
         logo: data.logo || "",
+        taxCompliance: data.taxCompliance || false,
+        isVATRegistered: data.isVATRegistered || false,
         contacts: data.contacts?.map((c: any) => ({
           id: c.id,
           systemConfigId: c.systemConfigId,
@@ -148,6 +153,8 @@ export const useSystemConfigStore = create<SystemConfigState>((set, get) => ({
           ? new Date(config.licenseValidTill).toISOString() 
           : null,
         logo: config.logo || null,
+        taxCompliance: config.taxCompliance || false,
+        isVATRegistered: config.isVATRegistered || false,
         contacts: (config.contacts || []).map((c) => ({
           id: c.id || crypto.randomUUID(),
           systemConfigId: config.id || "",
@@ -192,6 +199,8 @@ export const useSystemConfigStore = create<SystemConfigState>((set, get) => ({
           ? new Date(config.licenseValidTill).toISOString() 
           : null,
         logo: config.logo || null,
+        taxCompliance: config.taxCompliance || false,
+        isVATRegistered: config.isVATRegistered || false,
       }
 
       // Use PUT without ID to update the first config

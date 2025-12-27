@@ -13,6 +13,7 @@ namespace ImsServer.Models.SaleX
         public decimal Quantity { get; set; }
         public decimal UnitPrice { get; set; }
         public decimal TotalPrice { get; set; }
+        public decimal? VATAmount { get; set; }
         public decimal  ProfitMargin { get; set; }
 
         [ForeignKey("SaleId")]
@@ -33,6 +34,7 @@ namespace ImsServer.Models.SaleX
         public decimal Quantity { get; set; }
         public decimal UnitPrice { get; set; }
         public decimal TotalPrice { get; set; }
+        public decimal? VATAmount { get; set; }
         public decimal  ProfitMargin { get; set; }
         public SimpleSaleDto Sale { get; set; }
         public SimpleProductStorageDto ProductStorage { get; set; }
@@ -47,6 +49,7 @@ namespace ImsServer.Models.SaleX
         public decimal Quantity { get; set; }
         public decimal UnitPrice { get; set; }
         public decimal TotalPrice { get; set; }
+        public decimal? VATAmount { get; set; }
         public decimal  ProfitMargin { get; set; }
     }
 

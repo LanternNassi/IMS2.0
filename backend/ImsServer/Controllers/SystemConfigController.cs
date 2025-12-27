@@ -79,6 +79,8 @@ namespace ImsServer.Controllers
                 IMSKey = dto.IMSKey,
                 IMSVersion = dto.IMSVersion,
                 LicenseValidTill = dto.LicenseValidTill,
+                TaxCompliance = dto.TaxCompliance,
+                IsVATRegistered = dto.IsVATRegistered,
                 Logo = dto.Logo,
                 Contacts = new List<Contact>()
             };
@@ -137,6 +139,8 @@ namespace ImsServer.Controllers
             config.IMSKey = dto.IMSKey;
             config.IMSVersion = dto.IMSVersion;
             config.LicenseValidTill = dto.LicenseValidTill;
+            config.TaxCompliance = dto.TaxCompliance;
+            config.IsVATRegistered = dto.IsVATRegistered;
             config.Logo = dto.Logo;
 
             await _db.SaveChangesAsync();
@@ -178,6 +182,8 @@ namespace ImsServer.Controllers
             config.IMSKey = dto.IMSKey;
             config.IMSVersion = dto.IMSVersion;
             config.LicenseValidTill = dto.LicenseValidTill;
+            config.TaxCompliance = dto.TaxCompliance;
+            config.IsVATRegistered = dto.IsVATRegistered;
             config.Logo = dto.Logo;
 
             await _db.SaveChangesAsync();

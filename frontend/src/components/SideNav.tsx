@@ -27,7 +27,8 @@ import {
   User,
   ChevronDown,
   BaggageClaim,
-  ChartLine
+  ChartLine,
+  FileText
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -44,6 +45,7 @@ import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { useAuthStore } from "@/store/useAuthStore"
 import { useNotificationsStore } from "@/store/useNotificationsStore"
+import { useSystemConfigStore } from "@/store/useSystemConfigStore"
 
 const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/Dashboard", roles: ['admin'] },
@@ -53,8 +55,8 @@ const navItems = [
     path: "/Accounts",
     roles: ['admin'],
     subItems: [
-      { label: "Capital Account", icon: CreditCard, path: "/Accounts/capital" },
-      { label: "Financial Account", icon: Wallet, path: "/Accounts/financial" },
+      { label: "Capital Accounts", icon: CreditCard, path: "/Accounts/capital" },
+      { label: "Financial Accounts", icon: Wallet, path: "/Accounts/financial" },
       { label: "Transactions", icon: ArrowLeftRight, path: "/Accounts/transactions" },
     ]
   },
@@ -63,6 +65,7 @@ const navItems = [
   { label: "Categories", icon: FolderOpen, path: "/Categories", roles: ['admin'] },
   { label: "Store Management", icon: Store, path: "/Stores", roles: ['admin'] },
   { label: "Products", icon: Package, path: "/Products", roles: ['admin', 'normal'] },
+  { label: "Tax Records", icon: FileText, path: "/TaxRecords", roles: ['admin'] },
   { label: "Customers", icon: UserCheck, path: "/Customers", roles: ['admin', 'normal'] },
   { label: "Suppliers", icon: Truck, path: "/Suppliers", roles: ['admin', 'normal'] },
   { label: "Business Assets", icon: FolderOpen, path: "/Assets", roles: ['admin'] },
@@ -110,18 +113,37 @@ const SideNav = ({ defaultCollapsed = false }: SideNavProps) => {
 
   const { user } = useAuthStore()
   const { unreadCount, startPolling, stopPolling } = useNotificationsStore()
+  const { config, fetchSystemConfig } = useSystemConfigStore()
 
   const userRole = user?.role || 'normal'
-  const filteredNavItems = navItems.filter(item => item.roles.includes(userRole))
+  
+  // Filter nav items based on role and tax compliance
+  const filteredNavItems = navItems.filter(item => {
+    // Check role first
+    if (!item.roles.includes(userRole)) return false
+    
+    // If it's Tax Records, only show if tax compliance is enabled
+    if (item.path === "/TaxRecords") {
+      return config?.taxCompliance === true
+    }
+    
+    return true
+  })
+  
   const filteredBottomNavItems = bottomNavItems.filter(item => item.roles.includes(userRole))
 
-  // Start polling for notifications when component mounts
+  // Fetch system config and start polling for notifications when component mounts
   useEffect(() => {
+    // Fetch system config to check tax compliance status
+    if (!config) {
+      fetchSystemConfig()
+    }
+    
     startPolling()
     return () => {
       stopPolling()
     }
-  }, [startPolling, stopPolling])
+  }, [config, fetchSystemConfig, startPolling, stopPolling])
 
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode)

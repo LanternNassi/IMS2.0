@@ -1,6 +1,7 @@
 using ImsServer.Models.CustomerX;
 using ImsServer.Models.FinancialAccountX;
 using ImsServer.Models.SaleX;
+using ImsServer.Models.TaxRecordX;
 using ImsServer.Models.UserX;
 using System.ComponentModel.DataAnnotations.Schema;
     
@@ -11,6 +12,7 @@ namespace ImsServer.Models.SaleX
         public Guid Id { get; set; }
         public Guid? CustomerId { get; set; }
         public Guid? ProcessedById { get; set; } // Optional field for the user who processed the sale
+        public Guid? TaxRecordId { get; set; } // Optional field for associated tax record
         public DateTime SaleDate { get; set; }
         public decimal TotalAmount { get; set; }
         public decimal PaidAmount { get; set; }
@@ -40,6 +42,9 @@ namespace ImsServer.Models.SaleX
         public virtual ICollection<SalesItem> SaleItems { get; set; } = new List<SalesItem>();
 
         public string? Notes { get; set; }
+
+        [ForeignKey("TaxRecordId")]
+        public virtual TaxRecord? TaxRecord { get; set; }
     }
 
     public class SaleDto : GeneralFields
@@ -47,6 +52,7 @@ namespace ImsServer.Models.SaleX
         public Guid Id { get; set; }
         public Guid? CustomerId { get; set; }
         public Guid? ProcessedById { get; set; }
+        public Guid? TaxRecordId { get; set; }
         public DateTime SaleDate { get; set; }
         public decimal TotalAmount { get; set; }
         public decimal PaidAmount { get; set; }
@@ -64,10 +70,9 @@ namespace ImsServer.Models.SaleX
         public bool IsCompleted { get; set; }
         public SimpleCustomerDto? Customer { get; set; }
         public UserDto ProcessedBy { get; set; }
-
         public List<SimpleSalesItemDto> SaleItems { get; set; } = new List<SimpleSalesItemDto>();
-
         public string? Notes { get; set; }
+        public SimpleTaxRecordDto? TaxRecord { get; set; }
     }
 
     public class SimpleSaleDto
@@ -82,6 +87,7 @@ namespace ImsServer.Models.SaleX
         public Guid Id { get; set; }
         public Guid? CustomerId { get; set; }
         public Guid? ProcessedById { get; set; }
+        public Guid? TaxRecordId { get; set; }
         public DateTime SaleDate { get; set; }
         public decimal TotalAmount { get; set; }
         public decimal PaidAmount { get; set; }
@@ -108,6 +114,7 @@ namespace ImsServer.Models.SaleX
         public decimal BasePrice { get; set; }
         public decimal Quantity { get; set; }
         public decimal TotalPrice { get; set; }
+        public decimal? VATAmount { get; set; }
         public Guid StorageId { get; set; }
         public decimal? ProfitMargin { get; set; }
     }

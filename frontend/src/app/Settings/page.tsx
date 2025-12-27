@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { AlertCircle, Mail, MessageSquare, HardDrive, Building2, Settings, Save, X, Loader2 } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Switch } from "@/components/ui/switch"
 import { useSystemConfigStore } from "@/store/useSystemConfigStore"
 import api from "@/Utils/Request"
 
@@ -35,6 +36,8 @@ type BusinessConfig = {
   imsVersion?: string
   licenseValidTill?: string
   logo?: string
+  taxCompliance?: boolean
+  isVATRegistered?: boolean
   contacts: Contact[]
 }
 
@@ -81,6 +84,8 @@ const defaultBusinessConfig: BusinessConfig = {
   imsVersion: "",
   licenseValidTill: "",
   logo: "",
+  taxCompliance: false,
+  isVATRegistered: false,
   contacts: [],
 }
 
@@ -138,10 +143,10 @@ export default function SettingsPage() {
     }
   }, [config])
 
-  const handleBusinessConfigChange = (field: keyof Omit<BusinessConfig, "id" | "contacts">, value: string | number) => {
+  const handleBusinessConfigChange = (field: keyof Omit<BusinessConfig, "id" | "contacts">, value: string | number | boolean) => {
     setBusinessConfig((prev) => ({
       ...prev,
-      [field]: value as string,
+      [field]: value,
     }))
   }
 
@@ -350,6 +355,43 @@ export default function SettingsPage() {
                     className="dark:bg-gray-700 bg-white"
                   />
                 </div>
+              </div>
+
+              <div className="flex items-center gap-4 p-4 dark:bg-gray-700 bg-gray-50 rounded-lg">
+                <div className="flex-1">
+                  <p className="font-medium">Tax Compliance</p>
+                  <p className="text-sm text-muted-foreground">
+                    Enable automatic VAT calculation and recording for sales transactions
+                  </p>
+                </div>
+                <Switch
+                  checked={businessConfig.taxCompliance || false}
+                  onCheckedChange={(checked) => {
+                    handleBusinessConfigChange("taxCompliance", checked)
+                    // If tax compliance is disabled, also disable VAT registration
+                    if (!checked) {
+                      handleBusinessConfigChange("isVATRegistered", false)
+                    }
+                  }}
+                  className="data-[state=checked]:bg-green-600"
+                  thumbClassName="data-[state=checked]:bg-gray-100"
+                />
+              </div>
+
+              <div className={`flex items-center gap-4 p-4 dark:bg-gray-700 bg-gray-50 rounded-lg ${!businessConfig.taxCompliance ? 'opacity-50' : ''}`}>
+                <div className="flex-1">
+                  <p className="font-medium">VAT Registration</p>
+                  <p className="text-sm text-muted-foreground">
+                    Enable VAT registration status (requires Tax Compliance to be enabled)
+                  </p>
+                </div>
+                <Switch
+                  checked={businessConfig.isVATRegistered || false}
+                  onCheckedChange={(checked) => handleBusinessConfigChange("isVATRegistered", checked)}
+                  disabled={!businessConfig.taxCompliance}
+                  className="data-[state=checked]:bg-green-600"
+                  thumbClassName="data-[state=checked]:bg-gray-100"
+                />
               </div>
 
               <div className="space-y-2">

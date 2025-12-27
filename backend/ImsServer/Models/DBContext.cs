@@ -186,6 +186,11 @@ namespace ImsServer.Models
                 .HasForeignKey(c => c.SystemConfigId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // Configure SystemConfig TaxRate default value
+            modelBuilder.Entity<SystemConfig>()
+                .Property(s => s.TaxRate)
+                .HasDefaultValue(18m);
+
             base.OnModelCreating(modelBuilder);
 
         }

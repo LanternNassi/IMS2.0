@@ -26,6 +26,10 @@ namespace ImsServer.Models.SystemConfigX
 
         public string? IMSKey {get; set;}
 
+        public bool TaxCompliance { get; set; } = false; // True if the business is compliant with tax laws
+
+        public decimal TaxRate { get; set; } = 18; // Default tax rate percentage
+        public bool IsVATRegistered { get; set; } = false; // True if the business is VAT registered
         public string? IMSVersion { get; set;}
         public DateTime? LicenseValidTill { get; set; }
 
@@ -62,6 +66,9 @@ namespace ImsServer.Models.SystemConfigX
         public string? FiscalYearEnd { get; set; }
         public string? IMSKey { get; set; }
         public string? IMSVersion { get; set; }
+        public bool TaxCompliance { get; set; } = false; // True if the business is compliant with tax laws
+        public bool IsVATRegistered { get; set; } = false; // True if the business is VAT registered
+        public decimal TaxRate { get; set; } = 18; // Default tax rate percentage
         public DateTime? LicenseValidTill { get; set; }
         public string? Logo { get; set; }
         public List<SimpleContactDto>? Contacts { get; set; }
@@ -81,6 +88,9 @@ namespace ImsServer.Models.SystemConfigX
         public string? FiscalYearEnd { get; set; }
         public string? IMSKey { get; set; }
         public string? IMSVersion { get; set; }
+        public bool TaxCompliance { get; set; } = false; // True if the business is compliant with tax laws
+        public bool IsVATRegistered { get; set; } = false; // True if the business is VAT registered
+        public decimal TaxRate { get; set; } = 18; // Default tax rate percentage
         public DateTime? LicenseValidTill { get; set; }
         public string? Logo { get; set; }
     }
@@ -99,6 +109,9 @@ namespace ImsServer.Models.SystemConfigX
         public string? FiscalYearEnd { get; set; }
         public string? IMSKey { get; set; }
         public string? IMSVersion { get; set; }
+        public decimal TaxRate { get; set; } = 18; // Default tax rate percentage
+        public bool TaxCompliance { get; set; } = false; // True if the business is compliant with tax laws
+        public bool IsVATRegistered { get; set; } = false; // True if the business is VAT registered
         public DateTime? LicenseValidTill { get; set; }
         public string? Logo { get; set; }
         public List<SimpleContactDto>? Contacts { get; set; }
@@ -117,6 +130,8 @@ namespace ImsServer.Models.SystemConfigX
         public string? FiscalYearEnd { get; set; }
         public string? IMSKey { get; set; }
         public string? IMSVersion { get; set; }
+        public bool TaxCompliance { get; set; } = false; // True if the business is compliant with tax laws
+        public bool IsVATRegistered { get; set; } = false; // True if the business is VAT registered
         public DateTime? LicenseValidTill { get; set; }
         public string? Logo { get; set; }
     }
