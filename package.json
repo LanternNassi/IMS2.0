@@ -1,6 +1,6 @@
 {
     "name": "ims-desktop",
-    "version": "1.0.8",
+    "version": "1.0.9",
     "description": "IMS Desktop Application - Inventory Management System",
     "main": "electron/main.js",
     "author": "Ntambi Nassim",
@@ -11,6 +11,7 @@
         "dev:backend": "cd backend/ImsServer && dotnet watch run",
         "build:frontend": "cd frontend && npm run build",
         "build:backend": "cd backend/ImsServer && dotnet publish -c Release -o ../../dist/backend --self-contained true -r win-x64",
+        "package:backend-service": "powershell -ExecutionPolicy Bypass -Command \"$version = (Get-Content package.json | ConvertFrom-Json).version; & scripts/package-backend-service.ps1 -Version $version -OutputDir release -BackendDir dist/backend\"",
         "build:all": "npm run build:frontend && npm run build:backend",
         "pack": "npm run build:all && electron-builder --dir",
         "dist": "npm run build:all && electron-builder",

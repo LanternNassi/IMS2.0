@@ -70,6 +70,17 @@ jobs:
           dotnet publish -c Release -o ../../dist/backend --self-contained true -r win-x64
           echo "Backend build completed"
 
+      - name: Package Backend Service
+        if: steps.release-type.outputs.type == 'release'
+        run: |
+          Write-Host "Packaging Backend Service for Windows Service..."
+          $version = "${{ steps.package-version.outputs.version }}"
+          if (-not (Test-Path "scripts")) {
+            New-Item -ItemType Directory -Path "scripts" -Force | Out-Null
+          }
+          powershell -ExecutionPolicy Bypass -File "scripts/package-backend-service.ps1" -Version $version -OutputDir "release" -BackendDir "dist/backend"
+          echo "Backend service package created"
+
       - name: Build Server Version
         id: build-server
         env:
@@ -124,6 +135,33 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
+      - name: Upload Backend Service Package to Release
+        if: steps.release-type.outputs.type == 'release'
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          $zipFile = Get-ChildItem -Path "release" -Filter "IMS-Backend-Service-*.zip" | Select-Object -First 1
+          if ($zipFile) {
+            Write-Host "Uploading backend service package: $($zipFile.Name)"
+            $tag = "${{ github.ref_name }}"
+            $repo = "${{ github.repository }}"
+            
+            # Get release ID
+            $releaseResponse = Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/releases/tags/$tag" -Headers @{"Authorization"="token $env:GH_TOKEN"; "Accept"="application/vnd.github.v3+json"}
+            $releaseId = $releaseResponse.id
+            
+            # Upload asset
+            $uploadUrl = "https://uploads.github.com/repos/$repo/releases/$releaseId/assets?name=$($zipFile.Name)"
+            $headers = @{
+              "Authorization" = "token $env:GH_TOKEN"
+              "Content-Type" = "application/zip"
+            }
+            Invoke-RestMethod -Uri $uploadUrl -Method Post -Headers $headers -InFile $zipFile.FullName
+            Write-Host "Backend service package uploaded successfully!"
+          } else {
+            Write-Host "WARNING: Backend service zip file not found!"
+          }
+
       - name: Create release summary
         if: success()
         run: |
@@ -170,12 +208,13 @@ jobs:
           echo "" >> $env:GITHUB_STEP_SUMMARY
           echo "### Artifacts" >> $env:GITHUB_STEP_SUMMARY
           if ($isTag) {
-            echo "Both installers have been uploaded as artifacts and published to GitHub Releases." >> $env:GITHUB_STEP_SUMMARY
+            echo "All packages have been uploaded as artifacts and published to GitHub Releases." >> $env:GITHUB_STEP_SUMMARY
             echo "" >> $env:GITHUB_STEP_SUMMARY
             echo "**Download Links:**" >> $env:GITHUB_STEP_SUMMARY
             echo "- Server: [IMS Desktop Setup v${{ steps.package-version.outputs.version }}](https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }})" >> $env:GITHUB_STEP_SUMMARY
             echo "- Client: [IMS Desktop Client Setup v${{ steps.package-version.outputs.version }}](https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }})" >> $env:GITHUB_STEP_SUMMARY
+            echo "- Backend Service: [IMS-Backend-Service v${{ steps.package-version.outputs.version }}.zip](https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }})" >> $env:GITHUB_STEP_SUMMARY
           } else {
-            echo "Both installers have been uploaded as artifacts. To publish, create and push a version tag (e.g., v1.0.0)." >> $env:GITHUB_STEP_SUMMARY
+            echo "All packages have been uploaded as artifacts. To publish, create and push a version tag (e.g., v1.0.0)." >> $env:GITHUB_STEP_SUMMARY
           }
 

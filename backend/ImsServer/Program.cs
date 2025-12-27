@@ -1,8 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using ImsServer.Models;
 using AutoMapper;
+using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add Windows Service support
+builder.Host.UseWindowsService();
 
 builder.Configuration
     .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
@@ -88,5 +92,13 @@ app.UseCors();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Run as Windows Service or console app
+if (args.Contains("--install-service"))
+{
+    // Installation will be handled by external script
+    Console.WriteLine("Service installation should be done via install-service.bat");
+    return;
+}
 
 app.Run();
