@@ -42,6 +42,7 @@ namespace ImsServer.Controllers
             var query = _db.Sales
                 .Include(s => s.Customer)
                 .Include(s => s.ProcessedBy)
+                .Include(s => s.TaxRecord)
                 .Include(s => s.SaleItems)
                     .ThenInclude(si => si.ProductVariation)
                 .OrderByDescending(s => s.SaleDate)
@@ -345,23 +346,41 @@ namespace ImsServer.Controllers
                     // Deduct quantity from storage
                     productStorage.Quantity -= it.Quantity;
 
-                    // Calculate profit (assuming we have cost price in ProductStorage or ProductGeneric)
-                    // For now, we'll use a simple calculation or you can extend the model
+                    // Calculate profit and VAT
+                    // Both BasePrice and CostPrice include VAT when tax compliance is enabled
                     decimal itemProfit = 0;
-                    // If you have cost price available, calculate: (BasePrice - CostPrice) * Quantity
-                    // itemProfit = (it.BasePrice - costPrice) * it.Quantity;
-                    itemProfit = (it.BasePrice - variation.CostPrice) * it.Quantity;
-
-                    totalProfit += itemProfit;
 
                     // Tax calculation if tax compliance is enabled and product is taxable
                     if (systemConfig != null && systemConfig.TaxCompliance && systemConfig.IsVATRegistered && variation.Product != null && variation.Product.IsTaxable)
                     {
                         var TaxRate = systemConfig.TaxRate <= 0 ? 18 : systemConfig.TaxRate;
-
-                        it.VATAmount = ((it.BasePrice * it.Quantity * (100 + TaxRate) / 100) - (variation.CostPrice * it.Quantity * (100 + TaxRate) / 100));
+                        
+                        // Both BasePrice and CostPrice include VAT
+                        // Extract VAT-exclusive amounts
+                        decimal saleAmountIncludingVAT = it.BasePrice * it.Quantity;
+                        decimal saleAmountExcludingVAT = saleAmountIncludingVAT / (1 + (TaxRate / 100m));
+                        
+                        decimal costAmountIncludingVAT = variation.CostPrice * it.Quantity;
+                        decimal costAmountExcludingVAT = costAmountIncludingVAT / (1 + (TaxRate / 100m));
+                        
+                        // Calculate VAT amounts
+                        decimal vatCollected = saleAmountIncludingVAT - saleAmountExcludingVAT;
+                        decimal vatPaid = costAmountIncludingVAT - costAmountExcludingVAT;
+                        
+                        // Net VAT payable to revenue authority (VAT collected - VAT paid)
+                        it.VATAmount = vatCollected - vatPaid;
                         totalVAT += it.VATAmount.Value;
+                        
+                        // Profit should be calculated on VAT-exclusive amounts
+                        itemProfit = saleAmountExcludingVAT - costAmountExcludingVAT;
                     }
+                    else
+                    {
+                        // No VAT, calculate profit normally
+                        itemProfit = (it.BasePrice - variation.CostPrice) * it.Quantity;
+                    }
+
+                    totalProfit += itemProfit;
 
                     var saleItem = new SalesItem
                     {
@@ -498,6 +517,7 @@ namespace ImsServer.Controllers
             var sale = await _db.Sales
                 .Include(s => s.SaleItems)
                     .ThenInclude(si => si.ProductStorage)
+                .Include(s => s.TaxRecord)
                 .FirstOrDefaultAsync(s => s.Id == id);
 
             if (sale == null) return NotFound();
@@ -530,6 +550,19 @@ namespace ImsServer.Controllers
                     {
                         account.Balance -= sale.PaidAmount;
                     }
+                }
+
+                // Handle tax record: Soft delete if unpaid, leave it if already paid
+                if (sale.TaxRecordId.HasValue)
+                {
+                    var taxRecord = sale.TaxRecord ?? await _db.TaxRecords.FindAsync(sale.TaxRecordId.Value);
+                    
+                    if (taxRecord != null && !taxRecord.IsPaid)
+                    {
+                        // Tax hasn't been paid yet, so we can safely soft delete it
+                        _db.SoftDelete(taxRecord);
+                    }
+                    // If tax has already been paid, leave the record (may require manual credit/refund handling)
                 }
 
                 sale.IsRefunded = true;

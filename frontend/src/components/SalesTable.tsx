@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
+import { useSystemConfigStore } from "@/store/useSystemConfigStore"
 
 // Types matching the API response
 export interface SaleItem {
@@ -59,6 +60,21 @@ export interface Sale {
     email: string
   }
   saleItems?: SaleItem[]
+  taxRecord?: {
+    id: string
+    type: string
+    saleId: string
+    amount: number
+    dueDate: string
+    isPaid: boolean
+    paidDate: string | null
+    paidUsingFinancialAccountId: string | null
+    referenceNumber: string | null
+    description: string
+    penaltyAmount: number | null
+    periodStart: string
+    periodEnd: string
+  }
 }
 
 export interface SalesTableProps {
@@ -94,6 +110,10 @@ const SaleRow: React.FC<{
 }> = ({ sale, onView, onEdit, onDelete, onRefund }) => {
   const [isExpanded, setIsExpanded] = useState(false)
   const items = sale.saleItems || []
+  const { config } = useSystemConfigStore()
+  
+  // Check if tax compliance and VAT registration are enabled
+  const showTaxInfo = config?.taxCompliance && config?.isVATRegistered && sale.taxRecord
 
   return (
     <>
@@ -354,6 +374,47 @@ const SaleRow: React.FC<{
                   </TableBody>
                 </Table>
               </div>
+
+              {/* Tax Record Information */}
+              {showTaxInfo && (
+                <div className="pt-2 border-t border-border/30 dark:border-gray-700/30">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="h-1 w-1 rounded-full bg-primary" />
+                    <h4 className="text-sm font-semibold text-foreground">Tax Information</h4>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 p-3 rounded-lg bg-muted/30 dark:bg-gray-800/30">
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Tax ID</p>
+                      <p className="font-mono font-semibold text-foreground">
+                        TA-{sale.taxRecord?.id.slice(0, 8)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Reference Number</p>
+                      <p className="font-medium text-foreground">
+                        {sale.taxRecord?.referenceNumber || "—"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">VAT Status</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-foreground">
+                          {formatCurrencyFull(sale.taxRecord?.amount || 0)}
+                        </span>
+                        {sale.taxRecord?.isPaid ? (
+                          <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 hover:bg-emerald-100">
+                            Cleared
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 hover:bg-amber-100">
+                            Pending
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Sale Summary */}
               <div className="pt-2 border-t border-border/30 dark:border-gray-700/30 grid grid-cols-2 gap-4">

@@ -1,6 +1,6 @@
 {
     "name": "ims-desktop",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "description": "IMS Desktop Application - Inventory Management System",
     "main": "electron/main.js",
     "author": "Ntambi Nassim",
