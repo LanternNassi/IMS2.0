@@ -702,7 +702,7 @@ export default function ProductManagement() {
             <Stack direction="row" spacing={3}>
               <Box>
                 <Typography variant="h6" fontWeight="bold">
-                  {filteredProducts.length}
+                  {pagination?.totalCount || 0}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Total Products
@@ -710,7 +710,7 @@ export default function ProductManagement() {
               </Box>
               <Box>
                 <Typography variant="h6" fontWeight="bold" color="success.main">
-                  {filteredProducts.filter((p) => p.isActive).length}
+                  {pagination?.totalCount || 0}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Active Products
