@@ -15,6 +15,9 @@ const store = new Store({
   encryptionKey: 'your-encryption-key-here',
 });
 
+// Disable hardware acceleration
+app.disableHardwareAcceleration();
+
 // Logging utility for writing errors to file
 let logFileStream = null;
 let LOG_DIR = null;
@@ -73,53 +76,93 @@ function initLogFile() {
   }
 }
 
-// Write error to log file
+// Write error to log file (non-blocking)
 function writeToLog(level, message, error = null) {
-  const timestamp = new Date().toISOString();
-  let logEntry = `[${timestamp}] [${level}] ${message}\n`;
-  
-  if (error) {
-    if (error instanceof Error) {
-      logEntry += `  Error: ${error.message}\n`;
-      if (error.stack) {
-        logEntry += `  Stack: ${error.stack}\n`;
+  try {
+    const timestamp = new Date().toISOString();
+    let logEntry = `[${timestamp}] [${level}] ${message}\n`;
+    
+    if (error) {
+      if (error instanceof Error) {
+        logEntry += `  Error: ${error.message}\n`;
+        if (error.stack) {
+          logEntry += `  Stack: ${error.stack}\n`;
+        }
+      } else {
+        logEntry += `  Error: ${JSON.stringify(error)}\n`;
       }
+    }
+    
+    // Write to file (initialize if needed) - non-blocking
+    if (!logFileStream && app.isReady()) {
+      try {
+        initLogFile();
+      } catch (initErr) {
+        // If init fails, just log to console
+        console.error('Failed to initialize log file:', initErr);
+      }
+    }
+    
+    if (logFileStream) {
+      try {
+        // Use setImmediate to make this non-blocking
+        setImmediate(() => {
+          try {
+            if (logFileStream) {
+              logFileStream.write(logEntry);
+              logFileStream.write('\n');
+            }
+          } catch (err) {
+            console.error('Failed to write to log file:', err);
+          }
+        });
+      } catch (err) {
+        console.error('Failed to schedule log write:', err);
+      }
+    }
+    
+    // Also log to console (always works)
+    if (level === 'ERROR') {
+      console.error(`[${level}] ${message}`, error || '');
+    } else if (level === 'WARN') {
+      console.warn(`[${level}] ${message}`, error || '');
     } else {
-      logEntry += `  Error: ${JSON.stringify(error)}\n`;
+      console.log(`[${level}] ${message}`);
     }
-  }
-  
-  // Write to file (initialize if needed)
-  if (!logFileStream && app.isReady()) {
-    initLogFile();
-  }
-  
-  if (logFileStream) {
-    try {
-      logFileStream.write(logEntry);
-      logFileStream.write('\n');
-    } catch (err) {
-      console.error('Failed to write to log file:', err);
-    }
-  }
-  
-  // Also log to console
-  if (level === 'ERROR') {
-    console.error(`[${level}] ${message}`, error || '');
-  } else if (level === 'WARN') {
-    console.warn(`[${level}] ${message}`, error || '');
-  } else {
-    console.log(`[${level}] ${message}`);
+  } catch (err) {
+    // Even if logging fails, don't crash - just log to console
+    console.error('Critical error in writeToLog:', err);
+    console.log(`[${level}] ${message}`, error || '');
   }
 }
 
 // Log uncaught exceptions
 process.on('uncaughtException', (error) => {
   writeToLog('ERROR', 'Uncaught Exception', error);
+  // Try to show error dialog if app is ready
+  if (app.isReady()) {
+    dialog.showErrorBox(
+      "Application Error",
+      `An unexpected error occurred:\n${error.message}\n\nPlease check the log file for details.`
+    ).catch(() => {
+      // Ignore if dialog can't be shown
+    });
+  }
+  // Don't exit - let the app continue if possible
 });
 
 process.on('unhandledRejection', (reason, promise) => {
   writeToLog('ERROR', 'Unhandled Rejection', reason);
+  // Try to show error dialog if app is ready
+  if (app.isReady()) {
+    const errorMsg = reason instanceof Error ? reason.message : String(reason);
+    dialog.showErrorBox(
+      "Application Error",
+      `An unexpected error occurred:\n${errorMsg}\n\nPlease check the log file for details.`
+    ).catch(() => {
+      // Ignore if dialog can't be shown
+    });
+  }
 });
 
 let mainWindow;
@@ -440,12 +483,53 @@ function checkServerHealth(port, maxRetries = 30, interval = 500, host = null) {
   });
 }
 
+// Check if a port is already in use
+function isPortInUse(port, host = '127.0.0.1') {
+  return new Promise((resolve) => {
+    const server = http.createServer();
+    
+    server.once('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        resolve(true); // Port is in use
+      } else {
+        resolve(false); // Other error, assume port is available
+      }
+    });
+    
+    server.listen(port, host, () => {
+      // Port is available
+      server.once('close', () => {
+        resolve(false);
+      });
+      server.close();
+    });
+  });
+}
+
 // Start local HTTP server for frontend in production
 function startFrontendServer() {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     if (isDev) {
       resolve();
       return;
+    }
+    
+    // Check if port is already in use (another instance might be running)
+    const portInUse = await isPortInUse(FRONTEND_PORT, '127.0.0.1');
+    if (portInUse) {
+      console.log(`Port ${FRONTEND_PORT} is already in use. Using existing server.`);
+      writeToLog('INFO', `Port ${FRONTEND_PORT} is already in use, using existing server`);
+      // Port is already in use, assume another instance is running the server
+      // Just verify it's responding
+      try {
+        await checkServerHealth(FRONTEND_PORT, 5, 500, '127.0.0.1');
+        console.log('Existing frontend server is responding');
+        resolve();
+        return;
+      } catch (error) {
+        console.warn('Port is in use but server is not responding, will try to start anyway');
+        // Continue to try starting our own server
+      }
     }
     
     const frontendPath = path.join(__dirname, "..", "dist", "frontend");
@@ -494,13 +578,22 @@ function startFrontendServer() {
     });
     
     frontendServer.on('error', (err) => {
-      console.error('Frontend server error:', err);
-      writeToLog('ERROR', 'Frontend server error', err);
-      reject(err);
+      // If port is already in use, that's okay - another instance is running it
+      if (err.code === 'EADDRINUSE') {
+        console.log(`Port ${FRONTEND_PORT} is already in use. Another instance may be running the server.`);
+        writeToLog('INFO', `Port ${FRONTEND_PORT} is already in use, using existing server`);
+        // Don't reject - just resolve since we can use the existing server
+        resolve();
+      } else {
+        console.error('Frontend server error:', err);
+        writeToLog('ERROR', 'Frontend server error', err);
+        reject(err);
+      }
     });
     
     frontendServer.listen(FRONTEND_PORT, () => {
       console.log(`Frontend server running on http://0.0.0.0:${FRONTEND_PORT}`);
+      writeToLog('INFO', `Frontend server started on port ${FRONTEND_PORT}`);
       resolve();
     });
   });
@@ -572,93 +665,357 @@ function startBackend() {
 
 
 function createLoginWindow() {
-  loginWindow = new BrowserWindow({
-    width: 400,
-    height: 650,
-    resizable: false,
-    minimizable: false,
-    maximizable: false,
-    frame: true,
-    modal: true,
-    show: false,
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
-    },
-    icon: path.join(__dirname, "icon.ico"),
-  });
-  loginWindow.removeMenu && loginWindow.removeMenu();
-  loginWindow.loadFile(path.join(__dirname, "login.html"));
-  loginWindow.once('ready-to-show', () => loginWindow.show());
-  loginWindow.on("closed", () => {
-    loginWindow = null;
-  });
+  try {
+    // Resolve login.html path - handle both dev and production
+    let loginHtmlPath;
+    if (isDev) {
+      // Development: use __dirname
+      loginHtmlPath = path.join(__dirname, "login.html");
+    } else {
+      // Production: try multiple possible locations
+      const possiblePaths = [
+        path.join(__dirname, "login.html"), // Same directory as main.js
+        path.join(process.resourcesPath, "app", "electron", "login.html"), // Resources path
+        path.join(app.getAppPath(), "electron", "login.html"), // App path
+        path.join(__dirname, "..", "electron", "login.html"), // Parent/electron
+      ];
+      
+      loginHtmlPath = null;
+      for (const possiblePath of possiblePaths) {
+        if (fs.existsSync(possiblePath)) {
+          loginHtmlPath = possiblePath;
+          console.log(`Found login.html at: ${loginHtmlPath}`);
+          break;
+        }
+      }
+      
+      if (!loginHtmlPath) {
+        // Last resort: try to read from asar if packaged
+        try {
+          const asarPath = path.join(process.resourcesPath, "app.asar", "electron", "login.html");
+          if (fs.existsSync(asarPath)) {
+            loginHtmlPath = asarPath;
+            console.log(`Found login.html in asar at: ${loginHtmlPath}`);
+          }
+        } catch (asarErr) {
+          console.error('Error checking asar:', asarErr);
+        }
+      }
+    }
+    
+    // If still not found, check the original path
+    if (!loginHtmlPath || !fs.existsSync(loginHtmlPath)) {
+      loginHtmlPath = path.join(__dirname, "login.html");
+    }
+    
+    if (!fs.existsSync(loginHtmlPath)) {
+      const errorMsg = `Login HTML file not found. Searched:\n- ${path.join(__dirname, "login.html")}\n- ${isDev ? 'N/A' : path.join(process.resourcesPath, "app", "electron", "login.html")}\n- ${isDev ? 'N/A' : path.join(app.getAppPath(), "electron", "login.html")}`;
+      console.error(errorMsg);
+      try {
+        writeToLog('ERROR', errorMsg);
+      } catch (logErr) {
+        console.error('Failed to write to log:', logErr);
+      }
+      
+      // Instead of quitting, create a fallback login window with inline HTML
+      console.warn('Login.html not found, using fallback HTML');
+      createLoginWindowWithFallback();
+      return;
+    }
+    
+    console.log(`Using login.html from: ${loginHtmlPath}`);
+    console.log(`__dirname: ${__dirname}`);
+    console.log(`app.getAppPath(): ${app.getAppPath()}`);
+    console.log(`process.resourcesPath: ${process.resourcesPath}`);
+    console.log(`isDev: ${isDev}`);
+    
+    loginWindow = new BrowserWindow({
+      width: 400,
+      height: 650,
+      resizable: false,
+      minimizable: false,
+      maximizable: false,
+      frame: true,
+      modal: false, // Changed: modal windows can cause issues if no parent
+      show: true, // Changed: show immediately instead of waiting
+      webPreferences: {
+        nodeIntegration: true,
+        contextIsolation: false,
+        sandbox: false, // Ensure sandbox is disabled for nodeIntegration
+      },
+      icon: path.join(__dirname, "icon.ico"),
+    });
+    
+    loginWindow.removeMenu && loginWindow.removeMenu();
+    
+    // Show window after it's ready (for focus)
+    loginWindow.once('ready-to-show', () => {
+      try {
+        if (loginWindow && !loginWindow.isDestroyed()) {
+          loginWindow.show();
+          loginWindow.focus();
+          try {
+            writeToLog('INFO', 'Login window shown');
+          } catch (logErr) {
+            console.error('Failed to write to log:', logErr);
+          }
+        }
+      } catch (err) {
+        console.error('Error in ready-to-show handler:', err);
+      }
+    });
+    
+    loginWindow.on("closed", () => {
+      loginWindow = null;
+      // Don't quit app if login window closes - user might have other windows
+      // Only quit if this is the only window
+      const allWindows = BrowserWindow.getAllWindows();
+      if (allWindows.length === 0 && !mainWindow) {
+        // If no other windows exist, quit after a short delay
+        setTimeout(() => {
+          if (BrowserWindow.getAllWindows().length === 0) {
+            writeToLog('INFO', 'All windows closed, quitting application');
+            app.quit();
+          }
+        }, 100);
+      }
+    });
+    
+    loginWindow.on('error', (error) => {
+      try {
+        writeToLog('ERROR', 'Login window error', error);
+      } catch (logErr) {
+        console.error('Failed to write to log:', logErr);
+      }
+      console.error('Login window error:', error);
+    });
+    
+    loginWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+      const errorMsg = `Login window failed to load: ${errorCode} - ${errorDescription}`;
+      try {
+        writeToLog('ERROR', errorMsg);
+      } catch (logErr) {
+        console.error('Failed to write to log:', logErr);
+      }
+      console.error(errorMsg);
+      // Still show the window even if load fails
+      if (loginWindow && !loginWindow.isDestroyed()) {
+        loginWindow.show();
+        loginWindow.focus();
+      }
+    });
+    
+    loginWindow.webContents.on('crashed', (event, killed) => {
+      const errorMsg = `Login window crashed (killed: ${killed})`;
+      try {
+        writeToLog('ERROR', errorMsg);
+      } catch (logErr) {
+        console.error('Failed to write to log:', logErr);
+      }
+      console.error(errorMsg);
+      // Reload the window
+      if (loginWindow && !loginWindow.isDestroyed()) {
+        loginWindow.reload();
+      }
+    });
+    
+    // Load the file asynchronously to prevent blocking
+    setImmediate(() => {
+      try {
+        // Try to read and load HTML content directly as fallback
+        let htmlContent = null;
+        try {
+          htmlContent = fs.readFileSync(loginHtmlPath, 'utf8');
+        } catch (readErr) {
+          console.warn('Could not read login.html file:', readErr);
+        }
+        
+        loginWindow.loadFile(loginHtmlPath).catch((loadError) => {
+          const errorMsg = `Failed to load login.html: ${loadError.message}`;
+          try {
+            writeToLog('ERROR', errorMsg, loadError);
+          } catch (logErr) {
+            console.error('Failed to write to log:', logErr);
+          }
+          console.error(errorMsg);
+          
+          // Fallback: try loading HTML content directly
+          if (htmlContent && loginWindow && !loginWindow.isDestroyed()) {
+            console.log('Attempting to load HTML content directly...');
+            try {
+              loginWindow.webContents.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
+              console.log('Successfully loaded HTML content directly');
+            } catch (dataUrlError) {
+              console.error('Failed to load HTML content directly:', dataUrlError);
+              // Last resort: show error message
+              loginWindow.webContents.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(`
+                <!DOCTYPE html>
+                <html>
+                <head><title>Login Error</title></head>
+                <body style="font-family: Arial; padding: 20px; background: #1e293b; color: #f1f5f9;">
+                  <h2 style="color: #ef4444;">Load Error</h2>
+                  <p>Failed to load login page.</p>
+                  <p style="color: #94a3b8;">Path: ${loginHtmlPath}</p>
+                  <p style="color: #94a3b8;">Error: ${errorMsg}</p>
+                  <p style="margin-top: 20px; color: #64748b;">Please check the log file for details.</p>
+                </body>
+                </html>
+              `)}`);
+            }
+          } else {
+            // If we don't have HTML content, show error dialog
+            dialog.showErrorBox(
+              "Load Error",
+              `Failed to load login page:\n${errorMsg}\n\nPath: ${loginHtmlPath}\n\nPlease check the log file for details.`
+            );
+          }
+        });
+        try {
+          writeToLog('INFO', `Login window created and loading from: ${loginHtmlPath}`);
+        } catch (logErr) {
+          console.error('Failed to write to log:', logErr);
+        }
+        console.log('Login window created, loading:', loginHtmlPath);
+      } catch (loadError) {
+        const errorMsg = `Failed to load login.html: ${loadError.message}`;
+        try {
+          writeToLog('ERROR', errorMsg, loadError);
+        } catch (logErr) {
+          console.error('Failed to write to log:', logErr);
+        }
+        console.error(errorMsg);
+        // Ensure window is shown even if load fails
+        if (loginWindow && !loginWindow.isDestroyed()) {
+          loginWindow.show();
+          loginWindow.focus();
+        }
+        dialog.showErrorBox(
+          "Load Error",
+          `Failed to load login page:\n${errorMsg}\n\nPlease check the log file for details.`
+        );
+      }
+    });
+    
+    // Ensure window is visible after a short delay (fallback)
+    setTimeout(() => {
+      if (loginWindow && !loginWindow.isDestroyed() && !loginWindow.isVisible()) {
+        console.warn('Login window not visible after timeout, forcing show');
+        loginWindow.show();
+        loginWindow.focus();
+      }
+    }, 1000);
+  } catch (error) {
+    try {
+      writeToLog('ERROR', 'Failed to create login window', error);
+    } catch (logErr) {
+      console.error('Failed to write to log:', logErr);
+    }
+    console.error('Failed to create login window:', error);
+    dialog.showErrorBox(
+      "Window Creation Error",
+      `Failed to create login window:\n${error.message}\n\nPlease check the log file for details.`
+    );
+    // Don't quit immediately - give user a chance to see the error
+    setTimeout(() => {
+      app.quit();
+    }, 3000);
+  }
 }
 
 function createMainWindow() {
-  mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    minWidth: 800,
-    minHeight: 600,
-    show: false, // Don't show until ready
-    webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
-      nodeIntegration: false,
-      contextIsolation: true,
-    },
-    icon: path.join(__dirname, "icon.ico"),
-  });
+  try {
+    mainWindow = new BrowserWindow({
+      width: 1200,
+      height: 800,
+      minWidth: 800,
+      minHeight: 600,
+      show: false, // Don't show until ready
+      webPreferences: {
+        preload: path.join(__dirname, "preload.js"),
+        nodeIntegration: false,
+        contextIsolation: true,
+      },
+      icon: path.join(__dirname, "icon.ico"),
+    });
 
-  // if(isDev){
-  //   mainWindow.removeMenu();
-  // }
+    mainWindow.removeMenu();
 
-  mainWindow.removeMenu();
-
-
-  mainWindow.once('ready-to-show', () => {
-    mainWindow.show();
-  });
-
-  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
-    const errorMsg = `Failed to load page: ${errorCode} - ${errorDescription}`;
-    console.error(errorMsg);
-    writeToLog('ERROR', errorMsg);
-    setTimeout(() => {
-      console.log('Retrying page load...');
+    // Show window after it's ready, with fallback timeout
+    mainWindow.once('ready-to-show', () => {
       if (mainWindow && !mainWindow.isDestroyed()) {
-        let loadUrl;
-        if (isDev) {
-          loadUrl = "http://localhost:3000";
-        } else {
-          // Both server and client modes use local frontend server
-          loadUrl = `http://127.0.0.1:${FRONTEND_PORT}`;
-        }
-        mainWindow.loadURL(loadUrl);
+        mainWindow.show();
+        mainWindow.focus();
+        writeToLog('INFO', 'Main window shown');
       }
-    }, 1000);
-  });
+    });
+    
+    // Fallback: show window after 3 seconds even if ready-to-show doesn't fire
+    setTimeout(() => {
+      if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible()) {
+        writeToLog('WARN', 'Main window ready-to-show timeout, forcing show');
+        mainWindow.show();
+        mainWindow.focus();
+      }
+    }, 3000);
 
-  // Determine URL based on mode
-  let loadUrl;
-  if (isDev) {
-    loadUrl = "http://localhost:3000";
-  } else {
-    // Both server and client modes use local frontend server
-    // Client mode serves bundled frontend locally, connects to remote backend
-    loadUrl = `http://127.0.0.1:${FRONTEND_PORT}`;
+    mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+      const errorMsg = `Failed to load page: ${errorCode} - ${errorDescription}`;
+      console.error(errorMsg);
+      writeToLog('ERROR', errorMsg);
+      // Still show the window even if load fails
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.show();
+        mainWindow.focus();
+      }
+      setTimeout(() => {
+        console.log('Retrying page load...');
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          let loadUrl;
+          if (isDev) {
+            loadUrl = "http://localhost:3000";
+          } else {
+            // Both server and client modes use local frontend server
+            loadUrl = `http://127.0.0.1:${FRONTEND_PORT}`;
+          }
+          mainWindow.loadURL(loadUrl);
+        }
+      }, 1000);
+    });
+    
+    mainWindow.on('error', (error) => {
+      writeToLog('ERROR', 'Main window error', error);
+    });
+
+    // Determine URL based on mode
+    let loadUrl;
+    if (isDev) {
+      loadUrl = "http://localhost:3000";
+    } else {
+      // Both server and client modes use local frontend server
+      // Client mode serves bundled frontend locally, connects to remote backend
+      loadUrl = `http://127.0.0.1:${FRONTEND_PORT}`;
+    }
+    console.log('Loading URL:', loadUrl);
+    writeToLog('INFO', `Loading main window with URL: ${loadUrl}`);
+    mainWindow.loadURL(loadUrl);
+
+    if (isDev) {
+      mainWindow.webContents.openDevTools();
+    }
+
+    mainWindow.on("closed", () => {
+      mainWindow = null;
+    });
+    
+    writeToLog('INFO', 'Main window created');
+  } catch (error) {
+    writeToLog('ERROR', 'Failed to create main window', error);
+    dialog.showErrorBox(
+      "Window Creation Error",
+      `Failed to create main window:\n${error.message}\n\nPlease check the log file for details.`
+    );
+    app.quit();
   }
-  console.log('Loading URL:', loadUrl);
-  mainWindow.loadURL(loadUrl);
-
-  if (isDev) {
-    mainWindow.webContents.openDevTools();
-  }
-
-  mainWindow.on("closed", () => {
-    mainWindow = null;
-  });
 }
 
 app.on("ready", async () => {
@@ -668,6 +1025,29 @@ app.on("ready", async () => {
     writeToLog('INFO', `Application starting in ${APP_MODE.toUpperCase()} mode`);
     
     console.log(`App ready, mode: ${APP_MODE.toUpperCase()}...`);
+    
+    // Ensure at least one window is shown, even if startup fails
+    let windowShown = false;
+    const ensureWindowShown = () => {
+      if (!windowShown) {
+        windowShown = true;
+        const existingWindows = BrowserWindow.getAllWindows();
+        if (existingWindows.length === 0) {
+          writeToLog('WARN', 'No windows visible, creating login window as fallback');
+          createLoginWindow();
+        } else {
+          existingWindows.forEach(win => {
+            if (win && !win.isDestroyed() && !win.isVisible()) {
+              win.show();
+              win.focus();
+            }
+          });
+        }
+      }
+    };
+    
+    // Fallback: ensure window is shown after 5 seconds
+    setTimeout(ensureWindowShown, 5000);
     
     // Check for updates in production (after a short delay to not block startup)
     if (!isDev) {
@@ -706,50 +1086,74 @@ app.on("ready", async () => {
       } catch (error) {
         // Dialog will be closed by checkServerHealth on failure
         writeToLog('ERROR', `Failed to connect to remote backend at ${SERVER_IP}`, error);
-        throw error;
+        // Don't throw - show login window anyway so user can see the error
+        ensureWindowShown();
       }
     } else {
       // Server mode: Start local servers
       console.log("[SERVER MODE] Starting local servers...");
-      if (!isDev) {
-        console.log("Starting frontend server...");
-        await startFrontendServer();
-        console.log("Checking frontend server health...");
-        await checkServerHealth(FRONTEND_PORT, 30, 500, '127.0.0.1');
-      }
-      console.log("Starting backend server...");
-      await startBackend();
+      try {
+        if (!isDev) {
+          console.log("Starting frontend server...");
+          await startFrontendServer();
+          console.log("Checking frontend server health...");
+          await checkServerHealth(FRONTEND_PORT, 30, 500, '127.0.0.1');
+        }
+        console.log("Starting backend server...");
+        await startBackend();
         console.log("Checking backend server health...");
         await checkServerHealth(BACKEND_PORT, 30, 500, '127.0.0.1');
+      } catch (error) {
+        writeToLog('ERROR', 'Failed to start local servers', error);
+        // Still show window so user can see the error
+        ensureWindowShown();
+        throw error;
+      }
     }
     
     // Now check if user is already logged in
     const savedAuth = store.get('auth');
     if (savedAuth && savedAuth.token) {
       console.log("Found saved authentication, attempting auto-login...");
-      // Verify token is still valid
-      const isValid = await verifyToken(savedAuth.token);
-      if (isValid) {
-        console.log("Token valid, skipping login...");
-        createMainWindow();
-        return;
-      } else {
-        console.log("Token expired, showing login...");
+      try {
+        // Verify token is still valid
+        const isValid = await verifyToken(savedAuth.token);
+        if (isValid) {
+          console.log("Token valid, skipping login...");
+          createMainWindow();
+          windowShown = true;
+          return;
+        } else {
+          console.log("Token expired, showing login...");
+          store.delete('auth');
+        }
+      } catch (error) {
+        writeToLog('WARN', 'Token verification failed, showing login', error);
         store.delete('auth');
       }
     }
     
     console.log("No valid auth found, creating login window...");
     createLoginWindow();
+    windowShown = true;
   } catch (error) {
     console.error("Failed to start application:", error);
     writeToLog('ERROR', 'Application startup failed', error);
     const logPath = getLogFilePath();
-    dialog.showErrorBox(
-      "Startup Error",
-      `Failed to start the application:\n${error.message}\n\nPlease check the log file for details:\n${logPath}`
-    );
-    app.quit();
+    
+    // Ensure a window is shown to display the error
+    ensureWindowShown();
+    
+    // Show error dialog
+    setTimeout(() => {
+      dialog.showErrorBox(
+        "Startup Error",
+        `Failed to start the application:\n${error.message}\n\nPlease check the log file for details:\n${logPath}`
+      );
+    }, 1000);
+    
+    // Don't quit immediately - let user see the error
+    // app.quit();
   }
 });
 
@@ -882,6 +1286,8 @@ ipcMain.handle('update-token', async (event, newToken, expiresAt) => {
 });
 
 app.on("window-all-closed", () => {
+  writeToLog('INFO', 'All windows closed');
+  
   // Kill backend process (only in server mode)
   if (backendProcess && !IS_CLIENT_MODE) {
     console.log("Killing backend process...");
@@ -895,17 +1301,44 @@ app.on("window-all-closed", () => {
   }
   
   if (process.platform !== "darwin") {
+    writeToLog('INFO', 'Quitting application');
     app.quit();
   }
 });
 
 app.on("activate", () => {
   if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
+    // Check if we have auth, then create main window, otherwise login window
+    const savedAuth = store.get('auth');
+    if (savedAuth && savedAuth.token) {
+      createMainWindow();
+    } else {
+      createLoginWindow();
+    }
+  } else {
+    // Restore and focus existing windows
+    const windows = BrowserWindow.getAllWindows();
+    windows.forEach(win => {
+      if (win && !win.isDestroyed()) {
+        if (win.isMinimized()) {
+          win.restore();
+        }
+        win.focus();
+      }
+    });
   }
 });
 
 app.on("before-quit", () => {
+  // Check for hidden windows (may indicate startup issue)
+  const windows = BrowserWindow.getAllWindows();
+  const visibleWindows = windows.filter(win => win && !win.isDestroyed() && win.isVisible());
+  
+  // If no visible windows and we're trying to quit, log it
+  if (visibleWindows.length === 0 && windows.length > 0) {
+    writeToLog('WARN', 'Quitting with hidden windows - this may indicate a startup issue');
+  }
+  
   // Ensure backend is terminated (only in server mode)
   if (backendProcess && !IS_CLIENT_MODE) {
     backendProcess.kill();

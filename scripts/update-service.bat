@@ -49,64 +49,75 @@ REM Get latest release from GitHub
 echo Checking for latest release...
 echo.
 
-REM Try to get latest release using PowerShell
-powershell -Command "$ErrorActionPreference='Stop'; try { $response = Invoke-RestMethod -Uri 'https://api.github.com/repos/%GITHUB_OWNER%/%GITHUB_REPO%/releases/latest' -Headers @{'Accept'='application/vnd.github.v3+json'}; $latestVersion = $response.tag_name; $zipAsset = $response.assets | Where-Object { $_.name -like '*Backend-Service*.zip' } | Select-Object -First 1; if ($zipAsset) { Write-Host 'Latest version:' $latestVersion; Write-Host 'Download URL:' $zipAsset.browser_download_url; Write-Host 'DOWNLOAD_URL=' $zipAsset.browser_download_url; Write-Host 'VERSION=' $latestVersion } else { Write-Host 'ERROR: Backend service zip not found in latest release'; exit 1 } } catch { Write-Host 'ERROR: Failed to get latest release:' $_.Exception.Message; exit 1 }" > "%TEMP_DIR%\release_info.txt" 2>&1
+REM Create temp directory if it doesn't exist
+if not exist "%TEMP_DIR%" (
+    mkdir "%TEMP_DIR%"
+)
+
+REM Initialize variables
+set "LATEST_VERSION="
+set "DOWNLOAD_URL="
+
+REM Try to get latest release using PowerShell and save to temp file
+set "RELEASE_INFO_FILE=%TEMP_DIR%\release_info.txt"
+powershell -Command "$ErrorActionPreference='Stop'; try { $response = Invoke-RestMethod -Uri 'https://api.github.com/repos/%GITHUB_OWNER%/%GITHUB_REPO%/releases/latest' -Headers @{'Accept'='application/vnd.github.v3+json'}; $latestVersion = $response.tag_name; $zipAsset = $response.assets | Where-Object { $_.name -like '*Backend-Service*.zip' } | Select-Object -First 1; if ($zipAsset) { @('VERSION=' + $latestVersion, 'URL=' + $zipAsset.browser_download_url) | Out-File -FilePath '%RELEASE_INFO_FILE%' -Encoding ASCII } else { Write-Error 'Backend service zip not found in latest release'; exit 1 } } catch { Write-Error ('Failed to get latest release: ' + $_.Exception.Message); exit 1 }"
 
 if %errorLevel% neq 0 (
     echo ERROR: Failed to get latest release information!
     echo Please check your internet connection and GitHub access.
-    type "%TEMP_DIR%\release_info.txt"
     pause
     exit /b 1
 )
 
-REM Extract download URL and version from PowerShell output
-set DOWNLOAD_URL=
-set LATEST_VERSION=
-for /f "tokens=*" %%a in ('type "%TEMP_DIR%\release_info.txt"') do (
-    echo %%a | findstr /C:"DOWNLOAD_URL=" >nul
-    if !errorLevel! equ 0 (
-        set DOWNLOAD_URL=%%a
-        set DOWNLOAD_URL=!DOWNLOAD_URL:DOWNLOAD_URL= =!
+REM Read values from temp file
+for /f "tokens=1,* delims==" %%a in ('type "%RELEASE_INFO_FILE%"') do (
+    if "%%a"=="VERSION" (
+        set "LATEST_VERSION=%%b"
     )
-    echo %%a | findstr /C:"VERSION=" >nul
-    if !errorLevel! equ 0 (
-        set LATEST_VERSION=%%a
-        set LATEST_VERSION=!LATEST_VERSION:VERSION= =!
+    if "%%a"=="URL" (
+        set "DOWNLOAD_URL=%%b"
     )
 )
 
 REM Clean up temp file
-del "%TEMP_DIR%\release_info.txt" 2>nul
+del "%RELEASE_INFO_FILE%" 2>nul
 
-if "%DOWNLOAD_URL%"=="" (
+if "!DOWNLOAD_URL!"=="" (
     echo ERROR: Could not determine download URL!
+    echo Please ensure the release contains a file matching '*Backend-Service*.zip'
     pause
     exit /b 1
 )
 
-if "%LATEST_VERSION%"=="" (
+if "!LATEST_VERSION!"=="" (
     echo ERROR: Could not determine latest version!
     pause
     exit /b 1
 )
 
-echo Latest version available: %LATEST_VERSION%
+REM Remove 'v' prefix from version if present (v1.0.9 -> 1.0.9)
+if not "!LATEST_VERSION!"=="" (
+    if "!LATEST_VERSION:~0,1!"=="v" (
+        set "LATEST_VERSION=!LATEST_VERSION:~1!"
+    )
+)
+
+echo Latest version available: !LATEST_VERSION!
 echo.
 
 REM Check if update is needed
-if "%CURRENT_VERSION%"=="%LATEST_VERSION%" (
-    echo You are already running the latest version (%LATEST_VERSION%)!
+if "!CURRENT_VERSION!"=="!LATEST_VERSION!" (
+    echo You are already running the latest version: !LATEST_VERSION!
     echo No update needed.
     pause
     exit /b 0
 )
 
-echo New version available: %LATEST_VERSION%
-echo Current version: %CURRENT_VERSION%
+echo New version available: !LATEST_VERSION!
+echo Current version: !CURRENT_VERSION!
 echo.
 set /p CONFIRM="Do you want to update? (Y/N): "
-if /i not "%CONFIRM%"=="Y" (
+if /i not "!CONFIRM!"=="Y" (
     echo Update cancelled.
     pause
     exit /b 0
@@ -126,10 +137,14 @@ mkdir "%TEMP_DIR%"
 
 REM Download the zip file
 echo [1/5] Downloading update package...
-echo URL: %DOWNLOAD_URL%
+echo URL: !DOWNLOAD_URL!
 echo.
 
-powershell -Command "$ErrorActionPreference='Stop'; try { Invoke-WebRequest -Uri '%DOWNLOAD_URL%' -OutFile '%TEMP_DIR%\%ZIP_NAME%' -UseBasicParsing; Write-Host 'Download completed successfully' } catch { Write-Host 'ERROR: Download failed:' $_.Exception.Message; exit 1 }"
+REM Set environment variable for PowerShell to use
+set "PS_DOWNLOAD_URL=!DOWNLOAD_URL!"
+
+REM Download using PowerShell with environment variable
+powershell -Command "$ErrorActionPreference='Stop'; $url = $env:PS_DOWNLOAD_URL; try { Invoke-WebRequest -Uri $url -OutFile '%TEMP_DIR%\%ZIP_NAME%' -UseBasicParsing; Write-Host 'Download completed successfully' } catch { Write-Host 'ERROR: Download failed:' $_.Exception.Message; exit 1 }"
 
 if %errorLevel% neq 0 (
     echo ERROR: Failed to download update package!
@@ -202,7 +217,7 @@ if exist "%TEMP_DIR%\extracted\appsettings.json.backup" (
 )
 
 REM Save version
-echo %LATEST_VERSION% > "%SERVICE_DIR%version.txt"
+echo !LATEST_VERSION! > "%SERVICE_DIR%version.txt"
 
 echo Files updated successfully!
 echo.
@@ -239,8 +254,8 @@ echo ========================================
 echo Update completed successfully!
 echo ========================================
 echo.
-echo Previous version: %CURRENT_VERSION%
-echo New version: %LATEST_VERSION%
+echo Previous version: !CURRENT_VERSION!
+echo New version: !LATEST_VERSION!
 echo Service: %SERVICE_NAME%
 echo.
 echo The service has been updated and restarted.

@@ -805,7 +805,7 @@ export default function DebtsAnalysis() {
                                                                 {formatDate(debt.saleDate)}
                                                             </TableCell>
                                                             <TableCell className="text-sm font-medium text-right dark:text-white text-gray-900">
-                                                                {formatCurrency(debt.totalAmount-debt.discount)}
+                                                                {formatCurrency(debt.totalAmount - debt.discount)}
                                                             </TableCell>
                                                             <TableCell className="text-sm font-medium text-right text-emerald-500">
                                                                 {formatCurrency(debt.paidAmount)}

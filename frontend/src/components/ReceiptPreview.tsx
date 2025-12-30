@@ -121,6 +121,7 @@ export function ReceiptPreview({
           .view-mode-thermal .thermal-receipt .receipt-info.description,
           .view-mode-thermal .thermal-receipt .receipt-info.address,
           .view-mode-thermal .thermal-receipt .receipt-info.phones,
+          .view-mode-thermal .thermal-receipt .receipt-line.receipt-id-line,
           .view-mode-thermal .thermal-receipt .receipt-line.date-line,
           .view-mode-thermal .thermal-receipt .receipt-line.customer-line,
           .view-mode-thermal .thermal-receipt .receipt-line.subtotal-line,
@@ -240,6 +241,7 @@ export function ReceiptPreview({
           font-weight: normal;
         }
         
+        .thermal-receipt .receipt-line.receipt-id-line,
         .thermal-receipt .receipt-line.date-line,
         .thermal-receipt .receipt-line.customer-line {
           font-weight: bold;
@@ -573,7 +575,7 @@ export function ReceiptPreview({
             <div className="receipt-info address">{truncateText(companyAddress, 32)}</div>
           )}
           {companyPhones && companyPhones.length > 0 && (
-            <div className="receipt-info phones">{truncateText(companyPhones.join(", "), 32)}</div>
+            <div className="receipt-info phones">{companyPhones.join(", ")}</div>
           )}
         </div>
 
@@ -583,7 +585,7 @@ export function ReceiptPreview({
           </div>
           
           {saleId && (
-            <div className="receipt-line">
+            <div className="receipt-line receipt-id-line">
               <span>Receipt:</span>
               <span>SA-{saleId.slice(0,8)}</span>
             </div>

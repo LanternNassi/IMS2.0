@@ -17,7 +17,7 @@ import { ProductAutocomplete, type ProductVariation } from "@/components/Product
 import { ReceiptPreview } from "@/components/ReceiptPreview"
 import type { Sale, SalesItem } from "@/app/Sales/page"
 
-import { customer, useCustomerStore } from "@/store/useCustomerStore"
+import { customer, customerDto, useCustomerStore } from "@/store/useCustomerStore"
 import api from "@/Utils/Request"
 import { useRouter } from "next/navigation"
 import { useReactToPrint } from 'react-to-print'
@@ -33,7 +33,7 @@ const saleFormSchema = z.object({
 
 export default function AddSale() {
     const [isSubmitting, setIsSubmitting] = useState(false)
-    const { getCustomerById } = useCustomerStore()
+    const { getCustomerById, createCustomer } = useCustomerStore()
     const [snackbar, setSnackbar] = useState<{ open: boolean; message: string }>({ open: false, message: "" })
     const router = useRouter()
     const {user} = useAuthStore()
@@ -55,6 +55,7 @@ export default function AddSale() {
     const [currentUserId, setCurrentUserId] = useState<string>("")
 
     const [selectedCustomerDetails, setSelectedCustomerDetails] = useState<customer | null>(null)
+    const [customerNameInput, setCustomerNameInput] = useState<string>("") // For manual name entry
     const [selectedStorage, setSelectedStorage] = useState<string>("") // Storage location name
     const [selectedRateType, setSelectedRateType] = useState<"wholeSale" | "selling" | "custom">("selling")
     const [customPrice, setCustomPrice] = useState<string>("")
@@ -174,6 +175,16 @@ export default function AddSale() {
             notes: "",
         },
     })
+
+    // Sync customerNameInput with selectedCustomerDetails when customer is selected from autocomplete
+    useEffect(() => {
+        if (selectedCustomerDetails?.id && selectedCustomerDetails.name) {
+            // Only update if customer was selected (has ID) and name input is empty or different
+            if (customerNameInput !== selectedCustomerDetails.name) {
+                setCustomerNameInput(selectedCustomerDetails.name)
+            }
+        }
+    }, [selectedCustomerDetails?.id]) // Only trigger when customer ID changes (i.e., when selected from autocomplete)
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -391,7 +402,7 @@ export default function AddSale() {
         }
 
         if (paidAmount < (totalAmount - discount)) {
-            if (!selectedCustomerDetails) {
+            if (!selectedCustomerDetails && !customerNameInput.trim()) {
                 setSnackbar({ open: true, message: "Please select a customer for the sale or ensure the paid amount covers the total." })
                 return
             }
@@ -399,10 +410,71 @@ export default function AddSale() {
 
         setIsSubmitting(true)
 
+        // Handle customer creation on-the-fly if name is entered but customer doesn't exist
+        let customerId: string | undefined = undefined
+        let customerName: string | undefined = undefined
+
+        if (customerNameInput.trim()) {
+            // If customer was selected from autocomplete, use its ID
+            if (selectedCustomerDetails?.id) {
+                customerId = selectedCustomerDetails.id
+                customerName = selectedCustomerDetails.name
+            } else {
+                // Customer name was manually entered, create customer on-the-fly
+                try {
+                    const newCustomer: customerDto = {
+                        name: customerNameInput.trim(),
+                        customerType: "WALK_IN",
+                        address: selectedCustomerDetails?.address || "",
+                        phone: selectedCustomerDetails?.phone || "",
+                        email: selectedCustomerDetails?.email || "",
+                        accountNumber: selectedCustomerDetails?.accountNumber || "",
+                        moreInfo: "",
+                        customerTags: []
+                    }
+
+                    await new Promise<void>((resolve, reject) => {
+                        createCustomer(newCustomer, 
+                            async () => {
+                                // Customer created successfully, fetch it to get the ID
+                                try {
+                                    // Search for the newly created customer
+                                    const response = await api.get('/Customers', {
+                                        params: { keywords: customerNameInput.trim(), page: 1, pageSize: 1 }
+                                    })
+                                    const customers = response.data.customers || []
+                                    if (customers.length > 0) {
+                                        customerId = customers[0].id
+                                        customerName = customers[0].name
+                                    } else {
+                                        customerName = customerNameInput.trim()
+                                    }
+                                    resolve()
+                                } catch (err) {
+                                    // If fetch fails, just use the name
+                                    customerName = customerNameInput.trim()
+                                    resolve()
+                                }
+                            },
+                            () => {
+                                // Customer creation failed, just use the name
+                                customerName = customerNameInput.trim()
+                                resolve()
+                            }
+                        )
+                    })
+                } catch (error) {
+                    console.error('Error creating customer:', error)
+                    // If creation fails, just use the name
+                    customerName = customerNameInput.trim()
+                }
+            }
+        }
+
         const saleData: Sale = {
             id: crypto.randomUUID(),
-            customerId: selectedCustomerDetails?.id || undefined,
-            customerName: selectedCustomerDetails?.name || undefined,
+            customerId: customerId,
+            customerName: customerName,
             items,
             totalAmount,
             paidAmount: returnAmount <= 0 ? paidAmount : (totalAmount - discount),
@@ -442,6 +514,7 @@ export default function AddSale() {
     }
     const ClearAll = () => {
         setSelectedCustomerDetails(null)
+        setCustomerNameInput("")
         setItems([])
         setTotalAmount(0)
         setPaidAmount(0)
@@ -486,11 +559,13 @@ export default function AddSale() {
                                             // form.setValue("customerId", customer.id)
                                             const fullCustomer = await getCustomerById(customer.id)
                                             setSelectedCustomerDetails(fullCustomer)
+                                            setCustomerNameInput(fullCustomer.name)
                                             // Auto-focus to product search after customer selection
                                             setTimeout(() => productSearchRef.current?.focus(), 100)
                                         } else {
                                             // form.setValue("customerId", "")
                                             setSelectedCustomerDetails(null)
+                                            setCustomerNameInput("")
                                         }
                                     }}
                                     label="Search (Alt+1)"
@@ -523,11 +598,40 @@ export default function AddSale() {
                                 {/* Name */}
                                 <TextField
                                     label="Name"
-                                    value={selectedCustomerDetails?.name || ""}
-                                    InputProps={{ readOnly: true }}
+                                    value={customerNameInput}
+                                    onChange={(e) => {
+                                        const newName = e.target.value
+                                        setCustomerNameInput(newName)
+                                        
+                                        // If name is entered but no customer is selected, create a temporary customer object
+                                        if (newName.trim() && !selectedCustomerDetails) {
+                                            setSelectedCustomerDetails({
+                                                id: "", // Will be created on submit
+                                                name: newName.trim(),
+                                                customerType: "WALK_IN",
+                                                address: "",
+                                                phone: "",
+                                                email: "",
+                                                accountNumber: "",
+                                                moreInfo: "",
+                                                customerTags: [],
+                                                addedAt: new Date().toISOString(),
+                                                addedBy: 0,
+                                                updatedAt: new Date().toISOString(),
+                                                lastUpdatedBy: 0,
+                                                deletedAt: null
+                                            })
+                                        } else if (selectedCustomerDetails) {
+                                            // Update existing customer name
+                                            setSelectedCustomerDetails({
+                                                ...selectedCustomerDetails,
+                                                name: newName.trim()
+                                            })
+                                        }
+                                    }}
                                     fullWidth
                                     size="small"
-                                    sx={{ backgroundColor: 'rgba(0, 0, 0, 0.02)' }}
+                                    placeholder="Enter customer name"
                                 />
 
                                 {/* Email */}
@@ -558,7 +662,7 @@ export default function AddSale() {
                                         setSelectedProduct(product)
                                         setSelectedProductId(product?.id || "")
                                         // Reset rate selections and storage
-                                        setSelectedRateType("wholeSale")
+                                        setSelectedRateType("selling") // Default to retail price
                                         setCustomPrice("")
 
                                         // Auto-select first storage location if available
@@ -638,13 +742,13 @@ export default function AddSale() {
                                         '& .MuiSelect-select': { py: '8.5px' }
                                     }}
                                 >
+                                    <MenuItem value="selling">
+                                        {selectedProduct?.retailPrice?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "0.00"}
+                                    </MenuItem>
                                     <MenuItem value="wholeSale">
                                         {selectedProduct?.wholeSalePrice != null
                                             ? selectedProduct.wholeSalePrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                                             : "0.00"}
-                                    </MenuItem>
-                                    <MenuItem value="selling">
-                                        {selectedProduct?.retailPrice?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "0.00"}
                                     </MenuItem>
                                     <MenuItem value="custom">
                                         {customPrice ? `(${parseFloat(customPrice).toFixed(2)})` : ""}
@@ -1003,7 +1107,7 @@ export default function AddSale() {
                                     <div ref={receiptRef}>
                                         <ReceiptPreview
                                             saleId={fetchedSaleData?.id || createdSaleId || undefined}
-                                            customerName={fetchedSaleData?.customer?.name || selectedCustomerDetails?.name || "Walk-in Customer"}
+                                            customerName={fetchedSaleData?.customer?.name || customerNameInput.trim() || selectedCustomerDetails?.name || "Walk-in Customer"}
                                             items={fetchedSaleData?.saleItems || items}
                                             totalAmount={fetchedSaleData?.totalAmount || totalAmount}
                                             discount={fetchedSaleData?.discount || discount}

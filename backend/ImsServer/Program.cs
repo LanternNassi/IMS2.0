@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using ImsServer.Models;
 using AutoMapper;
 using Microsoft.Extensions.Hosting;
+using System.IO;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,9 +14,13 @@ builder.Configuration
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
     .AddEnvironmentVariables();
 
+var connectionString = builder.Configuration.GetConnectionString("DBCONNECTION");
+Console.WriteLine($"Database Connection String: {connectionString}");
+Console.WriteLine($"Environment: {builder.Environment.EnvironmentName}");
+Console.WriteLine($"AppSettings.json path: {Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json")}");
+
 builder.Services.AddDbContext<DBContext>(options =>
-      options.UseSqlServer(
-          builder.Configuration.GetConnectionString("DBCONNECTION")));
+      options.UseSqlServer(connectionString));
 
 // Add CORS policy in services
 builder.Services.AddCors(options =>
