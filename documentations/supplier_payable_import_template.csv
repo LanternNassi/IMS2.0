@@ -1,0 +1,5 @@
+SupplierName,PurchaseDate,GrandTotal,TotalAmount,Tax,PaidAmount,OutstandingAmount,PurchaseNumber,ContactPerson,EmailAddress,PhoneNumber,Address,TIN,Notes
+ABC Suppliers Ltd,2024-01-15,500000,450000,50000,200000,300000,PO-001,John Manager,john@abcsuppliers.com,+256700123456,123 Industrial Road Kampala,TIN-123456,Initial balance from old system
+XYZ Trading Company,2024-02-20,1000000,900000,100000,0,1000000,PO-002,Jane Director,jane@xyztrading.com,+256701234567,456 Business Park,TIN-789012,Unpaid invoice from previous system
+Global Supplies Inc,2024-03-10,750000,700000,50000,300000,450000,PO-003,Bob Owner,info@globalsupplies.com,+256702345678,789 Warehouse Street,TIN-345678,Partial payment received - migrated from legacy system
+

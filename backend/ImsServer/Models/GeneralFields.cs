@@ -52,4 +52,14 @@ namespace ImsServer.Models
         Receivable
     }
 
+    public class ImportResult
+    {
+        public string? CustomerName { get; set; } = string.Empty;
+        public string? SupplierName { get; set; } = string.Empty;
+        public Guid? SaleId { get; set; }
+        public Guid? PurchaseId { get; set; }
+        public bool Success { get; set; }
+        public string Message { get; set; } = string.Empty;
+    }
+
 }

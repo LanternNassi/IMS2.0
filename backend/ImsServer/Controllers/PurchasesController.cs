@@ -8,6 +8,7 @@ using ImsServer.Models.SupplierX;
 using ImsServer.Models.PurchaseDebtX;
 using ImsServer.Models.FinancialAccountX;
 
+
 namespace ImsServer.Controllers
 {
     [ApiController]
@@ -560,5 +561,229 @@ namespace ImsServer.Controllers
                 Payables = payables
             });
         }
+
+        [HttpPost("ImportSupplierDebts")]
+        public async Task<IActionResult> ImportSupplierDebts([FromBody] List<ImportSupplierDebtDto> debts)
+        {
+            if (debts == null || debts.Count == 0)
+            {
+                return BadRequest("No debt records provided");
+            }
+
+            var results = new List<ImportResult>();
+            
+            // Get first available user for ProcessedBy
+            var defaultUser = await _db.Users.FirstOrDefaultAsync();
+            if (defaultUser == null)
+            {
+                return BadRequest("No users found in the system. Please create a user first.");
+            }
+
+            using var tran = await _db.Database.BeginTransactionAsync();
+            try
+            {
+                foreach (var debtDto in debts)
+                {
+                    try
+                    {
+                        // Validate required fields
+                        if (string.IsNullOrWhiteSpace(debtDto.SupplierName))
+                        {
+                            results.Add(new ImportResult
+                            {
+                                SupplierName = debtDto.SupplierName ?? "Unknown",
+                                Success = false,
+                                Message = "SupplierName is required"
+                            });
+                            continue;
+                        }
+
+                        if (debtDto.GrandTotal <= 0)
+                        {
+                            results.Add(new ImportResult
+                            {
+                                SupplierName = debtDto.SupplierName,
+                                Success = false,
+                                Message = "GrandTotal must be greater than 0"
+                            });
+                            continue;
+                        }
+
+                        // Calculate outstanding amount if not provided
+                        var outstandingAmount = debtDto.OutstandingAmount ?? (debtDto.GrandTotal - (debtDto.PaidAmount ?? 0));
+                        if (outstandingAmount < 0) outstandingAmount = 0;
+
+                        // Find or create supplier
+                        Supplier? supplier = await _db.Suppliers
+                            .FirstOrDefaultAsync(s => s.CompanyName.ToLower().Trim() == debtDto.SupplierName.ToLower().Trim());
+
+                        if (supplier == null)
+                        {
+                            // Create new supplier (AddedBy/LastUpdatedBy will be set automatically by DBContext)
+                            supplier = new Supplier
+                            {
+                                Id = Guid.NewGuid(),
+                                CompanyName = debtDto.SupplierName.Trim(),
+                                ContactPerson = debtDto.ContactPerson,
+                                EmailAddress = debtDto.EmailAddress,
+                                PhoneNumber = debtDto.PhoneNumber ?? "",
+                                Address = debtDto.Address ?? "",
+                                TIN = debtDto.TIN,
+                                MoreInfo = debtDto.MoreInfo,
+                                Status = "Active"
+                            };
+                            _db.Suppliers.Add(supplier);
+                            await _db.SaveChangesAsync(); // Save supplier first
+                        }
+                        else
+                        {
+                            // Update supplier info if provided and different
+                            bool updated = false;
+                            if (!string.IsNullOrWhiteSpace(debtDto.Address) && supplier.Address != debtDto.Address)
+                            {
+                                supplier.Address = debtDto.Address;
+                                updated = true;
+                            }
+                            if (!string.IsNullOrWhiteSpace(debtDto.PhoneNumber) && supplier.PhoneNumber != debtDto.PhoneNumber)
+                            {
+                                supplier.PhoneNumber = debtDto.PhoneNumber;
+                                updated = true;
+                            }
+                            if (!string.IsNullOrWhiteSpace(debtDto.EmailAddress) && supplier.EmailAddress != debtDto.EmailAddress)
+                            {
+                                supplier.EmailAddress = debtDto.EmailAddress;
+                                updated = true;
+                            }
+                            if (!string.IsNullOrWhiteSpace(debtDto.ContactPerson) && supplier.ContactPerson != debtDto.ContactPerson)
+                            {
+                                supplier.ContactPerson = debtDto.ContactPerson;
+                                updated = true;
+                            }
+                            if (updated)
+                            {
+                                // UpdatedAt/LastUpdatedBy will be set automatically by DBContext
+                                await _db.SaveChangesAsync();
+                            }
+                        }
+
+                        // Parse purchase date
+                        DateTime purchaseDate;
+                        if (debtDto.PurchaseDate == default)
+                        {
+                            purchaseDate = DateTime.UtcNow;
+                        }
+                        else
+                        {
+                            purchaseDate = debtDto.PurchaseDate;
+                        }
+
+                        // Calculate amounts
+                        var totalAmount = debtDto.TotalAmount ?? debtDto.GrandTotal;
+                        var tax = debtDto.Tax ?? 0;
+                        var grandTotal = debtDto.GrandTotal;
+                        var paidAmount = debtDto.PaidAmount ?? 0;
+                        var isPaid = paidAmount >= grandTotal;
+
+                        // Create purchase without items (AddedBy/LastUpdatedBy will be set automatically by DBContext)
+                        var purchase = new Purchase
+                        {
+                            Id = Guid.NewGuid(),
+                            PurchaseNumber = debtDto.PurchaseNumber ?? Guid.NewGuid().ToString(),
+                            PurchaseDate = purchaseDate,
+                            SupplierId = supplier.Id,
+                            ProcessedBy = defaultUser.Id,
+                            TotalAmount = totalAmount,
+                            Tax = tax,
+                            GrandTotal = grandTotal,
+                            PaidAmount = paidAmount,
+                            OutstandingAmount = outstandingAmount,
+                            IsPaid = isPaid,
+                            WasPartialPayment = paidAmount > 0 && paidAmount < grandTotal,
+                            LinkedFinancialAccountId = null,
+                            Notes = debtDto.Notes ?? "Imported from external system"
+                        };
+
+                        _db.Purchases.Add(purchase);
+
+                        // If there was an initial payment, record it in the debt tracker
+                        if (paidAmount > 0 && paidAmount < grandTotal)
+                        {
+                            var initialPayment = new PurchaseDebtTracker
+                            {
+                                Id = Guid.NewGuid(),
+                                PurchaseId = purchase.Id,
+                                PaidAmount = paidAmount,
+                                PaymentMethod = PaymentMethod.OTHER,
+                                PaymentDate = purchaseDate,
+                                Description = debtDto.Notes ?? "Initial payment at import",
+                                ReceivedById = defaultUser.Id,
+                                LinkedFinancialAccountId = null
+                            };
+
+                            _db.PurchaseDebtTrackers.Add(initialPayment);
+                        }
+
+                        await _db.SaveChangesAsync();
+
+                        results.Add(new ImportResult
+                        {
+                            SupplierName = debtDto.SupplierName,
+                            PurchaseId = purchase.Id,
+                            Success = true,
+                            Message = "Successfully imported"
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        results.Add(new ImportResult
+                        {
+                            SupplierName = debtDto.SupplierName ?? "Unknown",
+                            Success = false,
+                            Message = $"Error: {ex.Message}"
+                        });
+                    }
+                }
+
+                await tran.CommitAsync();
+
+                var successCount = results.Count(r => r.Success);
+                var failureCount = results.Count(r => !r.Success);
+
+                return Ok(new
+                {
+                    TotalProcessed = debts.Count,
+                    SuccessCount = successCount,
+                    FailureCount = failureCount,
+                    Results = results
+                });
+            }
+            catch (Exception ex)
+            {
+                await tran.RollbackAsync();
+                return StatusCode(500, new { message = $"Import failed: {ex.Message}", innerException = ex.InnerException?.Message });
+            }
+        }
     }
+
+    // DTOs for import
+    public class ImportSupplierDebtDto
+    {
+        public string SupplierName { get; set; } = string.Empty;
+        public DateTime PurchaseDate { get; set; }
+        public decimal GrandTotal { get; set; }
+        public decimal? TotalAmount { get; set; }
+        public decimal? Tax { get; set; }
+        public decimal? PaidAmount { get; set; }
+        public decimal? OutstandingAmount { get; set; }
+        public string? PurchaseNumber { get; set; }
+        public string? ContactPerson { get; set; }
+        public string? EmailAddress { get; set; }
+        public string? PhoneNumber { get; set; }
+        public string? Address { get; set; }
+        public string? TIN { get; set; }
+        public string? MoreInfo { get; set; }
+        public string? Notes { get; set; }
+    }
+
+    
 }

@@ -1194,5 +1194,240 @@ namespace ImsServer.Controllers
 
             return NoContent();
         }
+
+        [HttpPost("ImportCustomerDebts")]
+        public async Task<IActionResult> ImportCustomerDebts([FromBody] List<ImportCustomerDebtDto> debts)
+        {
+            if (debts == null || debts.Count == 0)
+            {
+                return BadRequest("No debt records provided");
+            }
+
+            var results = new List<ImportResult>();
+            var systemConfig = await _db.SystemConfigs.FirstOrDefaultAsync();
+
+            // Get first available user for ProcessedById if not provided
+            var defaultUser = await _db.Users.FirstOrDefaultAsync();
+            if (defaultUser == null)
+            {
+                return BadRequest("No users found in the system. Please create a user first.");
+            }
+
+            using var tran = await _db.Database.BeginTransactionAsync();
+            try
+            {
+                foreach (var debtDto in debts)
+                {
+                    try
+                    {
+                        // Validate required fields
+                        if (string.IsNullOrWhiteSpace(debtDto.CustomerName))
+                        {
+                            results.Add(new ImportResult
+                            {
+                                CustomerName = debtDto.CustomerName ?? "Unknown",
+                                Success = false,
+                                Message = "CustomerName is required"
+                            });
+                            continue;
+                        }
+
+                        if (debtDto.TotalAmount <= 0)
+                        {
+                            results.Add(new ImportResult
+                            {
+                                CustomerName = debtDto.CustomerName,
+                                Success = false,
+                                Message = "TotalAmount must be greater than 0"
+                            });
+                            continue;
+                        }
+
+                        // Calculate outstanding amount if not provided
+                        var outstandingAmount = debtDto.OutstandingAmount ?? (debtDto.TotalAmount - debtDto.PaidAmount);
+                        if (outstandingAmount < 0) outstandingAmount = 0;
+
+                        // Find or create customer
+                        Customer? customer = await _db.Customers
+                            .FirstOrDefaultAsync(c => c.Name.ToLower().Trim() == debtDto.CustomerName.ToLower().Trim());
+
+                        if (customer == null)
+                        {
+                            // Create new customer (AddedBy/LastUpdatedBy will be set automatically by DBContext)
+                            customer = new Customer
+                            {
+                                Id = Guid.NewGuid(),
+                                Name = debtDto.CustomerName.Trim(),
+                                CustomerType = debtDto.CustomerType ?? "Retail",
+                                Address = debtDto.Address,
+                                Phone = debtDto.Phone,
+                                Email = debtDto.Email,
+                                AccountNumber = debtDto.AccountNumber,
+                                MoreInfo = debtDto.MoreInfo
+                            };
+                            _db.Customers.Add(customer);
+                            await _db.SaveChangesAsync(); // Save customer first
+                        }
+                        else
+                        {
+                            // Update customer info if provided and different
+                            bool updated = false;
+                            if (!string.IsNullOrWhiteSpace(debtDto.Address) && customer.Address != debtDto.Address)
+                            {
+                                customer.Address = debtDto.Address;
+                                updated = true;
+                            }
+                            if (!string.IsNullOrWhiteSpace(debtDto.Phone) && customer.Phone != debtDto.Phone)
+                            {
+                                customer.Phone = debtDto.Phone;
+                                updated = true;
+                            }
+                            if (!string.IsNullOrWhiteSpace(debtDto.Email) && customer.Email != debtDto.Email)
+                            {
+                                customer.Email = debtDto.Email;
+                                updated = true;
+                            }
+                            if (!string.IsNullOrWhiteSpace(debtDto.AccountNumber) && customer.AccountNumber != debtDto.AccountNumber)
+                            {
+                                customer.AccountNumber = debtDto.AccountNumber;
+                                updated = true;
+                            }
+                            if (updated)
+                            {
+                                // UpdatedAt/LastUpdatedBy will be set automatically by DBContext
+                                await _db.SaveChangesAsync();
+                            }
+                        }
+
+                        // Parse sale date
+                        DateTime saleDate;
+                        if (debtDto.SaleDate == default)
+                        {
+                            saleDate = DateTime.UtcNow;
+                        }
+                        else
+                        {
+                            saleDate = debtDto.SaleDate;
+                        }
+
+                        // Parse payment method
+                        PaymentMethod paymentMethod = PaymentMethod.OTHER;
+                        if (!string.IsNullOrWhiteSpace(debtDto.PaymentMethod))
+                        {
+                            if (Enum.TryParse<PaymentMethod>(debtDto.PaymentMethod.ToUpper(), out var parsedMethod))
+                            {
+                                paymentMethod = parsedMethod;
+                            }
+                        }
+
+                        // Calculate final amount (TotalAmount - Discount)
+                        var discount = debtDto.Discount ?? 0;
+                        var finalAmount = debtDto.PaidAmount ?? 0;
+                        var paidAmount = debtDto.PaidAmount ?? 0;
+                        var isPaid = paidAmount >= debtDto.TotalAmount;
+
+                        // Create sale without items (AddedBy/LastUpdatedBy will be set automatically by DBContext)
+                        var sale = new Sale
+                        {
+                            Id = Guid.NewGuid(),
+                            CustomerId = customer.Id,
+                            ProcessedById = defaultUser.Id,
+                            SaleDate = saleDate,
+                            TotalAmount = debtDto.TotalAmount,
+                            PaidAmount = paidAmount,
+                            ChangeAmount = 0,
+                            OutstandingAmount = outstandingAmount,
+                            Discount = discount,
+                            FinalAmount = finalAmount,
+                            Profit = 0, // No profit for debt imports without items
+                            IsPaid = isPaid,
+                            IsRefunded = false,
+                            IsTaken = false,
+                            PaymentMethod = paymentMethod,
+                            LinkedFinancialAccountId = null,
+                            IsCompleted = isPaid,
+                            WasPartialPayment = paidAmount > 0 && paidAmount < debtDto.TotalAmount,
+                            Notes = debtDto.Notes ?? "Imported from external system"
+                        };
+
+                        _db.Sales.Add(sale);
+
+                        // If there was an initial payment, record it in the debt tracker
+                        if (paidAmount > 0 && paidAmount < finalAmount)
+                        {
+                            var initialPayment = new SalesDebtsTracker
+                            {
+                                Id = Guid.NewGuid(),
+                                SaleId = sale.Id,
+                                PaidAmount = paidAmount,
+                                DebtType = DebtType.Receivable,
+                                PaymentMethod = paymentMethod,
+                                LinkedFinancialAccountId = null,
+                                Description = debtDto.Notes ?? "Initial payment at import"
+                            };
+
+                            _db.SalesDebtsTrackers.Add(initialPayment);
+                        }
+
+                        results.Add(new ImportResult
+                        {
+                            CustomerName = debtDto.CustomerName,
+                            SaleId = sale.Id,
+                            Success = true,
+                            Message = "Successfully imported"
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        results.Add(new ImportResult
+                        {
+                            CustomerName = debtDto.CustomerName ?? "Unknown",
+                            Success = false,
+                            Message = $"Error: {ex.Message}"
+                        });
+                    }
+                }
+
+                await _db.SaveChangesAsync();
+                await tran.CommitAsync();
+
+                var successCount = results.Count(r => r.Success);
+                var failureCount = results.Count(r => !r.Success);
+
+                return Ok(new
+                {
+                    TotalProcessed = debts.Count,
+                    SuccessCount = successCount,
+                    FailureCount = failureCount,
+                    Results = results
+                });
+            }
+            catch (Exception ex)
+            {
+                await tran.RollbackAsync();
+                return StatusCode(500, new { message = $"Import failed: {ex.Message}", innerException = ex.InnerException?.Message });
+            }
+        }
     }
+
+    // DTOs for import
+    public class ImportCustomerDebtDto
+    {
+        public string CustomerName { get; set; } = string.Empty;
+        public string? CustomerType { get; set; }
+        public DateTime SaleDate { get; set; }
+        public decimal TotalAmount { get; set; }
+        public decimal? PaidAmount { get; set; }
+        public decimal? OutstandingAmount { get; set; }
+        public decimal? Discount { get; set; }
+        public string? Address { get; set; }
+        public string? Phone { get; set; }
+        public string? Email { get; set; }
+        public string? AccountNumber { get; set; }
+        public string? MoreInfo { get; set; }
+        public string? PaymentMethod { get; set; }
+        public string? Notes { get; set; }
+    }
+
+    
 }

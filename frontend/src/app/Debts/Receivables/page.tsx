@@ -33,6 +33,8 @@ import { RecordPaymentDialog } from "@/components/RecordPaymentDialog"
 import { ViewSaleDetailsDialog } from "@/components/ViewSaleDetailsDialog"
 import { PaymentHistoryDialog } from "@/components/PaymentHistoryDialog"
 import PaginationControls from "@/components/PaginationControls"
+import { ExcelImportDialog, ColumnMapping } from "@/components/ExcelImportDialog"
+import { Upload } from "lucide-react"
 
 type Customer = {
     id: string
@@ -134,8 +136,8 @@ export default function DebtsAnalysis() {
         hasPreviousPage: false,
         hasNextPage: false,
     })
-    const [startDate, setStartDate] = useState(new Date(2025, 11, 1))
-    const [endDate, setEndDate] = useState(new Date(2025, 11, 31))
+    const [startDate, setStartDate] = useState(new Date(2023, 1, 1))
+    const [endDate, setEndDate] = useState(new Date())
     const [searchQuery, setSearchQuery] = useState("")
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
     const [customerOptions, setCustomerOptions] = useState<Customer[]>([])
@@ -146,6 +148,7 @@ export default function DebtsAnalysis() {
     const [expandedRow, setExpandedRow] = useState<string | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [snackbar, setSnackbar] = useState<{ open: boolean; message: string }>({ open: false, message: "" })
+    const [isImportDialogOpen, setIsImportDialogOpen] = useState(false)
 
     // Fetch customers for autocomplete
     const fetchCustomers = async (searchTerm: string) => {
@@ -317,12 +320,175 @@ export default function DebtsAnalysis() {
         })
     }
 
+    // Import handler
+    const handleImportDebts = async (data: any[]) => {
+        if (!data || data.length === 0) {
+            setSnackbar({ open: true, message: "No data to import" })
+            return
+        }
+
+        setIsImportDialogOpen(false)
+        setIsLoading(true)
+        setSnackbar({ open: true, message: `Processing ${data.length} debt record(s)...` })
+
+        try {
+            // Transform Excel data to API format
+            const debtsToImport = data.map((row) => {
+                // Parse date - handle multiple formats
+                let saleDate = new Date()
+                if (row.saleDate) {
+                    const parsed = new Date(row.saleDate)
+                    if (!isNaN(parsed.getTime())) {
+                        saleDate = parsed
+                    }
+                }
+
+                // Calculate outstanding amount if not provided
+                const totalAmount = parseFloat(row.totalAmount) || 0
+                const paidAmount = parseFloat(row.paidAmount) || 0
+                const outstandingAmount = row.outstandingAmount 
+                    ? parseFloat(row.outstandingAmount) 
+                    : Math.max(0, totalAmount - paidAmount)
+
+                return {
+                    customerName: row.customerName?.trim() || "",
+                    customerType: row.customerType?.trim() || "Retail",
+                    saleDate: saleDate.toISOString(),
+                    totalAmount: totalAmount,
+                    paidAmount: paidAmount,
+                    outstandingAmount: outstandingAmount,
+                    discount: row.discount ? parseFloat(row.discount) : 0,
+                    address: row.address?.trim() || null,
+                    phone: row.phone?.trim() || null,
+                    email: row.email?.trim() || null,
+                    accountNumber: row.accountNumber?.trim() || null,
+                    moreInfo: row.moreInfo?.trim() || null,
+                    paymentMethod: row.paymentMethod?.trim() || "CREDIT",
+                    notes: row.notes?.trim() || "Imported from external system"
+                }
+            }).filter(debt => debt.customerName && debt.totalAmount > 0)
+
+            if (debtsToImport.length === 0) {
+                setSnackbar({ open: true, message: "No valid debt records to import" })
+                setIsLoading(false)
+                return
+            }
+
+            // Send to API
+            const response = await api.post("/Sales/ImportCustomerDebts", debtsToImport)
+            
+            const successCount = response.data.successCount || 0
+            const failureCount = response.data.failureCount || 0
+
+            setSnackbar({ 
+                open: true, 
+                message: `Import completed: ${successCount} successful, ${failureCount} failed` 
+            })
+
+            // Refresh debts data
+            await fetchDebtors(1, pagination.pageSize, selectedCustomer?.id)
+        } catch (error: any) {
+            console.error("Error importing debts:", error)
+            setSnackbar({ 
+                open: true, 
+                message: error.response?.data?.message || "Failed to import debts. Please check your data format." 
+            })
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    // Column mappings for Excel import
+    const debtImportColumnMappings: ColumnMapping[] = [
+        {
+            field: "customerName",
+            possibleNames: ["customername", "customer name", "customer_name", "name"],
+            required: true
+        },
+        {
+            field: "customerType",
+            possibleNames: ["customertype", "customer type", "customer_type", "type"],
+            required: true
+        },
+        {
+            field: "saleDate",
+            possibleNames: ["saledate", "sale date", "sale_date", "date", "transaction date"],
+            required: true,
+            transform: (value: any) => {
+                // Try to parse date
+                if (value instanceof Date) return value
+                const parsed = new Date(value)
+                return isNaN(parsed.getTime()) ? new Date() : parsed
+            }
+        },
+        {
+            field: "totalAmount",
+            possibleNames: ["totalamount", "total amount", "total_amount", "amount", "invoice amount"],
+            required: true,
+            transform: (value: any) => parseFloat(String(value).replace(/[^0-9.-]/g, "")) || 0
+        },
+        {
+            field: "paidAmount",
+            possibleNames: ["paidamount", "paid amount", "paid_amount", "amount paid"],
+            required: true,
+            transform: (value: any) => parseFloat(String(value).replace(/[^0-9.-]/g, "")) || 0
+        },
+        {
+            field: "outstandingAmount",
+            possibleNames: ["outstandingamount", "outstanding amount", "outstanding_amount", "balance", "debt"],
+            required: true,
+            transform: (value: any) => parseFloat(String(value).replace(/[^0-9.-]/g, "")) || 0
+        },
+        {
+            field: "discount",
+            possibleNames: ["discount", "discount amount", "discount_amount"],
+            transform: (value: any) => value ? parseFloat(String(value).replace(/[^0-9.-]/g, "")) : 0
+        },
+        {
+            field: "address",
+            possibleNames: ["address", "customer address", "location"]
+        },
+        {
+            field: "phone",
+            possibleNames: ["phone", "phone number", "phone_number", "mobile"]
+        },
+        {
+            field: "email",
+            possibleNames: ["email", "email address", "e-mail"]
+        },
+        {
+            field: "accountNumber",
+            possibleNames: ["accountnumber", "account number", "account_number", "account"]
+        },
+        {
+            field: "moreInfo",
+            possibleNames: ["moreinfo", "more info", "more_info", "notes", "description", "info"]
+        },
+        {
+            field: "paymentMethod",
+            possibleNames: ["paymentmethod", "payment method", "payment_method", "method"]
+        },
+        {
+            field: "notes",
+            possibleNames: ["notes", "note", "description", "remarks", "comments"]
+        }
+    ]
+
     return (
         <div className="min-h-screen dark:bg-gray-900 bg-gray-50 p-6 space-y-6">
             {/* Header */}
-            <div>
-                <h1 className="text-4xl font-bold dark:text-white text-gray-900 mb-2">Receivables Analysis</h1>
-                <p className="dark:text-gray-400 text-gray-600">Monitor and analyze customer debts and payment status</p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-4xl font-bold dark:text-white text-gray-900 mb-2">Receivables Analysis</h1>
+                    <p className="dark:text-gray-400 text-gray-600">Monitor and analyze customer debts and payment status</p>
+                </div>
+                <Button
+                    onClick={() => setIsImportDialogOpen(true)}
+                    className="gap-2 dark:bg-gray-700 dark:text-white"
+                >
+                    <Upload className="h-4 w-4" />
+                    Import Debts
+                </Button>
             </div>
 
             {/* Loading State */}
@@ -1023,6 +1189,41 @@ export default function DebtsAnalysis() {
                         borderRadius: 2,
                     },
                 }}
+            />
+
+            {/* Import Dialog */}
+            <ExcelImportDialog
+                open={isImportDialogOpen}
+                onOpenChange={setIsImportDialogOpen}
+                title="Import Customer Debts"
+                description="Import customers with existing balances/debts from an Excel file. The system will create or match customers and create sales records for the debts."
+                columnMappings={debtImportColumnMappings}
+                onImport={handleImportDebts}
+                importButtonText="Import Debts"
+                renderPreviewRow={(row, index) => (
+                    <tr key={index} className="border-b border-border hover:bg-accent/50 transition-colors">
+                        <td className="px-4 py-3 text-sm">{row.customerName || ""}</td>
+                        <td className="px-4 py-3 text-sm">{row.customerType || ""}</td>
+                        <td className="px-4 py-3 text-sm">
+                            {row.saleDate ? new Date(row.saleDate).toLocaleDateString() : ""}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-right">
+                            {typeof row.totalAmount === "number" 
+                                ? row.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                : row.totalAmount || ""}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-right">
+                            {typeof row.paidAmount === "number"
+                                ? row.paidAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                : row.paidAmount || ""}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-right">
+                            {typeof row.outstandingAmount === "number"
+                                ? row.outstandingAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                : row.outstandingAmount || ""}
+                        </td>
+                    </tr>
+                )}
             />
         </div>
     )

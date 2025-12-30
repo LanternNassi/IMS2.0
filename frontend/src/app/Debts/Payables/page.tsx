@@ -31,6 +31,8 @@ import { PurchasePaymentHistoryDialog } from "@/components/PurchasePaymentHistor
 import { ViewPurchaseDetailsDialog } from "@/components/ViewPurchaseDetailsDialog"
 import api from "@/Utils/Request"
 import { ProductVariation } from "@/types/productTypes"
+import { ExcelImportDialog, ColumnMapping } from "@/components/ExcelImportDialog"
+import { Upload } from "lucide-react"
 
 // Types based on the API payload
 interface Supplier {
@@ -144,8 +146,8 @@ export default function PayablesAnalysis() {
     hasPreviousPage: false,
     hasNextPage: false,
   })
-  const [startDate, setStartDate] = useState(new Date(2025, 11, 1))
-  const [endDate, setEndDate] = useState(new Date(2025, 11, 31))
+  const [startDate, setStartDate] = useState(new Date(2023, 1, 1))
+  const [endDate, setEndDate] = useState(new Date())
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null)
   const [supplierOptions, setSupplierOptions] = useState<Supplier[]>([])
@@ -156,6 +158,7 @@ export default function PayablesAnalysis() {
   const [expandedRow, setExpandedRow] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string }>({ open: false, message: "" })
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false)
 
   // Fetch suppliers for autocomplete
   const fetchSuppliers = async (searchTerm: string) => {
@@ -314,12 +317,179 @@ export default function PayablesAnalysis() {
     fetchPayables(1, newPageSize, selectedSupplier?.id)
   }
 
+  // Import handler
+  const handleImportPayables = async (data: any[]) => {
+    if (!data || data.length === 0) {
+      setSnackbar({ open: true, message: "No data to import" })
+      return
+    }
+
+    setIsImportDialogOpen(false)
+    setIsLoading(true)
+    setSnackbar({ open: true, message: `Processing ${data.length} payable record(s)...` })
+
+    try {
+      // Transform Excel data to API format
+      const payablesToImport = data.map((row) => {
+        // Parse date - handle multiple formats
+        let purchaseDate = new Date()
+        if (row.purchaseDate) {
+          const parsed = new Date(row.purchaseDate)
+          if (!isNaN(parsed.getTime())) {
+            purchaseDate = parsed
+          }
+        }
+
+        // Calculate amounts
+        const grandTotal = parseFloat(row.grandTotal) || 0
+        const totalAmount = row.totalAmount ? parseFloat(row.totalAmount) : grandTotal
+        const tax = row.tax ? parseFloat(row.tax) : 0
+        const paidAmount = parseFloat(row.paidAmount) || 0
+        const outstandingAmount = row.outstandingAmount
+          ? parseFloat(row.outstandingAmount)
+          : Math.max(0, grandTotal - paidAmount)
+
+        return {
+          supplierName: row.supplierName?.trim() || "",
+          purchaseDate: purchaseDate.toISOString(),
+          grandTotal: grandTotal,
+          totalAmount: totalAmount,
+          tax: tax,
+          paidAmount: paidAmount,
+          outstandingAmount: outstandingAmount,
+          purchaseNumber: row.purchaseNumber?.trim() || null,
+          contactPerson: row.contactPerson?.trim() || null,
+          emailAddress: row.emailAddress?.trim() || null,
+          phoneNumber: row.phoneNumber?.trim() || null,
+          address: row.address?.trim() || null,
+          tin: row.tin?.trim() || null,
+          moreInfo: row.moreInfo?.trim() || null,
+          notes: row.notes?.trim() || "Imported from external system",
+        }
+      }).filter((payable) => payable.supplierName && payable.grandTotal > 0)
+
+      if (payablesToImport.length === 0) {
+        setSnackbar({ open: true, message: "No valid payable records to import" })
+        setIsLoading(false)
+        return
+      }
+
+      // Send to API
+      const response = await api.post("/Purchases/ImportSupplierDebts", payablesToImport)
+
+      const successCount = response.data.successCount || 0
+      const failureCount = response.data.failureCount || 0
+
+      setSnackbar({
+        open: true,
+        message: `Import completed: ${successCount} successful, ${failureCount} failed`,
+      })
+
+      // Refresh payables data
+      await fetchPayables(1, pagination.pageSize, selectedSupplier?.id)
+    } catch (error: any) {
+      console.error("Error importing payables:", error)
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || "Failed to import payables. Please check your data format.",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Column mappings for Excel import
+  const payableImportColumnMappings: ColumnMapping[] = [
+    {
+      field: "supplierName",
+      possibleNames: ["suppliername", "supplier name", "supplier_name", "companyname", "company name"],
+      required: true,
+    },
+    {
+      field: "purchaseDate",
+      possibleNames: ["purchasedate", "purchase date", "purchase_date", "date", "transaction date"],
+      required: true,
+      transform: (value: any) => {
+        // Try to parse date
+        if (value instanceof Date) return value
+        const parsed = new Date(value)
+        return isNaN(parsed.getTime()) ? new Date() : parsed
+      },
+    },
+    {
+      field: "grandTotal",
+      possibleNames: ["grandtotal", "grand total", "grand_total", "total", "amount", "invoice amount"],
+      required: true,
+      transform: (value: any) => parseFloat(String(value).replace(/[^0-9.-]/g, "")) || 0,
+    },
+    {
+      field: "totalAmount",
+      possibleNames: ["totalamount", "total amount", "total_amount", "subtotal"],
+      transform: (value: any) => (value ? parseFloat(String(value).replace(/[^0-9.-]/g, "")) : null),
+    },
+    {
+      field: "tax",
+      possibleNames: ["tax", "vat", "tax amount", "tax_amount"],
+      transform: (value: any) => (value ? parseFloat(String(value).replace(/[^0-9.-]/g, "")) : 0),
+    },
+    {
+      field: "paidAmount",
+      possibleNames: ["paidamount", "paid amount", "paid_amount", "amount paid"],
+      required: true,
+      transform: (value: any) => parseFloat(String(value).replace(/[^0-9.-]/g, "")) || 0,
+    },
+    {
+      field: "outstandingAmount",
+      possibleNames: ["outstandingamount", "outstanding amount", "outstanding_amount", "balance", "debt"],
+      required: true,
+      transform: (value: any) => parseFloat(String(value).replace(/[^0-9.-]/g, "")) || 0,
+    },
+    {
+      field: "purchaseNumber",
+      possibleNames: ["purchasenumber", "purchase number", "purchase_number", "invoice number", "invoice"],
+    },
+    {
+      field: "contactPerson",
+      possibleNames: ["contactperson", "contact person", "contact_person", "contact"],
+    },
+    {
+      field: "emailAddress",
+      possibleNames: ["emailaddress", "email address", "email_address", "email", "e-mail"],
+    },
+    {
+      field: "phoneNumber",
+      possibleNames: ["phonenumber", "phone number", "phone_number", "phone", "mobile"],
+    },
+    {
+      field: "address",
+      possibleNames: ["address", "supplier address", "location"],
+    },
+    {
+      field: "tin",
+      possibleNames: ["tin", "tax id", "tax_id", "tax identification number"],
+    },
+    {
+      field: "moreInfo",
+      possibleNames: ["moreinfo", "more info", "more_info", "info", "description"],
+    },
+    {
+      field: "notes",
+      possibleNames: ["notes", "note", "description", "remarks", "comments"],
+    },
+  ]
+
   return (
     <div className="min-h-screen dark:bg-gray-900 bg-gray-50 p-6 space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-4xl font-bold dark:text-white text-gray-900 mb-2">Payables Analysis</h1>
-        <p className="dark:text-gray-400 text-gray-600">Monitor and analyze supplier debts and payment obligations</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-bold dark:text-white text-gray-900 mb-2">Payables Analysis</h1>
+          <p className="dark:text-gray-400 text-gray-600">Monitor and analyze supplier debts and payment obligations</p>
+        </div>
+        <Button onClick={() => setIsImportDialogOpen(true)} className="gap-2 dark:bg-gray-700 dark:text-white">
+          <Upload className="h-4 w-4" />
+          Import Payables
+        </Button>
       </div>
 
       {/* Loading State */}
@@ -1051,6 +1221,40 @@ export default function PayablesAnalysis() {
             borderRadius: 2,
           },
         }}
+      />
+
+      {/* Import Dialog */}
+      <ExcelImportDialog
+        open={isImportDialogOpen}
+        onOpenChange={setIsImportDialogOpen}
+        title="Import Supplier Payables"
+        description="Import suppliers with existing balances/debts from an Excel file. The system will create or match suppliers and create purchase records for the debts."
+        columnMappings={payableImportColumnMappings}
+        onImport={handleImportPayables}
+        importButtonText="Import Payables"
+        renderPreviewRow={(row, index) => (
+          <tr key={index} className="border-b border-border hover:bg-accent/50 transition-colors">
+            <td className="px-4 py-3 text-sm">{row.supplierName || ""}</td>
+            <td className="px-4 py-3 text-sm">
+              {row.purchaseDate ? new Date(row.purchaseDate).toLocaleDateString() : ""}
+            </td>
+            <td className="px-4 py-3 text-sm text-right">
+              {typeof row.grandTotal === "number"
+                ? row.grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                : row.grandTotal || ""}
+            </td>
+            <td className="px-4 py-3 text-sm text-right">
+              {typeof row.paidAmount === "number"
+                ? row.paidAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                : row.paidAmount || ""}
+            </td>
+            <td className="px-4 py-3 text-sm text-right">
+              {typeof row.outstandingAmount === "number"
+                ? row.outstandingAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                : row.outstandingAmount || ""}
+            </td>
+          </tr>
+        )}
       />
     </div>
   )
