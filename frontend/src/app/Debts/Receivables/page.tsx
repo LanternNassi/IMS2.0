@@ -343,20 +343,41 @@ export default function DebtsAnalysis() {
                     }
                 }
 
-                // Calculate outstanding amount if not provided
+                // Parse amounts
                 const totalAmount = parseFloat(row.totalAmount) || 0
                 const paidAmount = parseFloat(row.paidAmount) || 0
-                const outstandingAmount = row.outstandingAmount 
-                    ? parseFloat(row.outstandingAmount) 
-                    : Math.max(0, totalAmount - paidAmount)
+                const outstandingAmount = parseFloat(row.outstandingAmount) || 0
+
+                // Handle case where only outstanding amount is provided
+                let finalTotalAmount = totalAmount
+                let finalPaidAmount = paidAmount
+                let finalOutstandingAmount = outstandingAmount
+
+                if (outstandingAmount > 0 && totalAmount === 0 && paidAmount === 0) {
+                    // Only outstanding amount provided - use it as total, set paid to 0
+                    finalTotalAmount = outstandingAmount
+                    finalPaidAmount = 0
+                    finalOutstandingAmount = outstandingAmount
+                } else if (outstandingAmount === 0 && totalAmount > 0) {
+                    // Calculate outstanding if not provided
+                    finalOutstandingAmount = Math.max(0, totalAmount - paidAmount)
+                } else if (totalAmount > 0 && outstandingAmount > 0) {
+                    // Both provided - use as is, but ensure consistency
+                    finalTotalAmount = totalAmount
+                    finalPaidAmount = paidAmount
+                    finalOutstandingAmount = outstandingAmount
+                } else if (totalAmount > 0 && paidAmount >= 0) {
+                    // Total and paid provided - calculate outstanding
+                    finalOutstandingAmount = Math.max(0, totalAmount - paidAmount)
+                }
 
                 return {
                     customerName: row.customerName?.trim() || "",
                     customerType: row.customerType?.trim() || "Retail",
                     saleDate: saleDate.toISOString(),
-                    totalAmount: totalAmount,
-                    paidAmount: paidAmount,
-                    outstandingAmount: outstandingAmount,
+                    totalAmount: finalTotalAmount,
+                    paidAmount: finalPaidAmount,
+                    outstandingAmount: finalOutstandingAmount,
                     discount: row.discount ? parseFloat(row.discount) : 0,
                     address: row.address?.trim() || null,
                     phone: row.phone?.trim() || null,
@@ -366,7 +387,7 @@ export default function DebtsAnalysis() {
                     paymentMethod: row.paymentMethod?.trim() || "CREDIT",
                     notes: row.notes?.trim() || "Imported from external system"
                 }
-            }).filter(debt => debt.customerName && debt.totalAmount > 0)
+            }).filter(debt => debt.customerName && (debt.totalAmount > 0 || debt.outstandingAmount > 0))
 
             if (debtsToImport.length === 0) {
                 setSnackbar({ open: true, message: "No valid debt records to import" })
@@ -424,13 +445,13 @@ export default function DebtsAnalysis() {
         {
             field: "totalAmount",
             possibleNames: ["totalamount", "total amount", "total_amount", "amount", "invoice amount"],
-            required: true,
+            required: false,
             transform: (value: any) => parseFloat(String(value).replace(/[^0-9.-]/g, "")) || 0
         },
         {
             field: "paidAmount",
             possibleNames: ["paidamount", "paid amount", "paid_amount", "amount paid"],
-            required: true,
+            required: false,
             transform: (value: any) => parseFloat(String(value).replace(/[^0-9.-]/g, "")) || 0
         },
         {

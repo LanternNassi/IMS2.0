@@ -190,19 +190,27 @@ export default function AddPurchase() {
         if (activeElement === addButtonRef.current ||
           (activeElement === productQtyRef.current && selectedProduct && selectedQuantity)) {
           e.preventDefault()
+          e.stopPropagation()
           addProduct()
-          productSearchRef.current?.focus()
+          // Small delay to ensure state updates before refocusing
+          setTimeout(() => {
+            productSearchRef.current?.focus()
+          }, 0)
+          return
         }
-        // If notes textarea or any other input (except autocomplete dropdown)
-        else if (activeElement === notesRef.current ||
-          (target.tagName === 'INPUT' && !target.closest('[role="combobox"]'))) {
-          // Don't prevent default in textarea to allow line breaks
-          if (activeElement !== notesRef.current) {
-            e.preventDefault()
-          }
-          // Submit form if items exist
-          if (items.length > 0 && activeElement !== notesRef.current) {
-            form.handleSubmit(handleFormSubmit)()
+        // If notes textarea, allow default behavior (new line)
+        else if (activeElement === notesRef.current) {
+          // Allow default Enter behavior in textarea
+          return
+        }
+        
+        // For other inputs (excluding autocomplete dropdowns), submit form
+        else if (target.tagName === 'INPUT' && !target.closest('[role="combobox"]')) {
+          e.preventDefault()
+          // Only submit if items exist
+          if (items.length > 0) {
+            const submitHandler = form.handleSubmit(handleFormSubmit)
+            submitHandler()
           }
         }
       }
@@ -303,6 +311,9 @@ export default function AddPurchase() {
   }
 
   const totalAmount = items.reduce((sum, item) => sum + item.totalPrice, 0)
+  const grandTotal = totalAmount - discount
+  // Calculate return/outstanding: positive = return amount, negative = outstanding amount
+  const returnAmount = paidAmount - grandTotal
 
   const handleFormSubmit = async (data: z.infer<typeof purchaseFormSchema>) => {
 
@@ -337,8 +348,8 @@ export default function AddPurchase() {
       supplierName: selectedSupplierDetails.companyName || "",
       items,
       totalAmount,
-      paidAmount,
-      grandTotal: totalAmount - discount,
+      paidAmount: paidAmount >= grandTotal ? grandTotal : paidAmount,
+      grandTotal: grandTotal,
       createdAt: new Date(),
       linkedFinancialAccountId: linkedFinancialAccountId || undefined,
       notes: data.notes,
@@ -519,13 +530,6 @@ export default function AddPurchase() {
                   inputRef={productQtyRef}
                   fullWidth
                   size="small"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && selectedProduct && selectedQuantity) {
-                      e.preventDefault()
-                      addProduct()
-                      productSearchRef.current?.focus()
-                    }
-                  }}
                 />
 
                 {/* Add Button */}
@@ -537,6 +541,7 @@ export default function AddPurchase() {
                     variant="contained"
                     color="primary"
                     ref={addButtonRef}
+                    type="button"
                   >
                     <Plus className="mr-2 h-4 w-4" /> ADD
                   </Button>
@@ -622,6 +627,7 @@ export default function AddPurchase() {
                                     title="Add batch/generic information"
                                     className={`h-7 w-7 min-w-0 ${item.hasGeneric ? "dark:bg-gray-600" : ""}`}
                                     disabled={isEditing}
+                                    type="button"
                                   >
                                     <Pill className="h-3 w-3" />
                                   </Button>
@@ -636,6 +642,7 @@ export default function AddPurchase() {
                                           onClick={saveEditingItem}
                                           className="h-7 w-7 min-w-0"
                                           size="small"
+                                          type="button"
                                         >
                                           ✓
                                         </Button>
@@ -644,6 +651,7 @@ export default function AddPurchase() {
                                           onClick={cancelEditingItem}
                                           className="h-7 w-7 min-w-0"
                                           size="small"
+                                          type="button"
                                         >
                                           ✕
                                         </Button>
@@ -656,6 +664,7 @@ export default function AddPurchase() {
                                           className="h-7 w-7 min-w-0"
                                           size="small"
                                           title="Edit item"
+                                          type="button"
                                         >
                                           ✎
                                         </Button>
@@ -666,6 +675,7 @@ export default function AddPurchase() {
                                           className="h-7 w-7 min-w-0"
                                           size="small"
                                           title="Delete item"
+                                          type="button"
                                         >
                                           <Trash2 className="h-3 w-3" />
                                         </Button>
@@ -702,6 +712,7 @@ export default function AddPurchase() {
                       type="number"
                       value={discount}
                       size="small"
+                      data-field="discount"
                       sx={{ width: '150px', '& input': { textAlign: 'right' } }}
                       onChange={(value) => {
                         setDiscount(Number(value.target.value))
@@ -715,6 +726,7 @@ export default function AddPurchase() {
                       type="number"
                       value={paidAmount || 0}
                       size="small"
+                      data-field="paidAmount"
                       sx={{ width: '150px', '& input': { textAlign: 'right' } }}
                       onChange={(value) => {
                         setPaidAmount(Number(value.target.value))
@@ -725,12 +737,26 @@ export default function AddPurchase() {
                   <div className="border-t dark:border-gray-700 pt-3">
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-blue-500 dark:text-blue-400 font-medium text-lg">Grand Total</span>
-                      <span className="text-2xl font-bold dark:text-white">{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <span className="text-2xl font-bold dark:text-white">{grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
 
                     <div className="flex justify-between items-center">
-                      <span className="text-blue-500 dark:text-blue-400 font-medium">Return amount</span>
-                      <span className="text-xl font-semibold dark:text-white">0</span>
+                      <span className="text-blue-500 dark:text-blue-400 font-medium">
+                        {returnAmount >= 0 ? "Return amount" : "Outstanding amount"}
+                      </span>
+                      <span className={`text-xl font-semibold ${
+                        returnAmount > 0 
+                          ? 'text-green-600 dark:text-green-400' 
+                          : returnAmount < 0 
+                            ? 'text-red-600 dark:text-red-400' 
+                            : 'dark:text-white'
+                      }`}>
+                        {returnAmount.toLocaleString(undefined, { 
+                          minimumFractionDigits: 2, 
+                          maximumFractionDigits: 2,
+                          signDisplay: returnAmount < 0 ? 'always' : 'auto'
+                        })}
+                      </span>
                     </div>
                   </div>
                 </CardContent>

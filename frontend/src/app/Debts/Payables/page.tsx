@@ -340,23 +340,53 @@ export default function PayablesAnalysis() {
           }
         }
 
-        // Calculate amounts
+        // Parse amounts
         const grandTotal = parseFloat(row.grandTotal) || 0
-        const totalAmount = row.totalAmount ? parseFloat(row.totalAmount) : grandTotal
-        const tax = row.tax ? parseFloat(row.tax) : 0
+        const totalAmount = row.totalAmount ? parseFloat(row.totalAmount) : null
+        const tax = row.tax ? parseFloat(row.tax) : null
         const paidAmount = parseFloat(row.paidAmount) || 0
-        const outstandingAmount = row.outstandingAmount
-          ? parseFloat(row.outstandingAmount)
-          : Math.max(0, grandTotal - paidAmount)
+        const outstandingAmount = parseFloat(row.outstandingAmount) || 0
+
+        // Handle case where only outstanding amount is provided
+        let finalGrandTotal = grandTotal
+        let finalTotalAmount = totalAmount
+        let finalTax = tax ?? 0
+        let finalPaidAmount = paidAmount
+        let finalOutstandingAmount = outstandingAmount
+
+        if (outstandingAmount > 0 && grandTotal === 0 && paidAmount === 0) {
+          // Only outstanding amount provided - use it as grand total, set paid to 0
+          finalGrandTotal = outstandingAmount
+          finalTotalAmount = outstandingAmount
+          finalTax = 0
+          finalPaidAmount = 0
+          finalOutstandingAmount = outstandingAmount
+        } else if (grandTotal > 0) {
+          // Grand total provided - use it
+          finalTotalAmount = totalAmount ?? grandTotal
+          finalTax = tax ?? (grandTotal - (totalAmount ?? grandTotal))
+          if (outstandingAmount === 0) {
+            // Calculate outstanding if not provided
+            finalOutstandingAmount = Math.max(0, grandTotal - paidAmount)
+          }
+        } else if (totalAmount !== null && totalAmount > 0) {
+          // Only total amount provided (no grand total)
+          finalGrandTotal = totalAmount + (tax ?? 0)
+          finalTotalAmount = totalAmount
+          finalTax = tax ?? 0
+          if (outstandingAmount === 0) {
+            finalOutstandingAmount = Math.max(0, finalGrandTotal - paidAmount)
+          }
+        }
 
         return {
           supplierName: row.supplierName?.trim() || "",
           purchaseDate: purchaseDate.toISOString(),
-          grandTotal: grandTotal,
-          totalAmount: totalAmount,
-          tax: tax,
-          paidAmount: paidAmount,
-          outstandingAmount: outstandingAmount,
+          grandTotal: finalGrandTotal,
+          totalAmount: finalTotalAmount,
+          tax: finalTax,
+          paidAmount: finalPaidAmount,
+          outstandingAmount: finalOutstandingAmount,
           purchaseNumber: row.purchaseNumber?.trim() || null,
           contactPerson: row.contactPerson?.trim() || null,
           emailAddress: row.emailAddress?.trim() || null,
@@ -366,7 +396,7 @@ export default function PayablesAnalysis() {
           moreInfo: row.moreInfo?.trim() || null,
           notes: row.notes?.trim() || "Imported from external system",
         }
-      }).filter((payable) => payable.supplierName && payable.grandTotal > 0)
+      }).filter((payable) => payable.supplierName && (payable.grandTotal > 0 || payable.outstandingAmount > 0))
 
       if (payablesToImport.length === 0) {
         setSnackbar({ open: true, message: "No valid payable records to import" })
@@ -419,7 +449,7 @@ export default function PayablesAnalysis() {
     {
       field: "grandTotal",
       possibleNames: ["grandtotal", "grand total", "grand_total", "total", "amount", "invoice amount"],
-      required: true,
+      required: false,
       transform: (value: any) => parseFloat(String(value).replace(/[^0-9.-]/g, "")) || 0,
     },
     {
@@ -430,12 +460,12 @@ export default function PayablesAnalysis() {
     {
       field: "tax",
       possibleNames: ["tax", "vat", "tax amount", "tax_amount"],
-      transform: (value: any) => (value ? parseFloat(String(value).replace(/[^0-9.-]/g, "")) : 0),
+      transform: (value: any) => (value ? parseFloat(String(value).replace(/[^0-9.-]/g, "")) : null),
     },
     {
       field: "paidAmount",
       possibleNames: ["paidamount", "paid amount", "paid_amount", "amount paid"],
-      required: true,
+      required: false,
       transform: (value: any) => parseFloat(String(value).replace(/[^0-9.-]/g, "")) || 0,
     },
     {
