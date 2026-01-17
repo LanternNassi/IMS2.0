@@ -4,6 +4,7 @@ using ImsServer.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ImsServer.Migrations
 {
     [DbContext(typeof(DBContext))]
-    partial class DBContextModelSnapshot : ModelSnapshot
+    [Migration("20260107085135_AddCreditDebitNotes")]
+    partial class AddCreditDebitNotes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -135,12 +138,6 @@ namespace ImsServer.Migrations
                     b.Property<int>("AddedBy")
                         .HasColumnType("int");
 
-                    b.Property<string>("ApplicationMessage")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("AppliedToSalesIds")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<DateTime>("CreditNoteDate")
                         .HasColumnType("datetime2");
 
@@ -171,9 +168,6 @@ namespace ImsServer.Migrations
 
                     b.Property<Guid>("ProcessedById")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal?>("ProfitAccrued")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("Reason")
                         .HasColumnType("int");
@@ -360,18 +354,6 @@ namespace ImsServer.Migrations
                     b.Property<int>("AddedBy")
                         .HasColumnType("int");
 
-                    b.Property<string>("ApplicationMessage")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("AppliedToPurchasesIds")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("AppliedToSalesIds")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid?>("CustomerId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<DateTime>("DebitNoteDate")
                         .HasColumnType("datetime2");
 
@@ -406,16 +388,13 @@ namespace ImsServer.Migrations
                     b.Property<int>("Reason")
                         .HasColumnType("int");
 
-                    b.Property<Guid?>("SaleId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
                     b.Property<decimal>("SubTotal")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<Guid?>("SupplierId")
+                    b.Property<Guid>("SupplierId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal>("TaxAmount")
@@ -429,15 +408,11 @@ namespace ImsServer.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CustomerId");
-
                     b.HasIndex("LinkedFinancialAccountId");
 
                     b.HasIndex("ProcessedById");
 
                     b.HasIndex("PurchaseId");
-
-                    b.HasIndex("SaleId");
 
                     b.HasIndex("SupplierId");
 
@@ -479,9 +454,6 @@ namespace ImsServer.Migrations
 
                     b.Property<decimal>("Quantity")
                         .HasColumnType("decimal(18,2)");
-
-                    b.Property<Guid?>("SaleItemId")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal?>("TaxAmount")
                         .HasColumnType("decimal(18,2)");
@@ -1944,7 +1916,7 @@ namespace ImsServer.Migrations
                         .IsRequired();
 
                     b.HasOne("ImsServer.Models.SaleX.Sale", "Sale")
-                        .WithMany("CreditNotes")
+                        .WithMany()
                         .HasForeignKey("SaleId");
 
                     b.Navigation("Customer");
@@ -1969,10 +1941,6 @@ namespace ImsServer.Migrations
 
             modelBuilder.Entity("ImsServer.Models.DebitNoteX.DebitNote", b =>
                 {
-                    b.HasOne("ImsServer.Models.CustomerX.Customer", "Customer")
-                        .WithMany()
-                        .HasForeignKey("CustomerId");
-
                     b.HasOne("ImsServer.Models.FinancialAccountX.FinancialAccount", "LinkedFinancialAccount")
                         .WithMany()
                         .HasForeignKey("LinkedFinancialAccountId");
@@ -1984,26 +1952,20 @@ namespace ImsServer.Migrations
                         .IsRequired();
 
                     b.HasOne("ImsServer.Models.PurchaseX.Purchase", "Purchase")
-                        .WithMany("DebitNotes")
+                        .WithMany()
                         .HasForeignKey("PurchaseId");
-
-                    b.HasOne("ImsServer.Models.SaleX.Sale", "Sale")
-                        .WithMany("DebitNotes")
-                        .HasForeignKey("SaleId");
 
                     b.HasOne("ImsServer.Models.SupplierX.Supplier", "Supplier")
                         .WithMany()
-                        .HasForeignKey("SupplierId");
-
-                    b.Navigation("Customer");
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("LinkedFinancialAccount");
 
                     b.Navigation("ProcessedBy");
 
                     b.Navigation("Purchase");
-
-                    b.Navigation("Sale");
 
                     b.Navigation("Supplier");
                 });
@@ -2403,17 +2365,11 @@ namespace ImsServer.Migrations
 
             modelBuilder.Entity("ImsServer.Models.PurchaseX.Purchase", b =>
                 {
-                    b.Navigation("DebitNotes");
-
                     b.Navigation("PurchaseItems");
                 });
 
             modelBuilder.Entity("ImsServer.Models.SaleX.Sale", b =>
                 {
-                    b.Navigation("CreditNotes");
-
-                    b.Navigation("DebitNotes");
-
                     b.Navigation("SaleItems");
                 });
 

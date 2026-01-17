@@ -482,7 +482,7 @@ const PRODUCT_COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "
 
 export default function ProductAnalysis() {
   const [startDate, setStartDate] = useState(new Date(2025, 11, 1))
-  const [endDate, setEndDate] = useState(new Date(2025, 11, 31))
+  const [endDate, setEndDate] = useState(new Date(2027, 11, 31))
   const [selectedProduct, setSelectedProduct] = useState<string>("")
   const [selectedVariation, setSelectedVariation] = useState<string>("")
   const [selectedCustomer, setSelectedCustomer] = useState<string>("")

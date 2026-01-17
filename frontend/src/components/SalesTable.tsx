@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState } from "react"
 import { format } from "date-fns"
-import { ChevronDown, ChevronUp, Eye, Pencil, Trash2, Receipt, Package, CheckCircle, XCircle, RotateCcw } from "lucide-react"
+import { ChevronDown, ChevronUp, Eye, Pencil, Trash2, Receipt, Package, CheckCircle, XCircle, RotateCcw, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -28,6 +28,105 @@ export interface SaleItem {
     retailPrice?: number
     wholeSalePrice?: number
   }
+}
+
+export interface CreditNoteItem {
+  id: string
+  creditNoteId: string
+  productVariationId: string | null
+  productName: string | null
+  description: string | null
+  quantity: number
+  unitPrice: number
+  totalPrice: number
+  taxAmount: number
+  saleItemId: string | null
+}
+
+export interface CreditNote {
+  id: string
+  creditNoteNumber: string
+  creditNoteDate: string
+  saleId: string | null
+  customerId: string
+  processedById: string
+  totalAmount: number
+  taxAmount: number
+  subTotal: number
+  reason: string
+  description: string | null
+  notes: string | null
+  status: string
+  isApplied: boolean
+  linkedFinancialAccountId: string | null
+  customer?: {
+    id: string
+    name: string
+    phone: string
+    email: string
+    address: string
+  }
+  processedBy?: {
+    id: string
+    username: string
+    email: string
+  }
+  creditNoteItems?: CreditNoteItem[]
+}
+
+export interface DebitNoteItem {
+  id: string
+  debitNoteId: string
+  productVariationId: string | null
+  productName: string | null
+  description: string | null
+  quantity: number
+  unitPrice: number
+  totalPrice: number
+  taxAmount: number | null
+  purchaseItemId: string | null
+  saleItemId: string | null
+}
+
+export interface DebitNote {
+  id: string
+  debitNoteNumber: string
+  debitNoteDate: string
+  purchaseId: string | null
+  saleId: string | null
+  supplierId: string | null
+  customerId: string | null
+  processedById: string
+  totalAmount: number
+  taxAmount: number
+  subTotal: number
+  reason: string
+  description: string | null
+  notes: string | null
+  status: string
+  isApplied: boolean
+  linkedFinancialAccountId: string | null
+  customer?: {
+    id: string
+    name: string
+    customerType: string
+    address: string
+    phone: string
+    email: string
+    accountNumber: string
+    moreInfo: string
+  }
+  supplier?: {
+    id: string
+    companyName: string
+    phone: string
+  }
+  processedBy?: {
+    id: string
+    username: string
+    email: string
+  }
+  debitNoteItems?: DebitNoteItem[]
 }
 
 export interface Sale {
@@ -60,6 +159,8 @@ export interface Sale {
     email: string
   }
   saleItems?: SaleItem[]
+  creditNotes?: CreditNote[]
+  debitNotes?: DebitNote[]
   taxRecord?: {
     id: string
     type: string
@@ -101,6 +202,28 @@ const getPaymentMethodLabel = (method: string) => {
   return labels[method] || method
 }
 
+const getCreditNoteStatusBadge = (status: string) => {
+  const statusConfig: { [key: string]: { label: string; className: string } } = {
+    Draft: { label: "Draft", className: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300" },
+    Applied: { label: "Applied", className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" },
+    Refunded: { label: "Refunded", className: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
+    Cancelled: { label: "Cancelled", className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
+  }
+  const config = statusConfig[status] || { label: status, className: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300" }
+  return <Badge className={cn("rounded-md font-normal", config.className)}>{config.label}</Badge>
+}
+
+const getDebitNoteStatusBadge = (status: string) => {
+  const statusConfig: { [key: string]: { label: string; className: string } } = {
+    Pending: { label: "Pending", className: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" },
+    Applied: { label: "Applied", className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" },
+    Cancelled: { label: "Cancelled", className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
+    Paid: { label: "Paid", className: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
+  }
+  const config = statusConfig[status] || { label: status, className: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300" }
+  return <Badge className={cn("rounded-md font-normal", config.className)}>{config.label}</Badge>
+}
+
 const SaleRow: React.FC<{
   sale: Sale
   onView?: (sale: Sale) => void
@@ -110,6 +233,8 @@ const SaleRow: React.FC<{
 }> = ({ sale, onView, onEdit, onDelete, onRefund }) => {
   const [isExpanded, setIsExpanded] = useState(false)
   const items = sale.saleItems || []
+  const creditNotes = sale.creditNotes || []
+  const debitNotes = sale.debitNotes || []
   const { config } = useSystemConfigStore()
   
   // Check if tax compliance and VAT registration are enabled
@@ -416,6 +541,134 @@ const SaleRow: React.FC<{
                 </div>
               )}
 
+              {/* Credit Notes Section */}
+              {creditNotes.length > 0 && (
+                <div className="pt-2 border-t border-border/30 dark:border-gray-700/30">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="h-1 w-1 rounded-full bg-primary" />
+                    <h4 className="text-sm font-semibold text-foreground">Credit Notes</h4>
+                    <Badge variant="outline" className="rounded-md font-normal">
+                      {creditNotes.length}
+                    </Badge>
+                  </div>
+                  <div className="rounded-xl border border-border/50 dark:border-gray-700 overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/50 dark:bg-gray-800/50 hover:bg-muted/50">
+                          <TableHead className="font-semibold text-foreground py-3 pl-4 border-r border-border/30 dark:border-gray-700/30">Credit Note #</TableHead>
+                          <TableHead className="font-semibold text-foreground py-3 border-r border-border/30 dark:border-gray-700/30">Date</TableHead>
+                          <TableHead className="font-semibold text-foreground py-3 border-r border-border/30 dark:border-gray-700/30">Reason</TableHead>
+                          <TableHead className="font-semibold text-foreground py-3 text-right border-r border-border/30 dark:border-gray-700/30">Amount</TableHead>
+                          <TableHead className="font-semibold text-foreground py-3 text-center border-r border-border/30 dark:border-gray-700/30">Status</TableHead>
+                          <TableHead className="font-semibold text-foreground py-3 pr-4">Items</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {creditNotes.map((creditNote, index) => (
+                          <TableRow
+                            key={creditNote.id}
+                            className={cn(
+                              "hover:bg-muted/30 dark:hover:bg-gray-800/30",
+                              index !== creditNotes.length - 1 && "border-b border-border/30 dark:border-gray-700/30",
+                            )}
+                          >
+                            <TableCell className="py-3 pl-4 border-r border-border/30 dark:border-gray-700/30">
+                              <div className="flex items-center gap-2">
+                                <FileText className="h-4 w-4 text-muted-foreground" />
+                                <span className="font-mono font-medium text-foreground">{creditNote.creditNoteNumber}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="py-3 border-r border-border/30 dark:border-gray-700/30">
+                              <span className="text-sm text-muted-foreground">
+                                {format(new Date(creditNote.creditNoteDate), "MMM dd, yyyy")}
+                              </span>
+                            </TableCell>
+                            <TableCell className="py-3 border-r border-border/30 dark:border-gray-700/30">
+                              <span className="text-sm text-foreground">{creditNote.reason}</span>
+                            </TableCell>
+                            <TableCell className="py-3 text-right border-r border-border/30 dark:border-gray-700/30">
+                              <span className="font-semibold text-foreground">{formatCurrencyFull(creditNote.totalAmount)}</span>
+                            </TableCell>
+                            <TableCell className="py-3 text-center border-r border-border/30 dark:border-gray-700/30">
+                              {getCreditNoteStatusBadge(creditNote.status)}
+                            </TableCell>
+                            <TableCell className="py-3 pr-4">
+                              <Badge variant="outline" className="rounded-md font-normal">
+                                {creditNote.creditNoteItems?.length || 0} items
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+
+              {/* Debit Notes Section */}
+              {debitNotes.length > 0 && (
+                <div className="pt-2 border-t border-border/30 dark:border-gray-700/30">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="h-1 w-1 rounded-full bg-orange-500" />
+                    <h4 className="text-sm font-semibold text-foreground">Debit Notes</h4>
+                    <Badge variant="outline" className="rounded-md font-normal">
+                      {debitNotes.length}
+                    </Badge>
+                  </div>
+                  <div className="rounded-xl border border-border/50 dark:border-gray-700 overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/50 dark:bg-gray-800/50 hover:bg-muted/50">
+                          <TableHead className="font-semibold text-foreground py-3 pl-4 border-r border-border/30 dark:border-gray-700/30">Debit Note #</TableHead>
+                          <TableHead className="font-semibold text-foreground py-3 border-r border-border/30 dark:border-gray-700/30">Date</TableHead>
+                          <TableHead className="font-semibold text-foreground py-3 border-r border-border/30 dark:border-gray-700/30">Reason</TableHead>
+                          <TableHead className="font-semibold text-foreground py-3 text-right border-r border-border/30 dark:border-gray-700/30">Amount</TableHead>
+                          <TableHead className="font-semibold text-foreground py-3 text-center border-r border-border/30 dark:border-gray-700/30">Status</TableHead>
+                          <TableHead className="font-semibold text-foreground py-3 pr-4">Items</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {debitNotes.map((debitNote, index) => (
+                          <TableRow
+                            key={debitNote.id}
+                            className={cn(
+                              "hover:bg-muted/30 dark:hover:bg-gray-800/30",
+                              index !== debitNotes.length - 1 && "border-b border-border/30 dark:border-gray-700/30",
+                            )}
+                          >
+                            <TableCell className="py-3 pl-4 border-r border-border/30 dark:border-gray-700/30">
+                              <div className="flex items-center gap-2">
+                                <FileText className="h-4 w-4 text-orange-500" />
+                                <span className="font-mono font-medium text-foreground">{debitNote.debitNoteNumber}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="py-3 border-r border-border/30 dark:border-gray-700/30">
+                              <span className="text-sm text-muted-foreground">
+                                {format(new Date(debitNote.debitNoteDate), "MMM dd, yyyy")}
+                              </span>
+                            </TableCell>
+                            <TableCell className="py-3 border-r border-border/30 dark:border-gray-700/30">
+                              <span className="text-sm text-foreground">{debitNote.reason}</span>
+                            </TableCell>
+                            <TableCell className="py-3 text-right border-r border-border/30 dark:border-gray-700/30">
+                              <span className="font-semibold text-foreground">{formatCurrencyFull(debitNote.totalAmount)}</span>
+                            </TableCell>
+                            <TableCell className="py-3 text-center border-r border-border/30 dark:border-gray-700/30">
+                              {getDebitNoteStatusBadge(debitNote.status)}
+                            </TableCell>
+                            <TableCell className="py-3 pr-4">
+                              <Badge variant="outline" className="rounded-md font-normal">
+                                {debitNote.debitNoteItems?.length || 0} items
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+
               {/* Sale Summary */}
               <div className="pt-2 border-t border-border/30 dark:border-gray-700/30 grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -431,6 +684,23 @@ const SaleRow: React.FC<{
                     <span className="text-muted-foreground">Final Amount:</span>
                     <span className="font-bold">{formatCurrencyFull(sale.finalAmount)}</span>
                   </div>
+                  {creditNotes.length > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Credit Notes:</span>
+                      <span className="font-medium text-red-600 dark:text-red-400">
+                        -{formatCurrencyFull(creditNotes.reduce((sum, cn) => sum + cn.totalAmount, 0))}
+                      </span>
+                    </div>
+                  )}
+                  {debitNotes.length > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Debit Notes:</span>
+                      <span className="font-medium text-orange-600 dark:text-orange-400">
+                        +{formatCurrencyFull(debitNotes.reduce((sum, dn) => sum + dn.totalAmount, 0))}
+                      </span>
+                    </div>
+                  )}
+                  
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">

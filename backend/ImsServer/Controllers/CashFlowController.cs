@@ -856,6 +856,18 @@ namespace ImsServer.Controllers
                 .Where(p => !p.LinkedFinancialAccountId.HasValue)
                 .SumAsync(p => (decimal?)p.PaidAmount) ?? 0m;
 
+            var debitNotes = await _db.DebitNotes
+                .Where(d => d.AddedAt >= flowStart && d.AddedAt < flowEnd && d.IsApplied)
+                .Where(d => d.LinkedFinancialAccountId.HasValue && includedAccountIds.Contains(d.LinkedFinancialAccountId.Value))
+                .SumAsync(d => (decimal?)d.TotalAmount) ?? 0m;
+
+            var debitNoteItemsExternal = await _db.DebitNoteItems
+                .Where(d => d.AddedAt >= flowStart && d.AddedAt < flowEnd && d.DebitNote.IsApplied)
+                .Where(d => d.DebitNote.LinkedFinancialAccountId.HasValue && includedAccountIds.Contains(d.DebitNote.LinkedFinancialAccountId.Value))
+                .Where(d => !d.ProductVariationId.HasValue)
+                .SumAsync(d => (decimal?)d.TotalPrice) ?? 0m;
+
+
             // Outflows: purchase payments recorded in PurchaseDebtTracker and linked to included accounts.
             var purchasesRealTimePayments = await _db.Purchases
                 .Where(p => p.AddedAt >= flowStart && p.AddedAt < flowEnd)
@@ -894,6 +906,12 @@ namespace ImsServer.Controllers
                 .Where(a => a.AddedAt >= flowStart && a.AddedAt < flowEnd)
                 .Where(a => !a.LinkedFinancialAccountId.HasValue)
                 .SumAsync(a => (decimal?)a.PurchasePrice) ?? 0m;
+
+            var creditNotes = await _db.CreditNotes
+                .Where(c => c.AddedAt >= flowStart && c.AddedAt < flowEnd && c.IsApplied)
+                .Where(c => c.AppliedToSalesIds == null)
+                .Where(c => c.LinkedFinancialAccountId.HasValue && includedAccountIds.Contains(c.LinkedFinancialAccountId.Value))
+                .SumAsync(c => (decimal?)c.TotalAmount) ?? 0m;
 
             // Capital account movements (owner contributions and withdrawals) linked to included accounts.
             // Inflows: INITIAL_CAPITAL, ADDITIONAL_INVESTMENT
@@ -941,9 +959,10 @@ namespace ImsServer.Controllers
                 .Where(t => includedAccountIds.Contains(t.FromFinancialAccountId) && !includedAccountIds.Contains(t.ToFinancialAccountId))
                 .SumAsync(t => (decimal?)t.Amount) ?? 0m;
 
-            var totalInflows = salesCollections + salesRealTimeCollections + transfersIn + capitalContributions;
-            var totalOutflows = purchasePayments + purchasesRealTimePayments + expenditures + fixedAssetPurchases + capitalWithdrawals + transfersOut;
+            var totalInflows = salesCollections + salesRealTimeCollections + transfersIn + capitalContributions + debitNoteItemsExternal;
+            var totalOutflows = purchasePayments + purchasesRealTimePayments + expenditures + fixedAssetPurchases + capitalWithdrawals + transfersOut + creditNotes;
             var net = totalInflows - totalOutflows;
+            var netNotes = debitNotes - creditNotes;
 
             // Approximate opening balance as-of start-of-day, based on closing-as-of-now minus today's net flow.
             var breakdown = new CashFlowBreakdownDto
@@ -957,6 +976,8 @@ namespace ImsServer.Controllers
                 FixedAssetPurchases = fixedAssetPurchases,
                 CapitalWithdrawals = capitalWithdrawals,
                 TransfersOut = transfersOut,
+                CreditNotes = creditNotes,
+                DebitNotes = debitNotes,
 
                 UnlinkedSalesCollections = unlinkedSalesCollections + unlinkedSalesRealTimeCollections,
                 UnlinkedPurchasePayments = unlinkedPurchasePayments,
@@ -985,6 +1006,7 @@ namespace ImsServer.Controllers
                     TotalInflows = totalInflows,
                     TotalOutflows = totalOutflows,
                     NetCashFlow = net,
+                    NetNotes = netNotes,
 
                     Breakdown = breakdown,
                     CashAccounts = accounts
@@ -1004,6 +1026,7 @@ namespace ImsServer.Controllers
                 TotalInflows = totalInflows,
                 TotalOutflows = totalOutflows,
                 NetCashFlow = net,
+                NetNotes = netNotes,
 
                 Breakdown = breakdown,
                 CashAccounts = accounts

@@ -44,7 +44,7 @@ namespace ImsServer.Controllers
             var accountsReceivableTotal = await _db.Sales
                 .AsNoTracking()
                 .Where(s => s.WasPartialPayment && (s.PaidAmount < s.TotalAmount))
-                .SumAsync(s => s.TotalAmount > s.PaidAmount ? (s.TotalAmount - s.PaidAmount) : 0m);
+                .SumAsync(s => s.TotalAmount > s.PaidAmount ? (decimal)s.OutstandingAmount : 0m);
 
             // Assets - Inventory (estimated valuation: Qty * Variation.CostPrice)
             var inventoryTotalQuantity = await _db.ProductStorages
@@ -97,11 +97,20 @@ namespace ImsServer.Controllers
                 .Where(s => !s.IsCompleted && s.WasPartialPayment)
                 .SumAsync(s => (decimal?)s.Profit) ?? 0m;
 
+            var creditNotesLossesToDamagedGoods = await _db.CreditNotes
+                .AsNoTracking()
+                .Where(c => c.Reason == Models.CreditNoteX.CreditNoteReason.DamagedGoods)
+                .SumAsync(c => (decimal?)c.TotalAmount - (decimal?)c.ProfitAccrued) ?? 0m;
+
+            var debitNotes = await _db.DebitNotes
+                .AsNoTracking()
+                .SumAsync(d => (decimal?)d.TotalAmount) ?? 0m;
+
             var expensesToDate = await _db.Expenditures
                 .AsNoTracking()
                 .SumAsync(e => (decimal?)e.Amount) ?? 0m;
 
-            var retainedEarningsEstimated = (profitToDate + profitsfromAccountsReceivables) - expensesToDate;
+            var retainedEarningsEstimated = (profitToDate + profitsfromAccountsReceivables + debitNotes) - expensesToDate - creditNotesLossesToDamagedGoods;
 
             var assetsTotal = cashAndBankTotal + accountsReceivableTotal + inventoryValue + fixedAssetsNet;
             var liabilitiesTotal = accountsPayableTotal + taxesPayableTotal;
@@ -123,7 +132,8 @@ namespace ImsServer.Controllers
                 Liabilities = new BalanceSheetLiabilities
                 {
                     AccountsPayableTotal = accountsPayableTotal,
-                    TaxesPayableTotal = taxesPayableTotal
+                    TaxesPayableTotal = taxesPayableTotal,
+                    DamagedInventory = creditNotesLossesToDamagedGoods
                 },
                 Equity = new BalanceSheetEquity
                 {
@@ -131,8 +141,8 @@ namespace ImsServer.Controllers
                     OwnerDrawings = ownerDrawings,
                     OwnerCapitalNet = ownerCapitalNet,
                     RetainedEarningsEstimated = retainedEarningsEstimated,
-                    ProfitToDate = (profitToDate + profitsfromAccountsReceivables),
-                    ExpensesToDate = expensesToDate
+                    ProfitToDate = (profitToDate + profitsfromAccountsReceivables + debitNotes) - creditNotesLossesToDamagedGoods,
+                    ExpensesToDate = expensesToDate,
                 },
                 AssetsTotal = assetsTotal,
                 LiabilitiesTotal = liabilitiesTotal,

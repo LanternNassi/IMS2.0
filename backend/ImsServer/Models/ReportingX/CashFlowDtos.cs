@@ -15,6 +15,7 @@ namespace ImsServer.Models.ReportingX
         public decimal TotalOutflows { get; set; }
         public decimal NetCashFlow { get; set; }
 
+        public decimal NetNotes { get; set; }
         public CashFlowBreakdownDto Breakdown { get; set; } = new();
         public List<CashAccountBalanceDto> CashAccounts { get; set; } = new();
     }
@@ -35,6 +36,8 @@ namespace ImsServer.Models.ReportingX
         public decimal TotalOutflows { get; set; }
         public decimal NetCashFlow { get; set; }
 
+        public decimal NetNotes {get; set; }
+
         public CashFlowBreakdownDto Breakdown { get; set; } = new();
         public List<CashAccountBalanceDto> CashAccounts { get; set; } = new();
     }
@@ -52,6 +55,8 @@ namespace ImsServer.Models.ReportingX
         public decimal FixedAssetPurchases { get; set; }
         public decimal CapitalWithdrawals { get; set; }
         public decimal TransfersOut { get; set; }
+        public decimal CreditNotes { get; set; }
+        public decimal DebitNotes { get; set; }
 
         // Unlinked (not attributable to a CASH financial account)
         public decimal UnlinkedSalesCollections { get; set; }

@@ -42,7 +42,7 @@ interface OverallMetadata {
 export default function ExpenditureManagement() {
   const [categories, setCategories] = useState<ExpenditureCategory[]>([])
   const [startDate, setStartDate] = useState(new Date(2025, 11, 1))
-  const [endDate, setEndDate] = useState(new Date(2025, 11, 31))
+  const [endDate, setEndDate] = useState(new Date(2026, 11, 31))
   const [error, setError] = useState<string | null>(null)
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string }>({ open: false, message: "" })
   

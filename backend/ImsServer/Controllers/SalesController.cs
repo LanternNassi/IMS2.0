@@ -45,6 +45,10 @@ namespace ImsServer.Controllers
                 .Include(s => s.TaxRecord)
                 .Include(s => s.SaleItems)
                     .ThenInclude(si => si.ProductVariation)
+                .Include(s => s.CreditNotes)
+                    .ThenInclude(cn => cn.CreditNoteItems)
+                .Include(s => s.DebitNotes)
+                    .ThenInclude(dn => dn.DebitNoteItems)
                 .OrderByDescending(s => s.SaleDate)
                 .AsQueryable();
 
@@ -182,6 +186,10 @@ namespace ImsServer.Controllers
                 .Include(s => s.SaleItems)
                     .ThenInclude(si => si.ProductStorage)
                         .ThenInclude(ps => ps.ProductGeneric)
+                .Include(s => s.CreditNotes)
+                    .ThenInclude(cn => cn.CreditNoteItems)
+                .Include(s => s.DebitNotes)
+                    .ThenInclude(dn => dn.DebitNoteItems)
                 .FirstOrDefaultAsync(s => s.Id == id && !s.DeletedAt.HasValue);
 
             if (sale == null) return NotFound();
@@ -353,15 +361,16 @@ namespace ImsServer.Controllers
                     // Tax calculation if tax compliance is enabled and product is taxable
                     if (systemConfig != null && systemConfig.TaxCompliance && systemConfig.IsVATRegistered && variation.Product != null && variation.Product.IsTaxable)
                     {
-                        var TaxRate = systemConfig.TaxRate <= 0 ? 18 : systemConfig.TaxRate;
+                        // var TaxRate = systemConfig.TaxRate <= 0 ? 18 : systemConfig.TaxRate;
+                        var TaxRate = variation.Product.TaxRate != null ? variation.Product.TaxRate : (systemConfig.TaxRate <= 0 ? 18 : systemConfig.TaxRate);
                         
                         // Both BasePrice and CostPrice include VAT
                         // Extract VAT-exclusive amounts
                         decimal saleAmountIncludingVAT = it.BasePrice * it.Quantity;
-                        decimal saleAmountExcludingVAT = saleAmountIncludingVAT / (1 + (TaxRate / 100m));
+                        decimal saleAmountExcludingVAT = saleAmountIncludingVAT / (1 + ((decimal)TaxRate / 100m));
                         
                         decimal costAmountIncludingVAT = variation.CostPrice * it.Quantity;
-                        decimal costAmountExcludingVAT = costAmountIncludingVAT / (1 + (TaxRate / 100m));
+                        decimal costAmountExcludingVAT = costAmountIncludingVAT / (1 + ((decimal)TaxRate / 100m));
                         
                         // Calculate VAT amounts
                         decimal vatCollected = saleAmountIncludingVAT - saleAmountExcludingVAT;
@@ -622,12 +631,12 @@ namespace ImsServer.Controllers
             // Apply amount filters on calculated outstanding
             if (minOutstanding.HasValue)
             {
-                allDebtors = allDebtors.Where(s => (s.TotalAmount - s.PaidAmount) >= minOutstanding.Value).ToList();
+                allDebtors = allDebtors.Where(s => s.OutstandingAmount >= minOutstanding.Value).ToList();
             }
 
             if (maxOutstanding.HasValue)
             {
-                allDebtors = allDebtors.Where(s => (s.TotalAmount - s.PaidAmount) <= maxOutstanding.Value).ToList();
+                allDebtors = allDebtors.Where(s => s.OutstandingAmount <= maxOutstanding.Value).ToList();
             }
 
             // Get total count before pagination
@@ -655,7 +664,7 @@ namespace ImsServer.Controllers
             };
 
             // Calculate comprehensive metadata (using all filtered data, not just current page)
-            var totalOutstanding = allDebtors.Sum(s => s.TotalAmount - s.PaidAmount);
+            var totalOutstanding = allDebtors.Sum(s => s.OutstandingAmount);
             var totalDebt = allDebtors.Sum(s => s.TotalAmount);
             var totalPaidSoFar = allDebtors.Sum(s => s.PaidAmount);
 
@@ -671,10 +680,10 @@ namespace ImsServer.Controllers
                     TotalSales = g.Count(),
                     TotalDebt = g.Sum(s => s.TotalAmount),
                     TotalPaid = g.Sum(s => s.PaidAmount),
-                    OutstandingAmount = g.Sum(s => s.TotalAmount - s.PaidAmount),
+                    OutstandingAmount = g.Sum(s => s.OutstandingAmount),
                     OldestDebtDate = g.Min(s => s.SaleDate),
                     MostRecentDebtDate = g.Max(s => s.SaleDate),
-                    AverageDebtPerSale = g.Average(s => s.TotalAmount - s.PaidAmount)
+                    AverageDebtPerSale = g.Average(s => s.OutstandingAmount)
                 })
                 .OrderByDescending(c => c.OutstandingAmount)
                 .Take(5)
@@ -689,8 +698,8 @@ namespace ImsServer.Controllers
                     SalesCount = g.Count(),
                     TotalDebt = g.Sum(s => s.TotalAmount),
                     TotalPaid = g.Sum(s => s.PaidAmount),
-                    OutstandingAmount = g.Sum(s => s.TotalAmount - s.PaidAmount),
-                    AverageOutstanding = g.Average(s => s.TotalAmount - s.PaidAmount)
+                    OutstandingAmount = g.Sum(s => s.OutstandingAmount),
+                    AverageOutstanding = g.Average(s => s.OutstandingAmount)
                 })
                 .OrderBy(t => t.Date)
                 .ToList();
@@ -736,7 +745,7 @@ namespace ImsServer.Controllers
                     PaymentRate = Math.Round(paymentRate, 2),
                     TotalDebtorSales = allDebtors.Count,
                     UniqueDebtors = allDebtors.Select(s => s.CustomerId).Distinct().Count(),
-                    AverageOutstandingPerSale = allDebtors.Any() ? Math.Round(totalOutstanding / allDebtors.Count, 2) : 0,
+                    AverageOutstandingPerSale = allDebtors.Any() ? Math.Round((decimal)(totalOutstanding / allDebtors.Count), 2) : 0,
                     AverageDaysOutstanding = Math.Round(avgDaysToPay, 0)
                 },
                 TopDebtors = topDebtors,
@@ -751,7 +760,7 @@ namespace ImsServer.Controllers
                             SaleId = s.Id,
                             CustomerId = s.CustomerId,
                             CustomerName = s.Customer.Name,
-                            OutstandingAmount = s.TotalAmount - s.PaidAmount,
+                            OutstandingAmount = s.OutstandingAmount,
                             DaysOverdue = Math.Round((today - s.SaleDate).TotalDays, 0),
                             SaleDate = s.SaleDate
                         })
@@ -797,6 +806,7 @@ namespace ImsServer.Controllers
                 .Include(si => si.ProductStorage)
                     .ThenInclude(ps => ps.ProductGeneric)
                 .Where(si => !si.DeletedAt.HasValue && !si.Sale.DeletedAt.HasValue && (includeUnpaid == true || si.Sale.IsPaid))
+                .Where(si => !si.Sale.IsRefunded)
                 .OrderByDescending(si => si.Sale.SaleDate)
                 .AsQueryable();
 
@@ -1118,6 +1128,11 @@ namespace ImsServer.Controllers
             if (!sale.WasPartialPayment)
             {
                 return BadRequest("Invoice generation is only available for sales with partial payments.");
+            }
+
+            if (sale.IsRefunded)
+            {
+                return BadRequest("INvoice cant be generated for refunded sales");
             }
 
             if (sale == null) return NotFound();

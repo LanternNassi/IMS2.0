@@ -40,6 +40,7 @@ export type Sale = {
   customerName: string | null | undefined
   items: SalesItem[]
   totalAmount: number
+  addedAt?: Date
   paidAmount?: number
   changeAmount?: number
   finalAmount?: number

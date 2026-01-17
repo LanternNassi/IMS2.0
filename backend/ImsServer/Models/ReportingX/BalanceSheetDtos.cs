@@ -39,6 +39,8 @@ namespace ImsServer.Models.ReportingX
     {
         public decimal AccountsPayableTotal { get; set; }
         public decimal TaxesPayableTotal { get; set; }
+
+        public decimal DamagedInventory { get; set; }
     }
 
     public class BalanceSheetEquity
@@ -53,6 +55,7 @@ namespace ImsServer.Models.ReportingX
         // Included so you can show the calculation in the PDF.
         public decimal ProfitToDate { get; set; }
         public decimal ExpensesToDate { get; set; }
+        public decimal DebitNotesManualEntries { get; set; }
     }
 
     public class BalanceSheetCashAccountLine

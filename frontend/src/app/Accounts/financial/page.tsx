@@ -487,7 +487,7 @@ export default function FinancialAccountsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6 dark:bg-gray-900">
+    <div className="min-h-screen p-6 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -554,11 +554,11 @@ export default function FinancialAccountsPage() {
         {/* Metrics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Total Balance */}
-          <div className="bg-gradient-to-br from-blue-600/20 to-blue-800/20 border border-blue-500/30 rounded-2xl p-5">
+          <div className="dark:bg-blue-800/20  border border-blue-500/30 rounded-2xl p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-blue-300 text-sm font-medium">Total Balance</p>
-                <p className="text-2xl font-bold text-white mt-1">{formatCurrency(metadata.totalBalance)}</p>
+                <p className="text-blue-700 text-sm font-medium">Total Balance</p>
+                <p className="text-2xl font-bold text-black dark:text-white mt-1">{formatCurrency(metadata.totalBalance)}</p>
               </div>
               <div className="p-3 bg-blue-500/20 rounded-xl">
                 <DollarSign className="h-6 w-6 text-blue-400" />
@@ -571,11 +571,11 @@ export default function FinancialAccountsPage() {
           </div>
 
           {/* Total Accounts */}
-          <div className="bg-gradient-to-br from-emerald-600/20 to-emerald-800/20 border border-emerald-500/30 rounded-2xl p-5">
+          <div className="dark:bg-emerald-800/20 border border-emerald-500/30 rounded-2xl p-5">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-emerald-300 text-sm font-medium">Total Accounts</p>
-                <p className="text-2xl font-bold text-white mt-1">{metadata.totalAccounts}</p>
+                <p className="text-2xl font-bold text-black dark:text-white mt-1">{metadata.totalAccounts}</p>
               </div>
               <div className="p-3 bg-emerald-500/20 rounded-xl">
                 <Building className="h-6 w-6 text-emerald-400" />
@@ -587,11 +587,11 @@ export default function FinancialAccountsPage() {
           </div>
 
           {/* Active Accounts */}
-          <div className="bg-gradient-to-br from-cyan-600/20 to-cyan-800/20 border border-cyan-500/30 rounded-2xl p-5">
+          <div className="dark:bg-cyan-800/20 border border-cyan-500/30 rounded-2xl p-5">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-cyan-300 text-sm font-medium">Active Accounts</p>
-                <p className="text-2xl font-bold text-white mt-1">{metadata.activeAccounts}</p>
+                <p className="text-2xl font-bold text-black dark:text-white mt-1">{metadata.activeAccounts}</p>
               </div>
               <div className="p-3 bg-cyan-500/20 rounded-xl">
                 <CheckCircle2 className="h-6 w-6 text-cyan-400" />
@@ -613,11 +613,11 @@ export default function FinancialAccountsPage() {
           </div>
 
           {/* Inactive Accounts */}
-          <div className="bg-gradient-to-br from-slate-600/20 to-slate-800/20 border border-slate-500/30 rounded-2xl p-5">
+          <div className="dark:bg-slate-800/20 border border-slate-500/30 rounded-2xl p-5">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-slate-300 text-sm font-medium">Inactive Accounts</p>
-                <p className="text-2xl font-bold text-white mt-1">{metadata.inactiveAccounts}</p>
+                <p className="text-2xl font-bold text-black dark:text-white mt-1">{metadata.inactiveAccounts}</p>
               </div>
               <div className="p-3 bg-slate-500/20 rounded-xl">
                 <XCircle className="h-6 w-6 text-slate-400" />
@@ -632,8 +632,8 @@ export default function FinancialAccountsPage() {
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Balance Distribution Pie Chart */}
-          <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Balance Distribution</h3>
+          <div className="dark:bg-slate-900/50 border border-slate-800 rounded-2xl p-6">
+            <h3 className="text-lg font-semibold text-black dark:text-white mb-4">Balance Distribution</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -682,8 +682,8 @@ export default function FinancialAccountsPage() {
           </div>
 
           {/* Account Type Breakdown Bar Chart */}
-          <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Balance by Account Type</h3>
+          <div className="dark:bg-slate-900/50 border border-slate-800 rounded-2xl p-6">
+            <h3 className="text-lg font-semibold dark:text-white mb-4">Balance by Account Type</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={barChartData} layout="vertical">
@@ -742,7 +742,7 @@ export default function FinancialAccountsPage() {
         </div>
 
         {/* Filters and Search */}
-        <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4">
+        <div className="dark:bg-slate-900/50 border border-slate-800 rounded-2xl p-4">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -750,7 +750,7 @@ export default function FinancialAccountsPage() {
                 placeholder="Search by account name, number, or bank..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
+                className="pl-10 dark:bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
               />
             </div>
             <Select value={filterType} onValueChange={setFilterType}>
@@ -798,9 +798,9 @@ export default function FinancialAccountsPage() {
         </div>
 
         {/* Accounts List */}
-        <div className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden">
+        <div className="dark:bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden">
           <div className="p-4 border-b border-slate-800">
-            <h3 className="text-lg font-semibold text-white">Accounts ({filteredAccounts.length})</h3>
+            <h3 className="text-lg font-semibold dark:text-white">Accounts ({filteredAccounts.length})</h3>
           </div>
 
           {isLoading ? (

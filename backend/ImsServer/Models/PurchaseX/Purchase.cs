@@ -1,3 +1,4 @@
+using ImsServer.Models.DebitNoteX;
 using ImsServer.Models.FinancialAccountX;
 using ImsServer.Models.PurchaseX;
 using ImsServer.Models.SupplierX;
@@ -35,6 +36,8 @@ namespace ImsServer.Models.PurchaseX
 
         public virtual ICollection<PurchaseItem> PurchaseItems { get; set; } = new List<PurchaseItem>();
 
+        public virtual ICollection<DebitNote>? DebitNotes { get; set; } = new List<DebitNote>();
+
     }
 
     public class PurchaseDto : GeneralFields
@@ -53,6 +56,8 @@ namespace ImsServer.Models.PurchaseX
         public UserDto ProcessedUser { get; set; }
         public List<SimplePurchaseItemDto> PurchaseItems { get; set; } = new List<SimplePurchaseItemDto>();
 
+        public List<CreateDebitNoteDto>? DebitNotes { get; set; } = new List<CreateDebitNoteDto>();
+
     }
 
     public class SimplePurchaseDto
@@ -67,6 +72,8 @@ namespace ImsServer.Models.PurchaseX
         public string? Notes { get; set; }
         public bool IsPaid { get; set; }
         public Guid? LinkedFinancialAccountId { get; set; }
+
+        public List<CreateDebitNoteDto>? DebitNotes { get; set; } = new List<CreateDebitNoteDto>();
     }
 
     public class CreatePurchaseDto

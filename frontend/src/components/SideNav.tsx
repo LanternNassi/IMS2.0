@@ -28,7 +28,10 @@ import {
   ChevronDown,
   BaggageClaim,
   ChartLine,
-  FileText
+  Plus,
+  FileText,
+  Banknote,
+  Ticket
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -64,15 +67,28 @@ const navItems = [
   { label: "Users", icon: Users, path: "/Users", roles: ['admin'] },
   { label: "Categories", icon: FolderOpen, path: "/Categories", roles: ['admin'] },
   { label: "Store Management", icon: Store, path: "/Stores", roles: ['admin'] },
+  {
+    label: "Credit Notes", icon: Banknote, path: "/CreditNotes", roles: ['admin', 'normal'], subItems: [
+      { label: "Add Credit Note", icon: Plus, path: "/CreditNotes/add" },
+      { label: "Credit Notes", icon: Banknote, path: "/CreditNotes" },
+    ]
+  },
   { label: "Products", icon: Package, path: "/Products", roles: ['admin', 'normal'] },
-  { label: "Tax Records", icon: FileText, path: "/TaxRecords", roles: ['admin'] },
+  { label: "Tax Returns", icon: FileText, path: "/TaxRecords", roles: ['admin'] },
   { label: "Customers", icon: UserCheck, path: "/Customers", roles: ['admin', 'normal'] },
   { label: "Suppliers", icon: Truck, path: "/Suppliers", roles: ['admin', 'normal'] },
   { label: "Business Assets", icon: FolderOpen, path: "/Assets", roles: ['admin'] },
   {
+    label: "Debit Notes", icon: Ticket, path: "/DebitNotes", roles: ['admin', 'normal'], subItems: [
+      { label: "Add Debit Note", icon: Plus, path: "/DebitNotes/add" },
+      { label: "Debit Notes", icon: Ticket, path: "/DebitNotes" },
+    ]
+  },
+  {
     label: "Financial Reports", icon: BarChart3, path: "/Reports", roles: ['admin'],
   },
-
+  
+ 
   {
     label: "Product Analysis", icon: ChartLine, path: "/Analysis", roles: ['admin'], subItems: [
       { label: "Product Analysis", icon: ChartLine, path: "/Analysis" },

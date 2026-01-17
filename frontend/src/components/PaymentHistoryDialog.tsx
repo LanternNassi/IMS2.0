@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { History, DollarSign, Calendar, CreditCard, FileText, X } from "lucide-react"
+import { History, DollarSign, Calendar, CreditCard, FileText, X, Receipt } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -18,6 +18,20 @@ type PaymentHistoryItem = {
   addedAt: string
 }
 
+type CreditNote = {
+  id: string
+  creditNoteNumber: string
+  totalAmount: number
+  creditNoteDate: string
+}
+
+type DebitNote = {
+  id: string
+  debitNoteNumber: string
+  totalAmount: number
+  debitNoteDate: string
+}
+
 type PaymentHistoryData = {
   sale: {
     id: string
@@ -26,6 +40,8 @@ type PaymentHistoryData = {
     paidAmount: number
     remainingBalance: number
     isPaid: boolean
+    creditNotes?: CreditNote[]
+    debitNotes?: DebitNote[]
     customer: {
       id: string
       name: string
@@ -36,6 +52,8 @@ type PaymentHistoryData = {
   summary: {
     totalPayments: number
     totalPaidViaTracker: number
+    totalCreditNotes: number
+    totalDebitNotes: number
     remainingBalance: number
   }
 }
@@ -168,15 +186,15 @@ export function PaymentHistoryDialog({ saleId, customerName, trigger }: PaymentH
                 </CardContent>
               </Card>
 
-              <Card className={`${data.sale.remainingBalance > 0 ? "dark:bg-red-900/20 bg-red-50" : "dark:bg-gray-700/30 bg-gray-50"}`}>
+              <Card className={`${data.summary.remainingBalance > 0 ? "dark:bg-red-900/20 bg-red-50" : "dark:bg-gray-700/30 bg-gray-50"}`}>
                 <CardContent className="pt-4">
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className={`text-xs font-medium mb-1 ${data.sale.remainingBalance > 0 ? "dark:text-red-300 text-red-700" : "dark:text-gray-400 text-gray-600"}`}>
+                      <p className={`text-xs font-medium mb-1 ${data.summary.remainingBalance > 0 ? "dark:text-red-300 text-red-700" : "dark:text-gray-400 text-gray-600"}`}>
                         Remaining Balance
                       </p>
-                      <p className={`text-xl font-bold ${data.sale.remainingBalance > 0 ? "dark:text-red-400 text-red-600" : "dark:text-gray-400 text-gray-600"}`}>
-                        {formatCurrency(data.sale.remainingBalance)}
+                      <p className={`text-xl font-bold ${data.summary.remainingBalance > 0 ? "dark:text-red-400 text-red-600" : "dark:text-gray-400 text-gray-600"}`}>
+                        {formatCurrency(data.summary.remainingBalance)}
                       </p>
                       <Badge
                         variant="outline"
@@ -206,6 +224,112 @@ export function PaymentHistoryDialog({ saleId, customerName, trigger }: PaymentH
                 )}
               </div>
             </div>
+
+            {/* Credit Notes Section */}
+            {data.sale.creditNotes && data.sale.creditNotes.length > 0 && (
+              <div>
+                <h4 className="text-sm font-semibold dark:text-gray-200 text-gray-700 mb-3">Credit Notes</h4>
+                <div className="rounded-lg border dark:border-gray-700 border-gray-200 overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="dark:bg-gray-700/50 bg-gray-50">
+                        <TableHead className="text-xs font-semibold">Credit Note #</TableHead>
+                        <TableHead className="text-xs font-semibold">Date</TableHead>
+                        <TableHead className="text-xs font-semibold text-right">Amount</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {data.sale.creditNotes.map((creditNote) => (
+                        <TableRow key={creditNote.id} className="dark:hover:bg-gray-700/30 hover:bg-gray-50">
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Receipt className="h-4 w-4 dark:text-blue-400 text-blue-600" />
+                              <span className="text-sm font-mono font-medium dark:text-white text-gray-900">
+                                {creditNote.creditNoteNumber}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4 dark:text-gray-400 text-gray-500" />
+                              <span className="text-sm dark:text-gray-300 text-gray-600">
+                                {formatDate(creditNote.creditNoteDate)}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span className="text-sm font-bold text-red-500 dark:text-red-400">
+                              -{formatCurrency(creditNote.totalAmount)}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <div className="mt-2 p-3 rounded-lg dark:bg-red-900/20 bg-red-50 border border-red-200 dark:border-red-800">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-medium dark:text-red-300 text-red-700">Total Credit Notes:</span>
+                    <span className="text-sm font-bold text-red-600 dark:text-red-400">
+                      -{formatCurrency(data.summary.totalCreditNotes)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Debit Notes Section */}
+            {data.sale.debitNotes && data.sale.debitNotes.length > 0 && (
+              <div>
+                <h4 className="text-sm font-semibold dark:text-gray-200 text-gray-700 mb-3">Debit Notes</h4>
+                <div className="rounded-lg border dark:border-gray-700 border-gray-200 overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="dark:bg-gray-700/50 bg-gray-50">
+                        <TableHead className="text-xs font-semibold">Debit Note #</TableHead>
+                        <TableHead className="text-xs font-semibold">Date</TableHead>
+                        <TableHead className="text-xs font-semibold text-right">Amount</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {data.sale.debitNotes.map((debitNote) => (
+                        <TableRow key={debitNote.id} className="dark:hover:bg-gray-700/30 hover:bg-gray-50">
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Receipt className="h-4 w-4 dark:text-orange-400 text-orange-600" />
+                              <span className="text-sm font-mono font-medium dark:text-white text-gray-900">
+                                {debitNote.debitNoteNumber}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4 dark:text-gray-400 text-gray-500" />
+                              <span className="text-sm dark:text-gray-300 text-gray-600">
+                                {formatDate(debitNote.debitNoteDate)}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span className="text-sm font-bold text-orange-500 dark:text-orange-400">
+                              +{formatCurrency(debitNote.totalAmount)}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <div className="mt-2 p-3 rounded-lg dark:bg-orange-900/20 bg-orange-50 border border-orange-200 dark:border-orange-800">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-medium dark:text-orange-300 text-orange-700">Total Debit Notes:</span>
+                    <span className="text-sm font-bold text-orange-600 dark:text-orange-400">
+                      +{formatCurrency(data.summary.totalDebitNotes)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Payment History Table */}
             <div>
@@ -273,26 +397,44 @@ export function PaymentHistoryDialog({ saleId, customerName, trigger }: PaymentH
 
             {/* Summary Footer */}
             <div className="p-4 rounded-lg dark:bg-gray-700/30 bg-gray-50 border-t-2 dark:border-blue-500 border-blue-400">
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-xs dark:text-gray-400 text-gray-500 mb-1">Total Tracked Payments</p>
-                  <p className="text-lg font-bold dark:text-white text-gray-900">
-                    {formatCurrency(data.summary.totalPaidViaTracker)}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs dark:text-gray-400 text-gray-500 mb-1">Payment Progress</p>
-                  <p className="text-lg font-bold dark:text-white text-gray-900">
-                    {((data.sale.paidAmount / data.sale.totalAmount) * 100).toFixed(1)}%
-                  </p>
-                </div>
-              </div>
-              <div className="mt-3 relative h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                <div
-                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-500"
-                  style={{ width: `${(data.sale.paidAmount / data.sale.totalAmount) * 100}%` }}
-                />
-              </div>
+              {(() => {
+                const totalCreditNotes = data.summary.totalCreditNotes || 0
+                const totalDebitNotes = data.summary.totalDebitNotes || 0
+                const totalTrackedWithAdjustments = data.summary.totalPaidViaTracker + totalCreditNotes - totalDebitNotes
+                const hasAdjustments = totalCreditNotes > 0 || totalDebitNotes > 0
+                return (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="text-xs dark:text-gray-400 text-gray-500 mb-1">Total Tracked Payments</p>
+                        <p className="text-lg font-bold dark:text-white text-gray-900">
+                          {formatCurrency(totalTrackedWithAdjustments)}
+                        </p>
+                        {hasAdjustments && (
+                          <p className="text-xs dark:text-gray-500 text-gray-500 mt-1">
+                            (Payments: {formatCurrency(data.summary.totalPaidViaTracker)}
+                            {totalCreditNotes > 0 && ` + Credit Notes: ${formatCurrency(totalCreditNotes)}`}
+                            {totalDebitNotes > 0 && ` - Debit Notes: ${formatCurrency(totalDebitNotes)}`}
+                            )
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs dark:text-gray-400 text-gray-500 mb-1">Payment Progress</p>
+                        <p className="text-lg font-bold dark:text-white text-gray-900">
+                          {((data.sale.paidAmount / data.sale.totalAmount) * 100).toFixed(1)}%
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-3 relative h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <div
+                        className="absolute inset-y-0 left-0 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-500"
+                        style={{ width: `${(data.sale.paidAmount / data.sale.totalAmount) * 100}%` }}
+                      />
+                    </div>
+                  </>
+                )
+              })()}
             </div>
 
             {/* Actions */}

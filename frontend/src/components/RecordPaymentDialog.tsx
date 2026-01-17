@@ -128,7 +128,39 @@ export function RecordPaymentDialog({ debt, onPaymentRecorded, trigger }: Record
       setIsDialogOpen(false)
     } catch (err: any) {
       console.error("Error recording payment:", err)
-      setError(err.response?.data?.message || "Failed to record payment. Please try again.")
+      
+      // Extract error message from response
+      let errorMessage = "Failed to record payment. Please try again."
+      
+      if (err.response?.data) {
+        const responseData = err.response.data
+        
+        // Handle different response formats
+        if (typeof responseData === 'string') {
+          // Direct string response (e.g., BadRequest("message"))
+          errorMessage = responseData
+        } else if (responseData.message) {
+          // Standard error object with message field
+          errorMessage = responseData.message
+        } else if (responseData.error) {
+          // Alternative error field
+          errorMessage = responseData.error
+        } else if (responseData.title) {
+          // ProblemDetails format
+          errorMessage = responseData.title
+        } else if (responseData.detail) {
+          // ProblemDetails detail field
+          errorMessage = responseData.detail
+        } else if (Array.isArray(responseData) && responseData.length > 0) {
+          // Array of errors (validation errors)
+          errorMessage = responseData.map((e: any) => e.message || e).join(', ')
+        }
+      } else if (err.message) {
+        // Network or other error
+        errorMessage = err.message
+      }
+      
+      setError(errorMessage)
     } finally {
       setIsSubmitting(false)
     }

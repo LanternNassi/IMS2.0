@@ -4,6 +4,7 @@ using ImsServer.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ImsServer.Migrations
 {
     [DbContext(typeof(DBContext))]
-    partial class DBContextModelSnapshot : ModelSnapshot
+    [Migration("20260108102155_debitNoteAddSales")]
+    partial class debitNoteAddSales
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -135,12 +138,6 @@ namespace ImsServer.Migrations
                     b.Property<int>("AddedBy")
                         .HasColumnType("int");
 
-                    b.Property<string>("ApplicationMessage")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("AppliedToSalesIds")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<DateTime>("CreditNoteDate")
                         .HasColumnType("datetime2");
 
@@ -171,9 +168,6 @@ namespace ImsServer.Migrations
 
                     b.Property<Guid>("ProcessedById")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal?>("ProfitAccrued")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("Reason")
                         .HasColumnType("int");
@@ -359,15 +353,6 @@ namespace ImsServer.Migrations
 
                     b.Property<int>("AddedBy")
                         .HasColumnType("int");
-
-                    b.Property<string>("ApplicationMessage")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("AppliedToPurchasesIds")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("AppliedToSalesIds")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid?>("CustomerId")
                         .HasColumnType("uniqueidentifier");
@@ -1984,11 +1969,11 @@ namespace ImsServer.Migrations
                         .IsRequired();
 
                     b.HasOne("ImsServer.Models.PurchaseX.Purchase", "Purchase")
-                        .WithMany("DebitNotes")
+                        .WithMany()
                         .HasForeignKey("PurchaseId");
 
                     b.HasOne("ImsServer.Models.SaleX.Sale", "Sale")
-                        .WithMany("DebitNotes")
+                        .WithMany()
                         .HasForeignKey("SaleId");
 
                     b.HasOne("ImsServer.Models.SupplierX.Supplier", "Supplier")
@@ -2403,16 +2388,12 @@ namespace ImsServer.Migrations
 
             modelBuilder.Entity("ImsServer.Models.PurchaseX.Purchase", b =>
                 {
-                    b.Navigation("DebitNotes");
-
                     b.Navigation("PurchaseItems");
                 });
 
             modelBuilder.Entity("ImsServer.Models.SaleX.Sale", b =>
                 {
                     b.Navigation("CreditNotes");
-
-                    b.Navigation("DebitNotes");
 
                     b.Navigation("SaleItems");
                 });

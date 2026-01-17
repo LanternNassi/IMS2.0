@@ -236,7 +236,7 @@ export function InvoicePdfDocument({
             <Text>{formatCurrency(data.sale.totalAmount)}</Text>
           </View>
           <View style={styles.totalRowBold}>
-            <Text>Total Amount:</Text>
+            <Text>Total:</Text>
             <Text>{formatCurrency(data.sale.finalAmount)}</Text>
           </View>
           <View style={styles.totalRow}>
@@ -245,7 +245,7 @@ export function InvoicePdfDocument({
           </View>
           {includeOutstanding && (
             <View style={styles.totalRow}>
-              <Text>Outstanding Balance:</Text>
+              <Text>Balance:</Text>
               <Text>{formatCurrency(data.sale.outstandingAmount)}</Text>
             </View>
           )}

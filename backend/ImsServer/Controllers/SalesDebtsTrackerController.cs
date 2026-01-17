@@ -32,6 +32,8 @@ namespace ImsServer.Controllers
             var query = _db.SalesDebtsTrackers
                 .Include(d => d.Sale)
                     .ThenInclude(s => s.Customer)
+                .Include(d => d.Sale)
+                    .ThenInclude(s => s.CreditNotes)
                 .Where(d => !d.DeletedAt.HasValue)
                 .OrderByDescending(d => d.AddedAt)
                 .AsQueryable();
@@ -145,6 +147,8 @@ namespace ImsServer.Controllers
             var payment = await _db.SalesDebtsTrackers
                 .Include(d => d.Sale)
                     .ThenInclude(s => s.Customer)
+                .Include(d => d.Sale)
+                    .ThenInclude(s => s.CreditNotes)
                 .FirstOrDefaultAsync(d => d.Id == id && !d.DeletedAt.HasValue);
 
             if (payment == null) return NotFound();
@@ -157,6 +161,8 @@ namespace ImsServer.Controllers
         {
             var sale = await _db.Sales
                 .Include(s => s.Customer)
+                .Include(s => s.CreditNotes)
+                .Include(s => s.DebitNotes)
                 .FirstOrDefaultAsync(s => s.Id == saleId);
 
             if (sale == null) return NotFound("Sale not found");
@@ -176,7 +182,15 @@ namespace ImsServer.Controllers
                 .ToListAsync();
 
             var totalPaid = payments.Sum(p => p.PaidAmount);
-            var remainingBalance = sale.TotalAmount - sale.PaidAmount;
+            
+            // Calculate credit notes total (reduces what customer owes)
+            var totalCreditNotes = sale.CreditNotes?.Where(cn => cn.IsApplied).Sum(cn => cn.TotalAmount) ?? 0;
+            
+            // Calculate debit notes total (increases what customer owes)
+            var totalDebitNotes = sale.DebitNotes?.Where(dn => dn.IsApplied).Sum(dn => dn.TotalAmount) ?? 0;
+            
+            // Remaining balance = Total - Paid - CreditNotes + DebitNotes
+            var remainingBalance = sale.TotalAmount - sale.PaidAmount - totalCreditNotes + totalDebitNotes;
 
             return Ok(new
             {
@@ -188,6 +202,22 @@ namespace ImsServer.Controllers
                     sale.PaidAmount,
                     RemainingBalance = remainingBalance,
                     sale.IsPaid,
+                    creditNotes = sale.CreditNotes.Select(cn => new
+                    {
+                        cn.Id,
+                        cn.CreditNoteNumber,
+                        cn.TotalAmount,
+                        cn.CreditNoteDate,
+                        cn.IsApplied
+                    }).ToList(),
+                    debitNotes = sale.DebitNotes.Select(dn => new
+                    {
+                        dn.Id,
+                        dn.DebitNoteNumber,
+                        dn.TotalAmount,
+                        dn.DebitNoteDate,
+                        dn.IsApplied
+                    }).ToList(),
                     Customer = new
                     {
                         sale.Customer.Id,
@@ -200,6 +230,8 @@ namespace ImsServer.Controllers
                 {
                     TotalPayments = payments.Count,
                     TotalPaidViaTracker = totalPaid,
+                    TotalCreditNotes = totalCreditNotes,
+                    TotalDebitNotes = totalDebitNotes,
                     RemainingBalance = remainingBalance
                 }
             });
@@ -224,10 +256,9 @@ namespace ImsServer.Controllers
             }
 
             // Validate payment amount
-            var remainingBalance = sale.TotalAmount - sale.PaidAmount;
-            if (dto.PaidAmount > remainingBalance)
+            if (dto.PaidAmount > sale.OutstandingAmount)
             {
-                return BadRequest($"Payment amount ({dto.PaidAmount}) exceeds remaining balance ({remainingBalance}).");
+                return BadRequest($"Payment amount ({dto.PaidAmount}) exceeds remaining balance ({sale.OutstandingAmount}).");
             }
 
             if (dto.PaidAmount <= 0)
@@ -255,7 +286,7 @@ namespace ImsServer.Controllers
                 // Update sale paid amount
                 sale.PaidAmount += dto.PaidAmount;
                 sale.FinalAmount += dto.PaidAmount;
-                sale.OutstandingAmount = sale.TotalAmount - sale.PaidAmount;
+                sale.OutstandingAmount -= dto.PaidAmount;
 
                 // Update the linked account balance if applicable
                 if (dto.LinkedFinancialAccountId.HasValue)
@@ -270,10 +301,10 @@ namespace ImsServer.Controllers
                 }
 
                 // Mark sale as paid if fully paid
-                if (sale.PaidAmount >= sale.TotalAmount)
+                if (sale.OutstandingAmount <= 0)
                 {
                     sale.IsPaid = true;
-                    sale.OutstandingAmount = 0;
+                    // sale.OutstandingAmount = 0;
                 }
 
                 await _db.SaveChangesAsync();
@@ -283,6 +314,8 @@ namespace ImsServer.Controllers
                 var created = await _db.SalesDebtsTrackers
                     .Include(d => d.Sale)
                         .ThenInclude(s => s.Customer)
+                    .Include(d => d.Sale)
+                        .ThenInclude(s => s.CreditNotes)
                     .FirstOrDefaultAsync(d => d.Id == payment.Id);
 
                 return CreatedAtAction(nameof(GetDebtPayment), new { id = payment.Id }, created);
@@ -368,6 +401,8 @@ namespace ImsServer.Controllers
                 var updated = await _db.SalesDebtsTrackers
                     .Include(d => d.Sale)
                         .ThenInclude(s => s.Customer)
+                    .Include(d => d.Sale)
+                        .ThenInclude(s => s.CreditNotes)
                     .FirstOrDefaultAsync(d => d.Id == id);
 
                 return Ok(updated);

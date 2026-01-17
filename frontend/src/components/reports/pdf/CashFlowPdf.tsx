@@ -97,12 +97,14 @@ export function CashFlowPdfDocument({
   const netOperating =
     data.breakdown.salesCollections +
     data.breakdown.unlinkedSalesCollections +
+    data.breakdown.debitNotes +
     data.breakdown.transfersIn -
     data.breakdown.purchasePayments -
     data.breakdown.unlinkedPurchasePayments -
     data.breakdown.expenditures -
     data.breakdown.unlinkedExpenditures -
-    data.breakdown.transfersOut
+    data.breakdown.transfersOut -
+    data.breakdown.creditNotes
 
   const netInvesting = -(data.breakdown.fixedAssetPurchases + data.breakdown.unlinkedFixedAssetPurchases)
 
@@ -124,16 +126,26 @@ export function CashFlowPdfDocument({
 
         <Text style={styles.sectionTitle}>OPERATING ACTIVITIES</Text>
         <View style={styles.box}>
+
           <Text style={{ fontSize: 9, fontWeight: 700, marginTop: 4 }}>Cash Inflows:</Text>
           {cfRow("Sales Collections", data.breakdown.salesCollections, currency, 1)}
           {data.breakdown.unlinkedSalesCollections > 0 &&
             cfRow("Unlinked Sales Collections", data.breakdown.unlinkedSalesCollections, currency, 1)}
           {cfRow("Transfers In", data.breakdown.transfersIn, currency, 1)}
+          {cfRow("Debit notes", data.breakdown.debitNotes, currency, 1)}
+
+
+
           <Text style={{ fontSize: 9, fontWeight: 700, marginTop: 4 }}>Cash Outflows:</Text>
           {cfRow("Purchase Payments", -data.breakdown.purchasePayments, currency, 1)}
           {data.breakdown.unlinkedPurchasePayments > 0 &&
             cfRow("Unlinked Purchase Payments", -data.breakdown.unlinkedPurchasePayments, currency, 1)}
+          {/* {data.breakdown.creditNotes > 0 &&
+            cfRow("Credit Notes", -data.breakdown.creditNotes, currency, 1)
+          } */}
+          {cfRow("Credit Notes", -data.breakdown.creditNotes, currency, 1)}
           {cfRow("Operating Expenditures", -data.breakdown.expenditures, currency, 1)}
+
           {data.breakdown.unlinkedExpenditures > 0 &&
             cfRow("Unlinked Expenditures", -data.breakdown.unlinkedExpenditures, currency, 1)}
           {cfRow("Transfers Out", -data.breakdown.transfersOut, currency, 1)}

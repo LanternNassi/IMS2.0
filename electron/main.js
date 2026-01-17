@@ -938,7 +938,7 @@ function createMainWindow() {
       icon: path.join(__dirname, "icon.ico"),
     });
 
-    mainWindow.removeMenu();
+    // mainWindow.removeMenu();
 
     // Show window after it's ready, with fallback timeout
     mainWindow.once('ready-to-show', () => {

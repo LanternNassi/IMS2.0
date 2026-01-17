@@ -1,4 +1,6 @@
+using ImsServer.Models.CreditNoteX;
 using ImsServer.Models.CustomerX;
+using ImsServer.Models.DebitNoteX;
 using ImsServer.Models.FinancialAccountX;
 using ImsServer.Models.SaleX;
 using ImsServer.Models.TaxRecordX;
@@ -45,6 +47,8 @@ namespace ImsServer.Models.SaleX
 
         [ForeignKey("TaxRecordId")]
         public virtual TaxRecord? TaxRecord { get; set; }
+        public virtual ICollection<CreditNote>? CreditNotes { get; set; } = new List<CreditNote>();
+        public virtual ICollection<DebitNote>? DebitNotes { get; set; } = new List<DebitNote>();
     }
 
     public class SaleDto : GeneralFields
@@ -73,6 +77,8 @@ namespace ImsServer.Models.SaleX
         public List<SimpleSalesItemDto> SaleItems { get; set; } = new List<SimpleSalesItemDto>();
         public string? Notes { get; set; }
         public SimpleTaxRecordDto? TaxRecord { get; set; }
+        public List<CreateCreditNoteDto>? CreditNotes { get; set; } = new List<CreateCreditNoteDto>();
+        public List<CreateDebitNoteDto>? DebitNotes { get; set; } = new List<CreateDebitNoteDto>();
     }
 
     public class SimpleSaleDto

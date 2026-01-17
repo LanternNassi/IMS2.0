@@ -20,6 +20,7 @@ export type CashFlowData = {
   totalInflows: number
   totalOutflows: number
   netCashFlow: number
+  netNotes: number
   breakdown: {
     salesCollections: number
     transfersIn: number
@@ -29,6 +30,8 @@ export type CashFlowData = {
     fixedAssetPurchases: number
     capitalWithdrawals: number
     transfersOut: number
+    creditNotes: number
+    debitNotes: number
     unlinkedSalesCollections: number
     unlinkedPurchasePayments: number
     unlinkedExpenditures: number
@@ -53,6 +56,7 @@ export const mockCashFlowData: CashFlowData = {
   totalInflows: 180000,
   totalOutflows: 10000,
   netCashFlow: 170000,
+  netNotes: -20000,
   breakdown: {
     salesCollections: 80000,
     transfersIn: 100000,
@@ -62,6 +66,8 @@ export const mockCashFlowData: CashFlowData = {
     fixedAssetPurchases: 0,
     capitalWithdrawals: 0,
     transfersOut: 0,
+    creditNotes: 20000,
+    debitNotes: 0,
     unlinkedSalesCollections: 0,
     unlinkedPurchasePayments: 0,
     unlinkedExpenditures: 0,
@@ -300,13 +306,15 @@ export function CashFlowStatement({
               <h3 className="font-bold text-lg mb-2 bg-secondary/50 dark:bg-gray-700 p-2 rounded dark:text-white">
                 CASH FLOWS FROM OPERATING ACTIVITIES
               </h3>
-              <p className="text-sm font-semibold mt-3 ml-6 dark:text-gray-200">Cash Inflows:</p>
+              <p className="text-sm font-semibold mt-3 ml-6 dark:text-gray-200">* Cash Inflows:</p>
               <Row label="Sales Collections" amount={effectiveData!.breakdown.salesCollections} level={2} />
               {effectiveData!.breakdown.unlinkedSalesCollections > 0 && (
                 <Row label="Unlinked Sales Collections" amount={effectiveData!.breakdown.unlinkedSalesCollections} level={2} />
               )}
               <Row label="Transfers In" amount={effectiveData!.breakdown.transfersIn} level={2} />
-              <p className="text-sm font-semibold mt-3 ml-6 dark:text-gray-200">Cash Outflows:</p>
+              <Row label="Debit Notes" amount={effectiveData!.breakdown.debitNotes} level={2}/>
+
+              <p className="text-sm font-semibold mt-3 ml-6 dark:text-gray-200">* Cash Outflows:</p>
               <Row label="Purchase Payments" amount={-effectiveData!.breakdown.purchasePayments} level={2} />
               {effectiveData!.breakdown.unlinkedPurchasePayments > 0 && (
                 <Row label="Unlinked Purchase Payments" amount={-effectiveData!.breakdown.unlinkedPurchasePayments} level={2} />
@@ -316,6 +324,10 @@ export function CashFlowStatement({
                 <Row label="Unlinked Expenditures" amount={-effectiveData!.breakdown.unlinkedExpenditures} level={2} />
               )}
               <Row label="Transfers Out" amount={-effectiveData!.breakdown.transfersOut} level={2} />
+
+              <Row label="Credit Notes" amount={-effectiveData!.breakdown.creditNotes} level={2} />
+
+
               <Separator className="my-2 dark:bg-gray-700" />
               <div className="bg-green-500/10 dark:bg-green-500/20 p-3 rounded-lg mt-2">
                 <Row
@@ -323,12 +335,14 @@ export function CashFlowStatement({
                   amount={
                     effectiveData!.breakdown.salesCollections +
                     effectiveData!.breakdown.unlinkedSalesCollections +
+                    effectiveData!.breakdown.debitNotes +
                     effectiveData!.breakdown.transfersIn -
                     effectiveData!.breakdown.purchasePayments -
                     effectiveData!.breakdown.unlinkedPurchasePayments -
                     effectiveData!.breakdown.expenditures -
                     effectiveData!.breakdown.unlinkedExpenditures -
-                    effectiveData!.breakdown.transfersOut
+                    effectiveData!.breakdown.transfersOut -
+                    effectiveData!.breakdown.creditNotes
                   }
                   bold
                 />

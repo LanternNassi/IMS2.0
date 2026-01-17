@@ -14,6 +14,8 @@ using ImsServer.Models.FixedAssetX;
 using ImsServer.Models.CapitalAccountX;
 using ImsServer.Models.TaxRecordX;
 using ImsServer.Models.SystemConfigX;
+using ImsServer.Models.CreditNoteX;
+using ImsServer.Models.DebitNoteX;
     
 
 using Microsoft.EntityFrameworkCore;
@@ -62,6 +64,11 @@ namespace ImsServer.Models
         public DbSet<TaxRecord> TaxRecords { get; set; }
         public DbSet<SystemConfig> SystemConfigs { get; set; }
         public DbSet<Contact> Contacts { get; set; }
+        
+        public DbSet<CreditNote> CreditNotes { get; set; }
+        public DbSet<CreditNoteItem> CreditNoteItems { get; set; }
+        public DbSet<DebitNote> DebitNotes { get; set; }
+        public DbSet<DebitNoteItem> DebitNoteItems { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -99,6 +106,11 @@ namespace ImsServer.Models
             modelBuilder.Entity<TaxRecord>().HasQueryFilter(c => !c.DeletedAt.HasValue);
             modelBuilder.Entity<SystemConfig>().HasQueryFilter(c => !c.DeletedAt.HasValue);
             modelBuilder.Entity<Contact>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+            
+            modelBuilder.Entity<CreditNote>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+            modelBuilder.Entity<CreditNoteItem>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+            modelBuilder.Entity<DebitNote>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+            modelBuilder.Entity<DebitNoteItem>().HasQueryFilter(c => !c.DeletedAt.HasValue);
 
             modelBuilder.Entity<DailyCashReconciliation>()
                 .HasIndex(x => new { x.FinancialAccountId, x.BusinessDateUtc })
@@ -243,6 +255,10 @@ namespace ImsServer.Models
                     || e.Entity is TaxRecord
                     || e.Entity is SystemConfig
                     || e.Entity is Contact
+                    || e.Entity is CreditNote
+                    || e.Entity is CreditNoteItem
+                    || e.Entity is DebitNote
+                    || e.Entity is DebitNoteItem
 
                     )
                 .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);
