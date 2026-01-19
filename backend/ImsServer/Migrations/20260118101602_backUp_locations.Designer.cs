@@ -4,6 +4,7 @@ using ImsServer.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ImsServer.Migrations
 {
     [DbContext(typeof(DBContext))]
-    partial class DBContextModelSnapshot : ModelSnapshot
+    [Migration("20260118101602_backUp_locations")]
+    partial class backUp_locations
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -346,64 +349,6 @@ namespace ImsServer.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("CustomerTags");
-                });
-
-            modelBuilder.Entity("ImsServer.Models.DatabaseBackupX.DatabaseBackup", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("AddedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("AddedBy")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("BackupDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("BackupFileName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("BackupFilePath")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("BackupLocation")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("BackupType")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ErrorMessage")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<long>("FileSizeBytes")
-                        .HasColumnType("bigint");
-
-                    b.Property<bool>("IsSuccessful")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("LastUpdatedBy")
-                        .HasColumnType("int");
-
-                    b.Property<Guid?>("SystemConfigId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SystemConfigId");
-
-                    b.ToTable("DatabaseBackups");
                 });
 
             modelBuilder.Entity("ImsServer.Models.DebitNoteX.DebitNote", b =>
@@ -1755,12 +1700,6 @@ namespace ImsServer.Migrations
                     b.Property<int>("AddedBy")
                         .HasColumnType("int");
 
-                    b.Property<bool>("AutoBackupEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("BackupFrequency")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("BackupLocations")
                         .HasColumnType("nvarchar(max)");
 
@@ -1784,9 +1723,6 @@ namespace ImsServer.Migrations
 
                     b.Property<bool>("IsVATRegistered")
                         .HasColumnType("bit");
-
-                    b.Property<DateTime?>("LastBackupDate")
-                        .HasColumnType("datetime2");
 
                     b.Property<int>("LastUpdatedBy")
                         .HasColumnType("int");
@@ -1816,9 +1752,6 @@ namespace ImsServer.Migrations
 
                     b.Property<string>("RegisteredTINumber")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("RetentionDays")
-                        .HasColumnType("int");
 
                     b.Property<bool>("TaxCompliance")
                         .HasColumnType("bit");
@@ -2038,15 +1971,6 @@ namespace ImsServer.Migrations
                         .IsRequired();
 
                     b.Navigation("CreditNote");
-                });
-
-            modelBuilder.Entity("ImsServer.Models.DatabaseBackupX.DatabaseBackup", b =>
-                {
-                    b.HasOne("ImsServer.Models.SystemConfigX.SystemConfig", "SystemConfig")
-                        .WithMany()
-                        .HasForeignKey("SystemConfigId");
-
-                    b.Navigation("SystemConfig");
                 });
 
             modelBuilder.Entity("ImsServer.Models.DebitNoteX.DebitNote", b =>

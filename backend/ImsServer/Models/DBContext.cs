@@ -16,6 +16,7 @@ using ImsServer.Models.TaxRecordX;
 using ImsServer.Models.SystemConfigX;
 using ImsServer.Models.CreditNoteX;
 using ImsServer.Models.DebitNoteX;
+using ImsServer.Models.DatabaseBackupX;
     
 
 using Microsoft.EntityFrameworkCore;
@@ -69,6 +70,7 @@ namespace ImsServer.Models
         public DbSet<CreditNoteItem> CreditNoteItems { get; set; }
         public DbSet<DebitNote> DebitNotes { get; set; }
         public DbSet<DebitNoteItem> DebitNoteItems { get; set; }
+        public DbSet<DatabaseBackup> DatabaseBackups { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -111,6 +113,7 @@ namespace ImsServer.Models
             modelBuilder.Entity<CreditNoteItem>().HasQueryFilter(c => !c.DeletedAt.HasValue);
             modelBuilder.Entity<DebitNote>().HasQueryFilter(c => !c.DeletedAt.HasValue);
             modelBuilder.Entity<DebitNoteItem>().HasQueryFilter(c => !c.DeletedAt.HasValue);
+            modelBuilder.Entity<DatabaseBackup>().HasQueryFilter(c => !c.DeletedAt.HasValue);
 
             modelBuilder.Entity<DailyCashReconciliation>()
                 .HasIndex(x => new { x.FinancialAccountId, x.BusinessDateUtc })
@@ -203,6 +206,14 @@ namespace ImsServer.Models
                 .Property(s => s.TaxRate)
                 .HasDefaultValue(18m);
 
+            // Configure BackupLocations to be stored as JSON
+            modelBuilder.Entity<SystemConfig>()
+                .Property(s => s.BackupLocations)
+                .HasConversion(
+                    v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions)null),
+                    v => System.Text.Json.JsonSerializer.Deserialize<List<string>>(v, (System.Text.Json.JsonSerializerOptions)null)
+                );
+
             base.OnModelCreating(modelBuilder);
 
         }
@@ -259,6 +270,7 @@ namespace ImsServer.Models
                     || e.Entity is CreditNoteItem
                     || e.Entity is DebitNote
                     || e.Entity is DebitNoteItem
+                    || e.Entity is DatabaseBackup
 
                     )
                 .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);
@@ -267,7 +279,7 @@ namespace ImsServer.Models
             {
                 if (entry.State == EntityState.Added)
                 {
-                    entry.Property("AddedAt").CurrentValue = DateTime.UtcNow;
+                    entry.Property("AddedAt").CurrentValue = DateTime.Now;
                     entry.Property("AddedBy").CurrentValue = 1;
                 }
                 if (entry.State == EntityState.Modified)
@@ -280,7 +292,7 @@ namespace ImsServer.Models
                     // var originalValue = originalValues["PropertyName"];
                     // var currentValue = currentValues["PropertyName"];
                 }
-                entry.Property("UpdatedAt").CurrentValue = DateTime.UtcNow;
+                entry.Property("UpdatedAt").CurrentValue = DateTime.Now;
                 entry.Property("LastUpdatedBy").CurrentValue = 1;
             }
         }
@@ -288,7 +300,7 @@ namespace ImsServer.Models
         public void SoftDelete<T>(T entity) where T : class
         {
             var entry = Entry(entity);
-            entry.Property("DeletedAt").CurrentValue = DateTime.UtcNow;
+            entry.Property("DeletedAt").CurrentValue = DateTime.Now;
             entry.State = EntityState.Modified;
         }
 

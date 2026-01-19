@@ -8,10 +8,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { AlertCircle, Mail, MessageSquare, HardDrive, Building2, Settings, Save, X, Loader2 } from "lucide-react"
+import { AlertCircle, Mail, MessageSquare, HardDrive, Building2, Settings, Save, X, Loader2, Trash2, Plus, FolderOpen } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Switch } from "@/components/ui/switch"
-import { useSystemConfigStore } from "@/store/useSystemConfigStore"
+import { Badge } from "@/components/ui/badge"
+import { useSystemConfigStore, type BackupConfig, type DatabaseBackup } from "@/store/useSystemConfigStore"
 import api from "@/Utils/Request"
 
 type Contact = {
@@ -61,14 +62,6 @@ type SMSConfig = {
   isActive: boolean
 }
 
-type BackupConfig = {
-  id: string
-  autoBackupEnabled: boolean
-  backupFrequency: "daily" | "weekly" | "monthly"
-  lastBackupDate: string
-  backupLocation: string
-  retentionDays: number
-}
 
 const defaultBusinessConfig: BusinessConfig = {
   organisationName: "",
@@ -109,26 +102,45 @@ const mockSMSConfig: SMSConfig = {
   isActive: true,
 }
 
-const mockBackupConfig: BackupConfig = {
-  id: "1",
-  autoBackupEnabled: true,
-  backupFrequency: "daily",
-  lastBackupDate: new Date().toISOString(),
-  backupLocation: "/backups/pharma",
-  retentionDays: 30,
-}
 
 export default function SettingsPage() {
-  const { config, isLoading, error, saveSystemConfig } = useSystemConfigStore()
+  const { 
+    config, 
+    isLoading, 
+    error, 
+    saveSystemConfig,
+    createDatabaseBackup,
+    getBackups,
+    getBackupConfig,
+    updateBackupConfig,
+    deleteBackup,
+    restoreDatabase
+  } = useSystemConfigStore()
   const [businessConfig, setBusinessConfig] = useState<BusinessConfig>(defaultBusinessConfig)
   const [emailConfig, setEmailConfig] = useState<EmailConfig>(mockEmailConfig)
   const [smsConfig, setSMSConfig] = useState<SMSConfig>(mockSMSConfig)
-  const [backupConfig, setBackupConfig] = useState<BackupConfig>(mockBackupConfig)
+  const [backupConfig, setBackupConfig] = useState<BackupConfig>({
+    autoBackupEnabled: false,
+    backupFrequency: "daily",
+    retentionDays: 30,
+    backupLocations: [],
+  })
+  const [backups, setBackups] = useState<DatabaseBackup[]>([])
+  const [isLoadingBackups, setIsLoadingBackups] = useState(false)
+  const [isCreatingBackup, setIsCreatingBackup] = useState(false)
+  const [newBackupLocation, setNewBackupLocation] = useState("")
   const [newContact, setNewContact] = useState<Contact>({ id: "", email: "", telephone: "" })
   const [isEditingEmail, setIsEditingEmail] = useState(false)
   const [isEditingSMS, setIsEditingSMS] = useState(false)
+  const [version, setVersion] = useState<string|null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const { toast } = useToast()
+
+  const getAppVersion = async () => {
+    const version = (await window.electron.getAppVersion()).version
+    return version
+  }
+
 
   // Sync store config to local state when it changes
   useEffect(() => {
@@ -141,6 +153,10 @@ export default function SettingsPage() {
     } else {
       setBusinessConfig(defaultBusinessConfig as BusinessConfig)
     }
+
+    getAppVersion().then(value => {
+      setVersion(value)
+    })
   }, [config])
 
   const handleBusinessConfigChange = (field: keyof Omit<BusinessConfig, "id" | "contacts">, value: string | number | boolean) => {
@@ -238,12 +254,160 @@ export default function SettingsPage() {
     toast({ title: "Success", description: "SMS configuration saved", className: "bg-primary text-black dark:bg-gray-700 dark:text-white" })
   }
 
-  const handleBackup = () => {
-    toast({ title: "Success", description: "Backup initiated successfully", className: "bg-primary text-black dark:bg-gray-700 dark:text-white" })
+  // Load backup config and backups on mount
+  useEffect(() => {
+    const loadBackupData = async () => {
+      try {
+        const config = await getBackupConfig()
+        setBackupConfig(config)
+        await loadBackups()
+      } catch (error: any) {
+        console.error("Error loading backup data:", error)
+      }
+    }
+    loadBackupData()
+  }, [])
+
+  const loadBackups = async () => {
+    setIsLoadingBackups(true)
+    try {
+      const data = await getBackups(1, 50)
+      setBackups(data.backups)
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to load backups",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoadingBackups(false)
+    }
   }
 
-  const handleRestore = () => {
-    toast({ title: "Restore", description: "Select a backup file to restore", className: "bg-primary text-black dark:bg-gray-700 dark:text-white" })
+  const handleBackup = async () => {
+    setIsCreatingBackup(true)
+    try {
+      const result = await createDatabaseBackup()
+      toast({ 
+        title: "Success", 
+        description: result.message || "Backup initiated successfully",
+        className: "bg-primary text-black dark:bg-gray-700 dark:text-white" 
+      })
+      await loadBackups()
+      // Refresh backup config to get updated last backup date
+      const config = await getBackupConfig()
+      setBackupConfig(config)
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to create backup",
+        variant: "destructive",
+      })
+    } finally {
+      setIsCreatingBackup(false)
+    }
+  }
+
+  const handleRestore = async (backupFilePath: string) => {
+    if (!confirm("Are you sure you want to restore from this backup? This will replace the current database.")) {
+      return
+    }
+    try {
+      await restoreDatabase(backupFilePath)
+      toast({ 
+        title: "Success", 
+        description: "Database restored successfully. Please restart the application.",
+        className: "bg-primary text-black dark:bg-gray-700 dark:text-white" 
+      })
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to restore database",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleSaveBackupConfig = async () => {
+    try {
+      await updateBackupConfig(backupConfig)
+      toast({ 
+        title: "Success", 
+        description: "Backup configuration saved successfully",
+        className: "bg-primary text-black dark:bg-gray-700 dark:text-white" 
+      })
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to save backup configuration",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleAddBackupLocation = () => {
+    if (newBackupLocation.trim()) {
+      setBackupConfig({
+        ...backupConfig,
+        backupLocations: [...(backupConfig.backupLocations || []), newBackupLocation.trim()],
+      })
+      setNewBackupLocation("")
+    }
+  }
+
+  const handleBrowseFolder = async () => {
+    try {
+      if (typeof window !== 'undefined' && window.electron?.showFolderPicker) {
+        const selectedPath = await window.electron.showFolderPicker()
+        if (selectedPath) {
+          setNewBackupLocation(selectedPath)
+        }
+      } else {
+        // Fallback for web environment - show a message
+        toast({
+          title: "Info",
+          description: "Folder picker is only available in the desktop application. Please enter the path manually.",
+          className: "bg-primary text-black dark:bg-gray-700 dark:text-white"
+        })
+      }
+    } catch (error: any) {
+      console.error("Error selecting folder:", error)
+      toast({
+        title: "Error",
+        description: "Failed to select folder. Please enter the path manually.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleRemoveBackupLocation = (index: number) => {
+    const newLocations = [...(backupConfig.backupLocations || [])]
+    newLocations.splice(index, 1)
+    setBackupConfig({
+      ...backupConfig,
+      backupLocations: newLocations,
+    })
+  }
+
+  const handleDeleteBackup = async (backupId: string) => {
+    if (!confirm("Are you sure you want to delete this backup?")) {
+      return
+    }
+    try {
+      await deleteBackup(backupId)
+      toast({ 
+        title: "Success", 
+        description: "Backup deleted successfully",
+        className: "bg-primary text-black dark:bg-gray-700 dark:text-white" 
+      })
+      await loadBackups()
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to delete backup",
+        variant: "destructive",
+      })
+    }
   }
 
   return (
@@ -430,7 +594,7 @@ export default function SettingsPage() {
                   <Input
                     id="license-valid"
                     type="date"
-                    value={businessConfig.licenseValidTill ? businessConfig.licenseValidTill.split("T")[0] : ""}
+                    value={businessConfig.licenseValidTill?.split("T")[0]}
                     onChange={(e) => handleBusinessConfigChange("licenseValidTill", e.target.value)}
                     disabled
                     className="dark:bg-gray-700 bg-white disabled:opacity-60"
@@ -445,7 +609,7 @@ export default function SettingsPage() {
                     id="ims-key"
                     value={businessConfig.imsKey}
                     onChange={(e) => handleBusinessConfigChange("imsKey", e.target.value)}
-                    disabled
+                    // disabled
                     className="dark:bg-gray-700 bg-white disabled:opacity-60"
                   />
                 </div>
@@ -453,7 +617,7 @@ export default function SettingsPage() {
                   <Label htmlFor="ims-version">IMS Version</Label>
                   <Input
                     id="ims-version"
-                    value={businessConfig.imsVersion}
+                    value={version!}
                     onChange={(e) => handleBusinessConfigChange("imsVersion", e.target.value)}
                     disabled
                     className="dark:bg-gray-700 bg-white disabled:opacity-60"
@@ -791,10 +955,14 @@ export default function SettingsPage() {
               <CardDescription>Configure automatic backups and data recovery</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="p-4 dark:bg-gray-700 bg-blue-50 rounded-lg border dark:border-gray-600 border-blue-200">
-                <p className="text-sm font-medium">Last Backup</p>
-                <p className="text-lg font-semibold mt-1">{new Date(backupConfig.lastBackupDate).toLocaleString()}</p>
-              </div>
+              {backupConfig.lastBackupDate && (
+                <div className="p-4 dark:bg-gray-700 bg-blue-50 rounded-lg border dark:border-gray-600 border-blue-200">
+                  <p className="text-sm font-medium">Last Backup</p>
+                  <p className="text-lg font-semibold mt-1">
+                    {new Date(backupConfig.lastBackupDate).toLocaleString()}
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 dark:bg-gray-700 bg-gray-50 rounded-lg">
@@ -802,11 +970,13 @@ export default function SettingsPage() {
                     <p className="font-medium">Automatic Backup</p>
                     <p className="text-sm text-muted-foreground">Enable scheduled backups</p>
                   </div>
-                  <input
-                    type="checkbox"
+                  <Switch
                     checked={backupConfig.autoBackupEnabled}
-                    onChange={(e) => setBackupConfig({ ...backupConfig, autoBackupEnabled: e.target.checked })}
-                    className="w-4 h-4"
+                    onCheckedChange={(checked) =>
+                      setBackupConfig({ ...backupConfig, autoBackupEnabled: checked })
+                    }
+                    className="data-[state=checked]:bg-green-600 dark:bg-blue-700"
+                    thumbClassName="data-[state=checked]:bg-gray-100 dark:bg-gray-700"
                   />
                 </div>
 
@@ -840,10 +1010,11 @@ export default function SettingsPage() {
                         onChange={(e) =>
                           setBackupConfig({
                             ...backupConfig,
-                            retentionDays: Number.parseInt(e.target.value),
+                            retentionDays: Number.parseInt(e.target.value) || 30,
                           })
                         }
                         className="dark:bg-gray-700 bg-white"
+                        min="1"
                       />
                     </div>
                   </>
@@ -851,24 +1022,83 @@ export default function SettingsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="backup-loc">Backup Location</Label>
-                <Input
-                  id="backup-loc"
-                  value={backupConfig.backupLocation}
-                  onChange={(e) => setBackupConfig({ ...backupConfig, backupLocation: e.target.value })}
-                  className="dark:bg-gray-700 bg-white"
-                  placeholder="/backups"
-                />
+                <Label>Backup Locations</Label>
+                <div className="space-y-2">
+                  {backupConfig.backupLocations?.map((location, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <Input
+                        value={location}
+                        readOnly
+                        className="dark:bg-gray-700 bg-white flex-1"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveBackupLocation(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={newBackupLocation}
+                      onChange={(e) => setNewBackupLocation(e.target.value)}
+                      placeholder="Enter backup location path (e.g., C:\\Backups or /backups)"
+                      className="dark:bg-gray-700 bg-white flex-1"
+                      onKeyPress={(e) => {
+                        if (e.key === "Enter") {
+                          handleAddBackupLocation()
+                        }
+                      }}
+                    />
+                    <Button 
+                      onClick={handleBrowseFolder} 
+                      className="dark:bg-gray-700 bg-white" 
+                      variant="outline" 
+                      size="sm"
+                      title="Browse for folder"
+                    >
+                      <FolderOpen className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      onClick={handleAddBackupLocation} 
+                      className="dark:bg-gray-700 bg-white" 
+                      variant="outline" 
+                      size="sm"
+                      disabled={!newBackupLocation.trim()}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
               </div>
 
               <div className="border-t dark:border-gray-700 pt-6 space-y-3">
-                <Button onClick={handleBackup} className="w-full dark:bg-gray-700 bg-white">
-                  <HardDrive className="h-4 w-4 mr-2" />
-                  Create Backup Now
+                <Button
+                  onClick={handleBackup}
+                  disabled={isCreatingBackup || !backupConfig.backupLocations?.length}
+                  className="w-full dark:bg-gray-700 bg-white"
+                >
+                  {isCreatingBackup ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Creating Backup...
+                    </>
+                  ) : (
+                    <>
+                      <HardDrive className="h-4 w-4 mr-2" />
+                      Create Backup Now
+                    </>
+                  )}
                 </Button>
-                <Button onClick={handleRestore} variant="outline" className="w-full bg-transparent dark:bg-gray-700 bg-white">
-                  <HardDrive className="h-4 w-4 mr-2" />
-                  Restore from Backup
+                <Button
+                  onClick={handleSaveBackupConfig}
+                  variant="outline"
+                  className="w-full bg-transparent dark:bg-gray-700 bg-white"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Backup Configuration
                 </Button>
               </div>
             </CardContent>
@@ -877,26 +1107,69 @@ export default function SettingsPage() {
           {/* Backup History */}
           <Card className="dark:bg-gray-800 bg-white">
             <CardHeader>
-              <CardTitle className="text-base">Recent Backups</CardTitle>
+              <CardTitle className="text-base">Backup History</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {[
-                  { date: new Date(Date.now() - 86400000), size: "245 MB" },
-                  { date: new Date(Date.now() - 172800000), size: "243 MB" },
-                  { date: new Date(Date.now() - 259200000), size: "241 MB" },
-                ].map((backup, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3 dark:bg-gray-700 bg-gray-50 rounded">
-                    <div>
-                      <p className="font-medium text-sm">{backup.date.toLocaleString()}</p>
-                      <p className="text-xs text-muted-foreground">{backup.size}</p>
+              {isLoadingBackups ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : backups.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>No backups found</p>
+                  <p className="text-sm mt-1">Create your first backup to get started</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {backups.map((backup) => (
+                    <div
+                      key={backup.id}
+                      className="flex items-center justify-between p-3 dark:bg-gray-700 bg-gray-50 rounded"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-sm">
+                            {new Date(backup.backupDate).toLocaleString()}
+                          </p>
+                          <Badge
+                            variant={backup.isSuccessful ? "default" : "destructive"}
+                            className="text-xs"
+                          >
+                            {backup.isSuccessful ? "Success" : "Failed"}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {backup.backupType}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {backup.fileSizeFormatted} • {backup.backupLocation}
+                        </p>
+                        {backup.errorMessage && (
+                          <p className="text-xs text-red-500 mt-1">{backup.errorMessage}</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {backup.isSuccessful && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRestore(backup.backupFilePath)}
+                          >
+                            Restore
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteBackup(backup.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                    <Button variant="ghost" size="sm">
-                      Download
-                    </Button>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

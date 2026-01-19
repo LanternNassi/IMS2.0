@@ -214,7 +214,7 @@ namespace ImsServer.Controllers
                 {
                     Id = dto.Id == Guid.Empty ? Guid.NewGuid() : dto.Id,
                     CreditNoteNumber = creditNoteNumber,
-                    CreditNoteDate = dto.CreditNoteDate == default ? DateTime.UtcNow : dto.CreditNoteDate,
+                    CreditNoteDate = dto.CreditNoteDate == default ? DateTime.Now : dto.CreditNoteDate,
                     SaleId = dto.SaleId,
                     CustomerId = dto.CustomerId,
                     ProcessedById = dto.ProcessedById,
@@ -512,7 +512,7 @@ namespace ImsServer.Controllers
         // Helper methods
         private async Task<string> GenerateCreditNoteNumberAsync()
         {
-            var year = DateTime.UtcNow.Year;
+            var year = DateTime.Now.Year;
             var lastNote = await _db.CreditNotes
                 .Where(cn => cn.CreditNoteNumber.StartsWith($"CN-{year}-"))
                 .OrderByDescending(cn => cn.CreditNoteNumber)

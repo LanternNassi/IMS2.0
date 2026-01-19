@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import api from '../Utils/Request'
+import { useOrgStore } from './useOrgStore'
 
 export type Contact = {
   id: string
@@ -28,14 +29,41 @@ export type SystemConfig = {
   contacts?: Contact[]
 }
 
+export type BackupConfig = {
+  autoBackupEnabled: boolean
+  backupFrequency: "daily" | "weekly" | "monthly"
+  retentionDays: number
+  backupLocations: string[]
+  lastBackupDate?: string | null
+}
+
+export type DatabaseBackup = {
+  id: string
+  backupFileName: string
+  backupFilePath: string
+  backupLocation: string
+  fileSizeBytes: number
+  backupDate: string
+  backupType: "Manual" | "Automatic"
+  isSuccessful: boolean
+  errorMessage?: string | null
+  fileSizeFormatted: string
+}
+
 interface SystemConfigState {
   config: SystemConfig | null
   isLoading: boolean
   error: string | null
   fetchSystemConfig: () => Promise<void>
-  updateSystemConfig: (config: SystemConfig) => Promise<void>
+  updateSystemConfig: (config: SystemConfig, refresh?: boolean) => Promise<void>
   createSystemConfig: (config: SystemConfig) => Promise<void>
   saveSystemConfig: (config: SystemConfig) => Promise<void>
+  restoreDatabase: (backupFilePath: string) => Promise<void>
+  createDatabaseBackup: (backupLocations?: string[]) => Promise<{ message: string; backups: DatabaseBackup[] }>
+  getBackups: (page?: number, pageSize?: number, isSuccessful?: boolean, backupType?: string) => Promise<{ backups: DatabaseBackup[]; pagination: any }>
+  getBackupConfig: () => Promise<BackupConfig>
+  updateBackupConfig: (config: BackupConfig) => Promise<void>
+  deleteBackup: (backupId: string) => Promise<void>
 }
 
 const defaultConfig: SystemConfig = {
@@ -60,13 +88,76 @@ export const useSystemConfigStore = create<SystemConfigState>((set, get) => ({
   config: null,
   isLoading: false,
   error: null,
-
+  createDatabaseBackup: async (backupLocations?: string[]) => {
+    try {
+      const response = await api.post("/SystemConfig/Backup", {
+        BackupLocations: backupLocations,
+        IsManual: true
+      })
+      return response.data
+    } catch (error) {
+      console.error("Error creating database backup:", error)
+      throw error
+    }
+  },
+  restoreDatabase: async (backupFilePath: string) => {
+    try {
+      await api.post("/SystemConfig/Restore", { BackupFilePath: backupFilePath })
+    } catch (error) {
+      console.error("Error restoring database from backup:", error)
+      throw error
+    }
+  },
+  getBackups: async (page = 1, pageSize = 50, isSuccessful?: boolean, backupType?: string) => {
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        pageSize: pageSize.toString(),
+      })
+      if (isSuccessful !== undefined) {
+        params.append("isSuccessful", isSuccessful.toString())
+      }
+      if (backupType) {
+        params.append("backupType", backupType)
+      }
+      const response = await api.get(`/SystemConfig/Backups?${params}`)
+      return response.data
+    } catch (error) {
+      console.error("Error fetching backups:", error)
+      throw error
+    }
+  },
+  getBackupConfig: async () => {
+    try {
+      const response = await api.get("/SystemConfig/BackupConfig")
+      return response.data
+    } catch (error) {
+      console.error("Error fetching backup config:", error)
+      throw error
+    }
+  },
+  updateBackupConfig: async (config: BackupConfig) => {
+    try {
+      await api.put("/SystemConfig/BackupConfig", config)
+    } catch (error) {
+      console.error("Error updating backup config:", error)
+      throw error
+    }
+  },
+  deleteBackup: async (backupId: string) => {
+    try {
+      await api.delete(`/SystemConfig/Backups/${backupId}`)
+    } catch (error) {
+      console.error("Error deleting backup:", error)
+      throw error
+    }
+  },
   fetchSystemConfig: async () => {
     set({ isLoading: true, error: null })
     try {
       const response = await api.get("/SystemConfig")
       const data = response.data
-      
+
       // Helper function to convert currency number to string
       const numberToCurrencyString = (num: number): string => {
         const numberMap: Record<number, string> = {
@@ -84,14 +175,15 @@ export const useSystemConfigStore = create<SystemConfigState>((set, get) => ({
         }
         return numberMap[num] ?? 'UGX'
       }
-      
+
+
       // Map backend response to frontend format
       const mappedConfig: SystemConfig = {
         id: data.id,
         organisationName: data.orgnanisationName || "",
         organisationDescription: data.organisationDescription || "",
-        currency: typeof data.currency === "number" 
-          ? numberToCurrencyString(data.currency) 
+        currency: typeof data.currency === "number"
+          ? numberToCurrencyString(data.currency)
           : (data.currency || "UGX"),
         registeredBusinessName: data.registeredBusinessName || "",
         registeredBusinessContact: data.registeredBusinessContact || "",
@@ -101,9 +193,7 @@ export const useSystemConfigStore = create<SystemConfigState>((set, get) => ({
         fiscalYearEnd: data.fiscalYearEnd || "",
         imsKey: data.imsKey || "",
         imsVersion: data.imsVersion || "",
-        licenseValidTill: data.licenseValidTill 
-          ? new Date(data.licenseValidTill).toISOString().split("T")[0] 
-          : "",
+        licenseValidTill: data.licenseValidTill || "",
         logo: data.logo || "",
         taxCompliance: data.taxCompliance || false,
         isVATRegistered: data.isVATRegistered || false,
@@ -116,15 +206,29 @@ export const useSystemConfigStore = create<SystemConfigState>((set, get) => ({
       }
 
       set({ config: mappedConfig, isLoading: false })
+
+      // Also attempt to fetch client information from server if ims key is set
+      if (mappedConfig.imsKey) {
+        useOrgStore.getState().fetchClientInformation(mappedConfig.imsKey).then(resp => {
+          
+          const { contacts, ...businessConfig } = mappedConfig
+          useSystemConfigStore.getState().updateSystemConfig({
+            ...businessConfig,
+            licenseValidTill: resp?.ValidTill?.toString()
+          },false)
+        })
+
+      }
+
     } catch (error: any) {
       if (error.response?.status === 404) {
         // No config exists yet, use defaults
         set({ config: defaultConfig, isLoading: false })
       } else {
         console.error("Error fetching system config:", error)
-        set({ 
+        set({
           error: error.response?.data?.message || "Failed to load system configuration",
-          isLoading: false 
+          isLoading: false
         })
       }
     }
@@ -138,8 +242,8 @@ export const useSystemConfigStore = create<SystemConfigState>((set, get) => ({
         id: config.id || crypto.randomUUID(),
         orgnanisationName: config.organisationName,
         organisationDescription: config.organisationDescription,
-        currency: typeof config.currency === "string" 
-          ? config.currency 
+        currency: typeof config.currency === "string"
+          ? config.currency
           : config.currency,
         registeredBusinessName: config.registeredBusinessName || null,
         registeredBusinessContact: config.registeredBusinessContact || null,
@@ -149,8 +253,8 @@ export const useSystemConfigStore = create<SystemConfigState>((set, get) => ({
         fiscalYearEnd: config.fiscalYearEnd || null,
         imsKey: config.imsKey || null,
         imsVersion: config.imsVersion || null,
-        licenseValidTill: config.licenseValidTill 
-          ? new Date(config.licenseValidTill).toISOString() 
+        licenseValidTill: config.licenseValidTill
+          ? new Date(config.licenseValidTill).toString()
           : null,
         logo: config.logo || null,
         taxCompliance: config.taxCompliance || false,
@@ -164,22 +268,22 @@ export const useSystemConfigStore = create<SystemConfigState>((set, get) => ({
       }
 
       const response = await api.post("/SystemConfig", configData)
-      
+
       // Refresh the config after creation
       await get().fetchSystemConfig()
-      
+
       set({ isLoading: false })
     } catch (error: any) {
       console.error("Error creating system config:", error)
-      set({ 
+      set({
         error: error.response?.data?.message || "Failed to create system configuration",
-        isLoading: false 
+        isLoading: false
       })
       throw error
     }
   },
 
-  updateSystemConfig: async (config: SystemConfig) => {
+  updateSystemConfig: async (config: SystemConfig, refresh: boolean = true) => {
     set({ isLoading: true, error: null })
     try {
       // Prepare the data for API (contacts are handled separately)
@@ -195,8 +299,8 @@ export const useSystemConfigStore = create<SystemConfigState>((set, get) => ({
         fiscalYearEnd: config.fiscalYearEnd || null,
         imsKey: config.imsKey || null,
         imsVersion: config.imsVersion || null,
-        licenseValidTill: config.licenseValidTill 
-          ? new Date(config.licenseValidTill).toISOString() 
+        licenseValidTill: config.licenseValidTill
+          ? new Date(config.licenseValidTill)
           : null,
         logo: config.logo || null,
         taxCompliance: config.taxCompliance || false,
@@ -205,16 +309,16 @@ export const useSystemConfigStore = create<SystemConfigState>((set, get) => ({
 
       // Use PUT without ID to update the first config
       await api.put("/SystemConfig", configData)
-      
+
       // Refresh the config after update
-      await get().fetchSystemConfig()
-      
+      if (refresh) await get().fetchSystemConfig()
+
       set({ isLoading: false })
     } catch (error: any) {
       console.error("Error updating system config:", error)
-      set({ 
+      set({
         error: error.response?.data?.message || "Failed to update system configuration",
-        isLoading: false 
+        isLoading: false
       })
       throw error
     }

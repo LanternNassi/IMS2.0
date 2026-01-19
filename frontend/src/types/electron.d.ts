@@ -66,6 +66,9 @@ export interface ElectronAPI {
     backendPort: number;
     mode: 'server' | 'client';
   } | null>;
+  
+  // Folder picker
+  showFolderPicker: () => Promise<string | null>;
 }
 
 export interface API {

@@ -115,7 +115,7 @@ dotnet ef database update --project IMS2.0/backend/ImsServer
 ```csharp
 private async Task<string> GenerateCreditNoteNumber()
 {
-    var year = DateTime.UtcNow.Year;
+    var year = DateTime.Now.Year;
     var lastNote = await _db.CreditNotes
         .Where(cn => cn.CreditNoteNumber.StartsWith($"CN-{year}-"))
         .OrderByDescending(cn => cn.CreditNoteNumber)

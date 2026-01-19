@@ -32,8 +32,14 @@ namespace ImsServer.Models.SystemConfigX
         public bool IsVATRegistered { get; set; } = false; // True if the business is VAT registered
         public string? IMSVersion { get; set;}
         public DateTime? LicenseValidTill { get; set; }
-
         public string? Logo { get; set; }
+        public List<string>? BackupLocations { get; set; }
+        
+        // Backup configuration
+        public bool AutoBackupEnabled { get; set; } = false;
+        public string? BackupFrequency { get; set; } // "daily", "weekly", "monthly"
+        public int RetentionDays { get; set; } = 30; // Default 30 days
+        public DateTime? LastBackupDate { get; set; }
     }
 
     public class ContactDto : GeneralFields
@@ -72,6 +78,12 @@ namespace ImsServer.Models.SystemConfigX
         public DateTime? LicenseValidTill { get; set; }
         public string? Logo { get; set; }
         public List<SimpleContactDto>? Contacts { get; set; }
+        public List<string>? BackupLocations { get; set; }
+        public bool AutoBackupEnabled { get; set; } = false;
+        public string? BackupFrequency { get; set; }
+        public int RetentionDays { get; set; } = 30;
+        public DateTime? LastBackupDate { get; set; }
+
     }
 
     public class SimpleSystemConfigDto
@@ -93,6 +105,9 @@ namespace ImsServer.Models.SystemConfigX
         public decimal TaxRate { get; set; } = 18; // Default tax rate percentage
         public DateTime? LicenseValidTill { get; set; }
         public string? Logo { get; set; }
+        public List<string>? BackupLocations { get; set; }
+
+        
     }
 
     public class CreateSystemConfigDto
@@ -146,6 +161,12 @@ namespace ImsServer.Models.SystemConfigX
     {
         public string Email { get; set; }
         public string Telephone { get; set; }
+    }
+
+    public class BackupRequestDto
+    {
+        // public string DatabaseName { get; set; }
+        public string BackupFilePath { get; set; }
     }
 
 }

@@ -281,7 +281,7 @@ namespace ImsServer.Controllers
                     Id = dto.Id == Guid.Empty ? Guid.NewGuid() : dto.Id,
                     CustomerId = dto.CustomerId,
                     ProcessedById = dto.ProcessedById,
-                    SaleDate = dto.SaleDate == default ? DateTime.UtcNow : dto.SaleDate,
+                    SaleDate = dto.SaleDate == default ? DateTime.Now : dto.SaleDate,
                     TotalAmount = dto.TotalAmount,
                     PaidAmount = dto.PaidAmount,
                     ChangeAmount = dto.ChangeAmount,
@@ -459,10 +459,10 @@ namespace ImsServer.Controllers
                         Type = TaxType.VAT,
                         SaleId = sale.Id,
                         Amount = totalVAT,
-                        DueDate = DateTime.UtcNow.AddMonths(1), // Example: due next month
+                        DueDate = DateTime.Now.AddMonths(1), // Example: due next month
                         Description = $"VAT for Sale SA-{sale.Id.ToString().Substring(0, 8)}",
-                        PeriodStart = DateTime.UtcNow, // Example period
-                        PeriodEnd = DateTime.UtcNow.AddMonths(1)
+                        PeriodStart = DateTime.Now, // Example period
+                        PeriodEnd = DateTime.Now.AddMonths(1)
                     };
 
                     _db.TaxRecords.Add(taxRecord);
@@ -705,7 +705,7 @@ namespace ImsServer.Controllers
                 .ToList();
 
             // Age analysis: Categorize debts by age
-            var today = DateTime.UtcNow;
+            var today = DateTime.Now;
             var ageAnalysis = new
             {
                 Current_0_30Days = allDebtors
@@ -1318,7 +1318,7 @@ namespace ImsServer.Controllers
                         DateTime saleDate;
                         if (debtDto.SaleDate == default)
                         {
-                            saleDate = DateTime.UtcNow;
+                            saleDate = DateTime.Now;
                         }
                         else
                         {

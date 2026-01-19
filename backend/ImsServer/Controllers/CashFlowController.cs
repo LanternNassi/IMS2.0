@@ -77,7 +77,7 @@ namespace ImsServer.Controllers
                 return BadRequest("endUtc must be greater than startUtc.");
             }
 
-            var utcNow = DateTime.UtcNow;
+            var utcNow = DateTime.Now;
 
             if (includeApproxBalances && end > utcNow)
             {
@@ -525,7 +525,7 @@ namespace ImsServer.Controllers
             bool enforceCashWhenFilteringById,
             string missingAccountMessage)
         {
-            var utcNow = DateTime.UtcNow;
+            var utcNow = DateTime.Now;
             var start = utcNow.Date;
             var end = start.AddDays(1);
 
@@ -568,7 +568,7 @@ namespace ImsServer.Controllers
                 return BadRequest("endUtc must be greater than startUtc.");
             }
 
-            var utcNow = DateTime.UtcNow;
+            var utcNow = DateTime.Now;
 
             if (includeApproxBalances && end > utcNow)
             {

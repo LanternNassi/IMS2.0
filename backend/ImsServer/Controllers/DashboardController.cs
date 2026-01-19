@@ -507,14 +507,14 @@ namespace ImsServer.Controllers
             var expiringItems = await _db.ProductGenerics
                 .Include(pg => pg.Product)
                 .Where(pg => !pg.DeletedAt.HasValue &&
-                            pg.ExpiryDate >= DateTime.UtcNow &&
-                            pg.ExpiryDate <= DateTime.UtcNow.AddDays(30))
+                            pg.ExpiryDate >= DateTime.Now &&
+                            pg.ExpiryDate <= DateTime.Now.AddDays(30))
                 .Select(pg => new
                 {
                     productName = pg.Product.ProductName,
                     expiryDate = pg.ExpiryDate,
-                    daysUntilExpiry = (pg.ExpiryDate - DateTime.UtcNow).Days,
-                    severity = (pg.ExpiryDate - DateTime.UtcNow).Days <= 7 ? "critical" : "warning"
+                    daysUntilExpiry = (pg.ExpiryDate - DateTime.Now).Days,
+                    severity = (pg.ExpiryDate - DateTime.Now).Days <= 7 ? "critical" : "warning"
                 })
                 .OrderBy(pg => pg.expiryDate)
                 .Take(5)
@@ -570,7 +570,7 @@ namespace ImsServer.Controllers
 
         private (DateTime startDate, DateTime endDate) GetDateRange(string dateRange)
         {
-            var utcNow = DateTime.UtcNow;
+            var utcNow = DateTime.Now;
             DateTime startDate;
             DateTime endDate;
 

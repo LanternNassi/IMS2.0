@@ -24,7 +24,7 @@ namespace ImsServer.Controllers
             [FromQuery] DateTime? businessDateUtc = null,
             [FromQuery] bool includeInactive = false)
         {
-            var utcNow = DateTime.UtcNow;
+            var utcNow = DateTime.Now;
             var businessDate = DateTime.SpecifyKind((businessDateUtc ?? utcNow).Date, DateTimeKind.Utc);
 
             var accountsQuery = _db.FinancialAccounts.AsNoTracking();
@@ -80,7 +80,7 @@ namespace ImsServer.Controllers
         [HttpGet("is-today-open")]
         public async Task<IActionResult> CheckIfTodayIsOpen()
         {
-            var utcNow = DateTime.UtcNow;
+            var utcNow = DateTime.Now;
             var businessDate = DateTime.SpecifyKind(utcNow.Date, DateTimeKind.Utc);
 
             var openRecs = await _db.DailyCashReconciliations
@@ -103,7 +103,7 @@ namespace ImsServer.Controllers
             [FromQuery] DateTime? businessDateUtc = null,
             [FromQuery] bool includeInactive = false)
         {
-            var utcNow = DateTime.UtcNow;
+            var utcNow = DateTime.Now;
             var businessDate = DateTime.SpecifyKind((businessDateUtc ?? utcNow).Date, DateTimeKind.Utc);
 
             var openRecs = await _db.DailyCashReconciliations
@@ -164,7 +164,7 @@ namespace ImsServer.Controllers
                 return BadRequest("FinancialAccountId is required.");
             }
 
-            var utcNow = DateTime.UtcNow;
+            var utcNow = DateTime.Now;
             var businessDate = DateTime.SpecifyKind((dto.BusinessDateUtc ?? utcNow).Date, DateTimeKind.Utc);
 
             var account = await _db.FinancialAccounts
@@ -247,7 +247,7 @@ namespace ImsServer.Controllers
                 return BadRequest("FinancialAccountId is required.");
             }
 
-            var utcNow = DateTime.UtcNow;
+            var utcNow = DateTime.Now;
             var businessDate = DateTime.SpecifyKind((dto.BusinessDateUtc ?? utcNow).Date, DateTimeKind.Utc);
 
             var account = await _db.FinancialAccounts

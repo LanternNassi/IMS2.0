@@ -89,7 +89,7 @@ namespace ImsServer.Controllers
                         Id = Guid.NewGuid(),
                         CustomerId = null, // No customer for reconciliation
                         ProcessedById = dto.CreatedById,
-                        SaleDate = DateTime.UtcNow,
+                        SaleDate = DateTime.Now,
                         TotalAmount = totalCost,
                         PaidAmount = 0, // No payment received for lost stock
                         ChangeAmount = 0,
@@ -142,9 +142,9 @@ namespace ImsServer.Controllers
                             OwnerId = dto.CreatedById,
                             Type = TransactionType.WITHDRAWAL,
                             Amount = totalCost,
-                            TransactionDate = DateTime.UtcNow,
+                            TransactionDate = DateTime.Now,
                             Description = $"{RECONCILIATION_TAG} Stock reconciliation withdrawal - {dto.Reason}. Product: {productStorage.ProductVariation.Name}, Quantity: {quantityLost}. {dto.Notes ?? ""}",
-                            ReferenceNumber = $"RECON-{DateTime.UtcNow:yyyyMMddHHmmss}",
+                            ReferenceNumber = $"RECON-{DateTime.Now:yyyyMMddHHmmss}",
                             LinkedFinancialAccountId = defaultAccount.Id
                         };
 
@@ -186,9 +186,9 @@ namespace ImsServer.Controllers
                         OwnerId = dto.CreatedById,
                         Type = TransactionType.ADDITIONAL_INVESTMENT,
                         Amount = totalCost,
-                        TransactionDate = DateTime.UtcNow,
+                        TransactionDate = DateTime.Now,
                         Description = $"{RECONCILIATION_TAG} Stock reconciliation investment - {dto.Reason}. Product: {productStorage.ProductVariation.Name}, Quantity: {quantityGained}. {dto.Notes ?? ""}",
-                        ReferenceNumber = $"RECON-{DateTime.UtcNow:yyyyMMddHHmmss}",
+                        ReferenceNumber = $"RECON-{DateTime.Now:yyyyMMddHHmmss}",
                         LinkedFinancialAccountId = defaultAccount.Id
                     };
 
@@ -217,8 +217,8 @@ namespace ImsServer.Controllers
                     var reconciliationPurchase = new Purchase
                     {
                         Id = Guid.NewGuid(),
-                        PurchaseNumber = $"RECON-{DateTime.UtcNow:yyyyMMddHHmmss}",
-                        PurchaseDate = DateTime.UtcNow,
+                        PurchaseNumber = $"RECON-{DateTime.Now:yyyyMMddHHmmss}",
+                        PurchaseDate = DateTime.Now,
                         SupplierId = supplier.Id,
                         ProcessedBy = dto.CreatedById,
                         TotalAmount = totalCost,

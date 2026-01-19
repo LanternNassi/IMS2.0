@@ -938,7 +938,7 @@ function createMainWindow() {
       icon: path.join(__dirname, "icon.ico"),
     });
 
-    // mainWindow.removeMenu();
+    mainWindow.removeMenu();
 
     // Show window after it's ready, with fallback timeout
     mainWindow.once('ready-to-show', () => {
@@ -1529,7 +1529,41 @@ ipcMain.handle("get-app-version", async () => {
   };
 });
 
+// IPC handler for folder picker
+ipcMain.handle("show-folder-picker", async () => {
+  console.log('show-folder-picker handler called');
+  try {
+    // Use mainWindow if available, otherwise get the focused window
+    const window = mainWindow || BrowserWindow.getFocusedWindow();
+    
+    if (!window) {
+      console.error('No window available for folder picker');
+      writeToLog('WARN', 'No window available for folder picker');
+      return null;
+    }
+    
+    const result = await dialog.showOpenDialog(window, {
+      properties: ['openDirectory'],
+      title: 'Select Backup Folder'
+    });
+    
+    if (result.canceled || result.filePaths.length === 0) {
+      console.log('Folder picker cancelled or no path selected');
+      return null;
+    }
+    
+    return result.filePaths[0];
+  } catch (error) {
+    console.error('Error showing folder picker:', error);
+    writeToLog('ERROR', 'Failed to show folder picker', error);
+    return null;
+  }
+});
+
+console.log('IPC handler "show-folder-picker" registered');
+
 // IPC handler to get server configuration
+
 ipcMain.handle("get-server-config", async () => {
   if (IS_CLIENT_MODE) {
     return {

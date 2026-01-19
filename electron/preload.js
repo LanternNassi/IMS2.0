@@ -39,6 +39,9 @@ contextBridge.exposeInMainWorld("electron", {
     // Server configuration (for client mode)
     getServerConfig: () => ipcRenderer.invoke('get-server-config'),
 
+    // Folder picker
+    showFolderPicker: () => ipcRenderer.invoke('show-folder-picker'),
+
     // Remove listeners
     removeAuthDataListener: () => {
         ipcRenderer.removeAllListeners('auth-data');

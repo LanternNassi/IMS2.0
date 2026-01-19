@@ -146,7 +146,7 @@ namespace ImsServer.Controllers
             if (asset == null) return NotFound();
 
             // Calculate accumulated depreciation
-            var yearsOwned = (DateTime.UtcNow - asset.PurchaseDate).TotalDays / 365.25;
+            var yearsOwned = (DateTime.Now - asset.PurchaseDate).TotalDays / 365.25;
             var accumulatedDepreciation = asset.PurchasePrice - asset.CurrentValue;
             var remainingLife = asset.UsefulLifeYears - yearsOwned;
 
@@ -176,7 +176,7 @@ namespace ImsServer.Controllers
                 Name = dto.Name,
                 Type = dto.Type,
                 PurchasePrice = dto.PurchasePrice,
-                PurchaseDate = dto.PurchaseDate == default ? DateTime.UtcNow : dto.PurchaseDate,
+                PurchaseDate = dto.PurchaseDate == default ? DateTime.Now : dto.PurchaseDate,
                 CurrentValue = dto.PurchasePrice, // Initially same as purchase price
                 DepreciationRate = dto.DepreciationRate,
                 UsefulLifeYears = dto.UsefulLifeYears,
@@ -237,7 +237,7 @@ namespace ImsServer.Controllers
             if (asset == null) return NotFound();
 
             // Calculate depreciation using straight-line method
-            var yearsOwned = (DateTime.UtcNow - asset.PurchaseDate).TotalDays / 365.25;
+            var yearsOwned = (DateTime.Now - asset.PurchaseDate).TotalDays / 365.25;
             var depreciationPerYear = asset.PurchasePrice / asset.UsefulLifeYears;
             var accumulatedDepreciation = (decimal)yearsOwned * depreciationPerYear;
 
@@ -266,7 +266,7 @@ namespace ImsServer.Controllers
 
             if (asset == null) return NotFound();
 
-            asset.DisposalDate = disposalDate ?? DateTime.UtcNow;
+            asset.DisposalDate = disposalDate ?? DateTime.Now;
             asset.DisposalValue = disposalValue;
             asset.IsActive = false;
 

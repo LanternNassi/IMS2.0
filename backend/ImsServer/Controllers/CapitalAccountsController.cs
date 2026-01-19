@@ -225,7 +225,7 @@ namespace ImsServer.Controllers
                 OwnerId = dto.OwnerId,
                 Type = dto.Type,
                 Amount = dto.Amount,
-                TransactionDate = dto.TransactionDate == default ? DateTime.UtcNow : dto.TransactionDate,
+                TransactionDate = dto.TransactionDate == default ? DateTime.Now : dto.TransactionDate,
                 Description = dto.Description,
                 ReferenceNumber = dto.ReferenceNumber,
                 LinkedFinancialAccountId = dto.LinkedFinancialAccountId

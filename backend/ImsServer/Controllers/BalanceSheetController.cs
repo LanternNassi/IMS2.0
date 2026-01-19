@@ -22,7 +22,7 @@ namespace ImsServer.Controllers
         [HttpGet("today")]
         public async Task<IActionResult> GetTodayBalanceSheet()
         {
-            var asOfUtc = DateTime.UtcNow;
+            var asOfUtc = DateTime.Now;
 
             // Assets - Cash & Bank
             var cashAccounts = await _db.FinancialAccounts

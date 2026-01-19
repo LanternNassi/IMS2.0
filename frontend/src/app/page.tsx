@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useSystemConfigStore } from "@/store/useSystemConfigStore";
 import { useRouter } from "next/navigation";
+import { useOrgStore } from "@/store/useOrgStore";
 import { useAuthStore } from "@/store/useAuthStore";
 
 export default function Home() {

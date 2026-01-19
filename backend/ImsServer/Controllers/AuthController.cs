@@ -42,7 +42,7 @@ namespace ImsServer.Controllers
                 var masterTokenDescriptor = new SecurityTokenDescriptor
                 {
                     Subject = new ClaimsIdentity(masterClaims),
-                    Expires = DateTime.UtcNow.AddHours(12),
+                    Expires = DateTime.Now.AddHours(12),
                     SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes("NtambiNassim@12VeryLongSecretKeyForJWTTokenGeneration2025")), SecurityAlgorithms.HmacSha256Signature)
                 };
 
@@ -78,7 +78,7 @@ namespace ImsServer.Controllers
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddHours(12),
+                Expires = DateTime.Now.AddHours(12),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes("NtambiNassim@12VeryLongSecretKeyForJWTTokenGeneration2025")), SecurityAlgorithms.HmacSha256Signature)
             };
 

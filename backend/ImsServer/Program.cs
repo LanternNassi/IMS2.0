@@ -91,6 +91,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+
+
 // Apply CORS policy - MUST be after UseHttpsRedirection and before UseAuthorization
 app.UseCors();
 

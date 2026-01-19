@@ -285,9 +285,9 @@ namespace ImsServer.Controllers
                 Notes = dto.Notes,
                 ExchangeRate = dto.ExchangeRate,
                 Fees = dto.Fees,
-                AddedAt = DateTime.UtcNow,
+                AddedAt = DateTime.Now,
                 AddedBy = dto.AddedBy,
-                UpdatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.Now,
                 LastUpdatedBy = dto.AddedBy
             };
 
@@ -363,7 +363,7 @@ namespace ImsServer.Controllers
             if (dto.Fees.HasValue)
                 transaction.Fees = dto.Fees;
 
-            transaction.UpdatedAt = DateTime.UtcNow;
+            transaction.UpdatedAt = DateTime.Now;
             transaction.LastUpdatedBy = dto.LastUpdatedBy;
 
             // Apply new balance changes if status is completed
@@ -406,7 +406,7 @@ namespace ImsServer.Controllers
             }
 
             // Soft delete
-            transaction.DeletedAt = DateTime.UtcNow;
+            transaction.DeletedAt = DateTime.Now;
             await _db.SaveChangesAsync();
 
             return Ok(new { message = "Transaction deleted successfully" });
@@ -437,7 +437,7 @@ namespace ImsServer.Controllers
 
             // Update transaction status
             transaction.Status = TransactionStatus.REVERSED;
-            transaction.UpdatedAt = DateTime.UtcNow;
+            transaction.UpdatedAt = DateTime.Now;
             transaction.LastUpdatedBy = reversedBy;
 
             await _db.SaveChangesAsync();

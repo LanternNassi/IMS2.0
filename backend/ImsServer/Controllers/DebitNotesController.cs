@@ -275,7 +275,7 @@ namespace ImsServer.Controllers
                 {
                     Id = dto.Id == Guid.Empty ? Guid.NewGuid() : dto.Id,
                     DebitNoteNumber = debitNoteNumber,
-                    DebitNoteDate = dto.DebitNoteDate == default ? DateTime.UtcNow : dto.DebitNoteDate,
+                    DebitNoteDate = dto.DebitNoteDate == default ? DateTime.Now : dto.DebitNoteDate,
                     PurchaseId = dto.PurchaseId,
                     SaleId = dto.SaleId,
                     SupplierId = dto.SupplierId,
@@ -602,7 +602,7 @@ namespace ImsServer.Controllers
         // Helper methods
         private async Task<string> GenerateDebitNoteNumberAsync()
         {
-            var year = DateTime.UtcNow.Year;
+            var year = DateTime.Now.Year;
             var lastNote = await _db.DebitNotes
                 .Where(dn => dn.DebitNoteNumber.StartsWith($"DN-{year}-"))
                 .OrderByDescending(dn => dn.DebitNoteNumber)

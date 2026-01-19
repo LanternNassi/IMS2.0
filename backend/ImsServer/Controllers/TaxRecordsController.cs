@@ -110,7 +110,7 @@ namespace ImsServer.Controllers
 
             // Calculate metadata (using all filtered data)
             var allTaxRecords = await query.ToListAsync();
-            var today = DateTime.UtcNow;
+            var today = DateTime.Now;
 
             var metadata = new
             {
@@ -165,8 +165,8 @@ namespace ImsServer.Controllers
 
             if (taxRecord == null) return NotFound();
 
-            var daysUntilDue = (taxRecord.DueDate - DateTime.UtcNow).Days;
-            var isOverdue = !taxRecord.IsPaid && taxRecord.DueDate < DateTime.UtcNow;
+            var daysUntilDue = (taxRecord.DueDate - DateTime.Now).Days;
+            var isOverdue = !taxRecord.IsPaid && taxRecord.DueDate < DateTime.Now;
 
             return Ok(new
             {
@@ -237,7 +237,7 @@ namespace ImsServer.Controllers
             }
 
             taxRecord.IsPaid = true;
-            taxRecord.PaidDate = paidDate ?? DateTime.UtcNow;
+            taxRecord.PaidDate = paidDate ?? DateTime.Now;
 
             await _db.SaveChangesAsync();
 

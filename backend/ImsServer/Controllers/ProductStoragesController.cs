@@ -282,9 +282,9 @@ namespace ImsServer.Controllers
                     {
                         Id = Guid.NewGuid(),
                         ProductId = variation.ProductId,
-                        ExpiryDate = DateTime.UtcNow.AddYears(10), // Default 10 year expiry
-                        ManufactureDate = DateTime.UtcNow,
-                        BatchNumber = $"DEFAULT-{DateTime.UtcNow:yyyyMMddHHmmss}",
+                        ExpiryDate = DateTime.Now.AddYears(10), // Default 10 year expiry
+                        ManufactureDate = DateTime.Now,
+                        BatchNumber = $"DEFAULT-{DateTime.Now:yyyyMMddHHmmss}",
                         SupplierId = await _dbcontext.Suppliers.Select(s => s.Id).FirstOrDefaultAsync() // Use first available supplier
                     };
 

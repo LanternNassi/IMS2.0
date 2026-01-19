@@ -21,7 +21,7 @@ namespace ImsServer.Controllers
         [HttpGet("today")]
         public async Task<IActionResult> GetToday()
         {
-            var utcNow = DateTime.UtcNow;
+            var utcNow = DateTime.Now;
             var start = utcNow.Date;
             var end = start.AddDays(1);
 
@@ -56,7 +56,7 @@ namespace ImsServer.Controllers
 
         private async Task<IActionResult> GetRangeInternal(DateTime startUtc, DateTime endUtc)
         {
-            var asOfUtc = DateTime.UtcNow;
+            var asOfUtc = DateTime.Now;
 
             // Revenue (completed, non-refunded)
             var salesRevenue = await _db.Sales

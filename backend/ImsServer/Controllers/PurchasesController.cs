@@ -201,7 +201,7 @@ namespace ImsServer.Controllers
                 {
                     Id = dto.Id == Guid.Empty ? Guid.NewGuid() : dto.Id,
                     PurchaseNumber = dto.PurchaseNumber ?? Guid.NewGuid().ToString(),
-                    PurchaseDate = dto.PurchaseDate == default ? DateTime.UtcNow : dto.PurchaseDate,
+                    PurchaseDate = dto.PurchaseDate == default ? DateTime.Now : dto.PurchaseDate,
                     SupplierId = dto.SupplierId,
                     TotalAmount = dto.TotalAmount,
                     Tax = dto.Tax,
@@ -490,7 +490,7 @@ namespace ImsServer.Controllers
                 })
                 .OrderBy(t => t.Date)
                 .ToList();
-            var today = DateTime.UtcNow;
+            var today = DateTime.Now;
             var ageAnalysis = new
             {
                 Current_0_30Days = allPayables
@@ -670,7 +670,7 @@ namespace ImsServer.Controllers
                         DateTime purchaseDate;
                         if (debtDto.PurchaseDate == default)
                         {
-                            purchaseDate = DateTime.UtcNow;
+                            purchaseDate = DateTime.Now;
                         }
                         else
                         {

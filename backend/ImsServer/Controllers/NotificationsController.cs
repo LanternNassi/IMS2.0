@@ -19,7 +19,7 @@ namespace ImsServer.Controllers
         [HttpGet]
         public async Task<IActionResult> GetNotifications()
         {
-            var utcNow = DateTime.UtcNow;
+            var utcNow = DateTime.Now;
             var notifications = new List<object>();
 
             // 1. Expiring products (within 30 days)
@@ -236,7 +236,7 @@ namespace ImsServer.Controllers
         [HttpGet("count")]
         public async Task<IActionResult> GetNotificationCount()
         {
-            var utcNow = DateTime.UtcNow;
+            var utcNow = DateTime.Now;
             var count = 0;
 
             // Count expiring products

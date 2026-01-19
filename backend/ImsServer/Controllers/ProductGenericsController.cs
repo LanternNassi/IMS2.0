@@ -61,7 +61,7 @@ namespace ImsServer.Controllers
             // Filter out expired items by default
             if (includeExpired == false || includeExpired == null)
             {
-                query = query.Where(pg => pg.ExpiryDate >= DateTime.UtcNow);
+                query = query.Where(pg => pg.ExpiryDate >= DateTime.Now);
             }
 
             return Ok(_mapper.Map<List<ProductGenericDto>>(await query.ToListAsync()));
@@ -82,7 +82,7 @@ namespace ImsServer.Controllers
             var query = _dbcontext.ProductGenerics
                 .Include(pg => pg.Product)
                 .Include(pg => pg.Supplier)
-                .Where(pg => pg.ExpiryDate < DateTime.UtcNow)
+                .Where(pg => pg.ExpiryDate < DateTime.Now)
                 .AsQueryable();
 
             if (keywords != null)
@@ -115,12 +115,12 @@ namespace ImsServer.Controllers
                 return NotFound();
             }
 
-            var futureDate = DateTime.UtcNow.AddDays(days);
+            var futureDate = DateTime.Now.AddDays(days);
 
             var query = _dbcontext.ProductGenerics
                 .Include(pg => pg.Product)
                 .Include(pg => pg.Supplier)
-                .Where(pg => pg.ExpiryDate >= DateTime.UtcNow && pg.ExpiryDate <= futureDate)
+                .Where(pg => pg.ExpiryDate >= DateTime.Now && pg.ExpiryDate <= futureDate)
                 .AsQueryable();
 
             if (productId.HasValue)
@@ -224,7 +224,7 @@ namespace ImsServer.Controllers
                 return BadRequest("Expiry date must be after manufacture date.");
             }
 
-            if (productGeneric.ManufactureDate > DateTime.UtcNow)
+            if (productGeneric.ManufactureDate > DateTime.Now)
             {
                 return BadRequest("Manufacture date cannot be in the future.");
             }
@@ -277,7 +277,7 @@ namespace ImsServer.Controllers
 
             // Validate dates for each generic
             var invalidDateGenerics = productGenerics
-                .Where(pg => pg.ExpiryDate <= pg.ManufactureDate || pg.ManufactureDate > DateTime.UtcNow)
+                .Where(pg => pg.ExpiryDate <= pg.ManufactureDate || pg.ManufactureDate > DateTime.Now)
                 .ToList();
 
             if (invalidDateGenerics.Any())
@@ -320,7 +320,7 @@ namespace ImsServer.Controllers
                 return BadRequest("Expiry date must be after manufacture date.");
             }
 
-            if (productGeneric.ManufactureDate > DateTime.UtcNow)
+            if (productGeneric.ManufactureDate > DateTime.Now)
             {
                 return BadRequest("Manufacture date cannot be in the future.");
             }

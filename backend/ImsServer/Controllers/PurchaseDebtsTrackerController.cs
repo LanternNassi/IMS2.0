@@ -203,7 +203,7 @@ namespace ImsServer.Controllers
                     PurchaseId = dto.PurchaseId,
                     PaidAmount = dto.PaidAmount,
                     PaymentMethod = dto.PaymentMethod,
-                    PaymentDate = dto.PaymentDate == default ? DateTime.UtcNow : dto.PaymentDate,
+                    PaymentDate = dto.PaymentDate == default ? DateTime.Now : dto.PaymentDate,
                     Description = dto.Description,
                     ReceivedById = dto.ReceivedById,
                     LinkedFinancialAccountId = dto.LinkedFinancialAccountId
