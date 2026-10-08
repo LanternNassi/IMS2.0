@@ -92,7 +92,7 @@ const page = () => {
           label="Customer's Id"
           disabled
           defaultValue={editRow ? editRow.id : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
         />
 
@@ -102,7 +102,7 @@ const page = () => {
           name="name"
           label="Full Name"
           defaultValue={editRow ? editRow.name : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
         />
 
@@ -112,7 +112,7 @@ const page = () => {
           name="customerType"
           label="Customer Type"
           defaultValue={editRow ? editRow.customerType : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
         />
 
@@ -121,7 +121,7 @@ const page = () => {
           name="address"
           label="Address"
           defaultValue={editRow ? editRow.address : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
         />
 
@@ -130,7 +130,7 @@ const page = () => {
           name="phone"
           label="Telephone"
           defaultValue={editRow ? editRow.phone : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
         />
 
@@ -139,7 +139,7 @@ const page = () => {
           name="email"
           label="Email Address"
           defaultValue={editRow ? editRow.email : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
         />
 
@@ -148,7 +148,7 @@ const page = () => {
           name="accountNumber"
           label="Account Number"
           defaultValue={editRow ? editRow.accountNumber : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
         />
 
@@ -160,12 +160,12 @@ const page = () => {
           rows={4}
           label="More Information"
           defaultValue={editRow ? editRow.moreInfo : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
         />
 
         <ChipInput 
-          styles = {{width : "25vw"}}
+          styles={{ width: "100%" }}
           onTagsChange={onTagsChange} 
           searchTags={searchCustomerTags}
           label="Attach Tags eg. Urgent(This is an urgent customer)"
@@ -174,7 +174,7 @@ const page = () => {
 
         <LoadingButton
           type="submit"
-          sx={{ width: "25vw", height: "8vh" }}
+          fullWidth sx={{ height: "8vh" }}
           variant="contained"
           tabIndex={-1}
           loading={submitting}

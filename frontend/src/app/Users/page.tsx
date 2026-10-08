@@ -47,7 +47,7 @@ const page = () => {
           name="username"
           label="Username"
           defaultValue={editRow ? editRow.username : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
         />
 
@@ -57,7 +57,7 @@ const page = () => {
           name="passwordHarsh"
           label="Password"
           defaultValue={editRow ? editRow.username : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
         />
 
@@ -67,7 +67,7 @@ const page = () => {
           name="gender"
           label="Gender"
           defaultValue={editRow ? editRow.gender : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
         >
           <MenuItem value="Male">Male</MenuItem>
@@ -80,7 +80,7 @@ const page = () => {
           name="telephone"
           label="Telephone"
           defaultValue={editRow ? editRow.telephone : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
         />
 
@@ -90,7 +90,7 @@ const page = () => {
           label="email"
           name="email"
           defaultValue={editRow ? editRow.email : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
         />
 
@@ -100,7 +100,7 @@ const page = () => {
           name="role"
           label="Account Type"
           defaultValue={editRow ? editRow.role : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
         >
           <MenuItem value="admin">admin</MenuItem>
@@ -108,7 +108,7 @@ const page = () => {
         </TextField>
         <LoadingButton
           type="submit"
-          sx={{ width: "25vw", height: "8vh" }}
+          fullWidth sx={{ height: "8vh" }}
           variant="contained"
           tabIndex={-1}
           loading={submitting}

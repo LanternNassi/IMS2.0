@@ -307,7 +307,11 @@ const SaleRow: React.FC<{
         {/* Status */}
         <TableCell className="py-3 w-32 border-r border-border/30 dark:border-gray-700/30">
           <div className="flex flex-col gap-1">
-            {sale.isPaid ? (
+            {sale.isRefunded ? (
+              <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 hover:bg-red-100">
+                Refunded
+              </Badge>
+            ) : sale.isPaid ? (
               <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 hover:bg-emerald-100">
                 Paid
               </Badge>

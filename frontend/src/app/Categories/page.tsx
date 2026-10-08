@@ -54,7 +54,7 @@ const page = () => {
           label="Category Id"
           disabled
           defaultValue={editRow ? editRow.id : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
         />
 
@@ -64,7 +64,7 @@ const page = () => {
           name="name"
           label="Category Name"
           defaultValue={editRow ? editRow.name : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
         />
 
@@ -76,13 +76,13 @@ const page = () => {
           rows={4}
           label="Store Description"
           defaultValue={editRow ? editRow.description : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
         />
 
         <LoadingButton
           type="submit"
-          sx={{ width: "25vw", height: "8vh" }}
+          fullWidth sx={{ height: "8vh" }}
           variant="contained"
           tabIndex={-1}
           loading={submitting}

@@ -145,7 +145,8 @@ namespace ImsServer.Controllers
             }
 
             // Calculate metadata (using all filtered data, not just current page)
-            var allSales = await query.ToListAsync();
+            // Refunded sales are reversed, so they don't count towards totals or profit
+            var allSales = await query.Where(s => !s.IsRefunded).ToListAsync();
             var metadata = new
             {
                 TotalAmount = allSales.Sum(s => s.TotalAmount),

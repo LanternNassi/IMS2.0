@@ -137,27 +137,6 @@ export default function SalesPage() {
     console.log("View sale:", sale)
   }
 
-  const handleEdit = (sale: SaleTableType) => {
-    router.push(`/Sales/edit/${sale.id}`)
-  }
-
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this sale?")) return
-
-    try {
-      await api.delete(`/Sales/${id}`)
-      setSnackbar({ open: true, message: "Sale deleted successfully" })
-      fetchSales(pagination.currentPage, pagination.pageSize)
-    } catch (error: any) {
-      console.error("Error deleting sale:", error)
-
-      setSnackbar({
-        open: true,
-        message: error.response?.data?.message || "Failed to delete sale",
-      })
-    }
-  }
-
   const handleRefund = async (id: string) => {
     if (!confirm("Are you sure you want to refund this sale? This will return stock to inventory and reverse the transaction.")) return
 
@@ -344,8 +323,6 @@ export default function SalesPage() {
           <SalesTable
             sales={filteredSales}
             onView={handleView}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
             onRefund={handleRefund}
           />
         )}

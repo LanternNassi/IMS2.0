@@ -95,7 +95,7 @@ const page = () => {
           name="name"
           label="Asset Name"
           defaultValue={editRow ? editRow.name : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
           required
         />
@@ -106,7 +106,7 @@ const page = () => {
           name="type"
           label="Asset Type"
           defaultValue={editRow ? editRow.type : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
           required
         >
@@ -125,7 +125,7 @@ const page = () => {
           label="Purchase Price (Shs)"
           type="number"
           defaultValue={editRow ? editRow.purchasePrice : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
           required
         />
@@ -139,7 +139,7 @@ const page = () => {
           defaultValue={
             editRow && editRow.purchaseDate ? editRow.purchaseDate.split("T")[0] : ""
           }
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
           InputLabelProps={{
             shrink: true,
@@ -154,7 +154,7 @@ const page = () => {
           label="Annual Depreciation Rate (%)"
           type="number"
           defaultValue={editRow ? editRow.depreciationRate : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
           inputProps={{ step: "0.01", min: "0", max: "100" }}
           required
@@ -167,7 +167,7 @@ const page = () => {
           label="Useful Life (Years)"
           type="number"
           defaultValue={editRow ? editRow.usefulLifeYears : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
           required
         />
@@ -178,7 +178,7 @@ const page = () => {
           name="serialNumber"
           label="Serial Number"
           defaultValue={editRow ? editRow.serialNumber : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
           required
         />
@@ -189,7 +189,7 @@ const page = () => {
           name="manufacturer"
           label="Manufacturer"
           defaultValue={editRow ? editRow.manufacturer : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
           required
         />
@@ -201,7 +201,7 @@ const page = () => {
           label="Financial Account (Optional)"
           value={selectedFinancialAccountId}
           onChange={(e) => setSelectedFinancialAccountId(e.target.value)}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
         >
           <MenuItem value="">None</MenuItem>
@@ -220,7 +220,7 @@ const page = () => {
           name="description"
           label="Description"
           defaultValue={editRow ? editRow.description : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
           multiline
           rows={3}
@@ -229,7 +229,7 @@ const page = () => {
 
         <LoadingButton
           type="submit"
-          sx={{ width: "25vw", height: "8vh" }}
+          fullWidth sx={{ height: "8vh" }}
           variant="contained"
           tabIndex={-1}
           loading={submitting}

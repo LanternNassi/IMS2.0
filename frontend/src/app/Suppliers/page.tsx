@@ -87,7 +87,7 @@ const page = () => {
           label="Supplier's Id"
           disabled
           defaultValue={editRow ? editRow.id : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
         />
 
@@ -97,7 +97,7 @@ const page = () => {
           name="companyName"
           label="Company Name"
           defaultValue={editRow ? editRow.companyName : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
         />
 
@@ -107,7 +107,7 @@ const page = () => {
           name="contactPerson"
           label="Contact Person"
           defaultValue={editRow ? editRow.contactPerson : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
         />
 
@@ -117,7 +117,7 @@ const page = () => {
           name="emailAddress"
           label="Email Address"
           defaultValue={editRow ? editRow.emailAddress : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
         />
 
@@ -127,7 +127,7 @@ const page = () => {
           name="phoneNumber"
           label="Phone Number"
           defaultValue={editRow ? editRow.phoneNumber : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
         />
 
@@ -136,7 +136,7 @@ const page = () => {
           name="address"
           label="Address"
           defaultValue={editRow ? editRow.address : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
         />
 
@@ -145,7 +145,7 @@ const page = () => {
           name="tin"
           label="TIN Number (Optional)"
           defaultValue={editRow ? editRow.tin : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
         />
 
@@ -154,7 +154,7 @@ const page = () => {
           name="status"
           label="Supplier Status"
           defaultValue={editRow ? editRow.status : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
         />
 
@@ -166,12 +166,12 @@ const page = () => {
           rows={4}
           label="More Information"
           defaultValue={editRow ? editRow.moreInfo : ""}
-          sx={{ width: "25vw" }}
+          fullWidth
           margin="normal"
         />
 
         <ChipInput
-          styles={{ width: "25vw" }}
+          styles={{ width: "100%" }}
           onTagsChange={onTagsChange}
           searchTags={searchSupplierTags}
           label="Attach Tags eg. Urgent(This is an urgent supplier)"
@@ -180,7 +180,7 @@ const page = () => {
 
         <LoadingButton
           type="submit"
-          sx={{ width: "25vw", height: "8vh" }}
+          fullWidth sx={{ height: "8vh" }}
           variant="contained"
           tabIndex={-1}
           loading={submitting}
