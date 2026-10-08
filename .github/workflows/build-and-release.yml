@@ -10,6 +10,8 @@ on:
 jobs:
   build-and-release:
     runs-on: windows-latest
+    permissions:
+      contents: write  # Allows the built-in token to create releases and upload assets
     
     steps:
       - name: Checkout code
@@ -84,7 +86,7 @@ jobs:
       - name: Build Server Version
         id: build-server
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           Write-Host "Building Server version..."
           if ("${{ github.ref }}" -like "refs/tags/*") {
@@ -102,7 +104,7 @@ jobs:
       - name: Build Client Version
         id: build-client
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           Write-Host "Building Client version..."
           if ("${{ github.ref }}" -like "refs/tags/*") {
@@ -138,7 +140,7 @@ jobs:
       - name: Upload Backend Service Package to Release
         if: steps.release-type.outputs.type == 'release'
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           $zipFile = Get-ChildItem -Path "release" -Filter "IMS-Backend-Service-*.zip" | Select-Object -First 1
           if ($zipFile) {
